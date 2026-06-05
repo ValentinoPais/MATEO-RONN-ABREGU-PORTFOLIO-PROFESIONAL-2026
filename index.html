@@ -152,6 +152,9 @@
       position: relative;
       overflow: hidden;
       cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
     .gallery-item.img-v    { grid-column: span 2; grid-row: span 3; }
@@ -744,6 +747,10 @@
             lbResetTrack(true);
           }
         } else if (axis === 'y' && Math.abs(dy) > 100) {
+          // Scroll background FIRST, while modal still visible
+          if (lbImages[lbIndex]) {
+            lbImages[lbIndex].closest('.gallery-item').scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
           lb.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
           lb.style.transform = `translateY(${dy > 0 ? '100vh' : '-100vh'})`;
           lb.style.opacity = '0';
@@ -751,7 +758,7 @@
             lb.classList.remove('open');
             lb.style.transform = '';
             lb.style.opacity = '';
-            closeLightbox(true);
+            document.body.style.overflow = '';
           }, 220);
         } else {
           lb.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
