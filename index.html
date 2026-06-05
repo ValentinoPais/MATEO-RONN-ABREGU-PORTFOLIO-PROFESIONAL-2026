@@ -528,6 +528,9 @@
       });
     })();
 
+    window.scrollTo(0, 0);
+    history.scrollRestoration = 'manual';
+
     function fixOddVerticals() {
       if (window.innerWidth > 600) {
         document.querySelectorAll('.gallery-item.img-v, .gallery-item.img-v-lg')
