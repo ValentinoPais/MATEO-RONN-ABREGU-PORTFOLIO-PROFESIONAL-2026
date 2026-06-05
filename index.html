@@ -452,7 +452,6 @@
       <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-24.JPG" alt="Show" /></div>
       <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-39.JPG" alt="Show" /></div>
       <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-108.JPG" alt="Show" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-3.JPG" alt="Show" /></div>
       <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-96.JPG" alt="Show" /></div>
       <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-104.JPG" alt="Show" /></div>
       <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-112.JPG" alt="Show" /></div>
@@ -609,7 +608,7 @@
 
     function lbNavBtn(dir) {
       const next = Math.max(0, Math.min(lbImages.length - 1, lbIndex + dir));
-      if (next === lbIndex) return;
+      if (next === lbIndex) { lbResetTrack(true); return; }
 
       if (lbNavTimeout) {
         clearTimeout(lbNavTimeout);
@@ -642,17 +641,17 @@
     function closeLightbox(fromSwipe) {
       const lb = document.getElementById('lightbox');
       if (lbImages[lbIndex]) {
-        lbImages[lbIndex].closest('.gallery-item').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        lbImages[lbIndex].closest('.gallery-item').scrollIntoView({ behavior: 'instant', block: 'center' });
       }
       document.body.style.overflow = '';
       if (!fromSwipe) {
-        lb.style.transition = 'opacity 0.2s ease';
+        lb.style.transition = 'opacity 0.18s ease';
         lb.style.opacity = '0';
         setTimeout(() => {
           lb.classList.remove('open');
           lb.style.opacity = '';
           lb.style.transition = '';
-        }, 200);
+        }, 180);
       }
     }
 
@@ -695,7 +694,7 @@
         }
         if (axis === 'x') {
           const atEdge = (lbIndex === 0 && dx > 0) || (lbIndex === lbImages.length - 1 && dx < 0);
-          track().style.transform = `translateX(calc(-100vw + ${atEdge ? dx * 0.15 : dx}px))`;
+          if (!atEdge) track().style.transform = `translateX(calc(-100vw + ${dx}px))`;
         } else if (axis === 'y') {
           lb.style.transform = `translateY(${dy}px)`;
           lb.style.opacity = Math.max(0, 1 - Math.abs(dy) / 300);
@@ -712,9 +711,9 @@
           lbNavBtn(dx < 0 ? 1 : -1);
         } else if (axis === 'y' && Math.abs(dy) > 100) {
           if (lbImages[lbIndex]) {
-            lbImages[lbIndex].closest('.gallery-item').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            lbImages[lbIndex].closest('.gallery-item').scrollIntoView({ behavior: 'instant', block: 'center' });
           }
-          lb.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+          lb.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
           lb.style.transform = `translateY(${dy > 0 ? '100vh' : '-100vh'})`;
           lb.style.opacity = '0';
           setTimeout(() => {
@@ -723,7 +722,7 @@
             lb.style.opacity = '';
             lb.style.transition = '';
             document.body.style.overflow = '';
-          }, 220);
+          }, 180);
         } else {
           lb.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
           lb.style.transform = '';
@@ -757,8 +756,7 @@
         }
         if (axis === 'x') {
           const atEdge = (lbIndex === 0 && dx > 0) || (lbIndex === lbImages.length - 1 && dx < 0);
-          const offset = atEdge ? dx * 0.15 : dx;
-          track().style.transform = `translateX(calc(-100vw + ${offset}px))`;
+          if (!atEdge) track().style.transform = `translateX(calc(-100vw + ${dx}px))`;
         } else if (axis === 'y') {
           lb.style.transform = `translateY(${dy}px)`;
           lb.style.opacity = Math.max(0, 1 - Math.abs(dy) / 300);
@@ -775,11 +773,10 @@
             lbResetTrack(true);
           }
         } else if (axis === 'y' && Math.abs(dy) > 100) {
-          // Scroll background FIRST, while modal still visible
           if (lbImages[lbIndex]) {
-            lbImages[lbIndex].closest('.gallery-item').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            lbImages[lbIndex].closest('.gallery-item').scrollIntoView({ behavior: 'instant', block: 'center' });
           }
-          lb.style.transition = 'transform 0.22s ease, opacity 0.22s ease';
+          lb.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
           lb.style.transform = `translateY(${dy > 0 ? '100vh' : '-100vh'})`;
           lb.style.opacity = '0';
           setTimeout(() => {
@@ -787,7 +784,7 @@
             lb.style.transform = '';
             lb.style.opacity = '';
             document.body.style.overflow = '';
-          }, 220);
+          }, 180);
         } else {
           lb.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
           lb.style.transform = '';
