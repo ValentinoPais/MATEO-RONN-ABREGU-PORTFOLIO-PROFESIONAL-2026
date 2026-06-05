@@ -670,7 +670,8 @@
 
     function closeLightbox(fromSwipe) {
       const lb = document.getElementById('lightbox');
-      if (!isMobile() && lbImages[lbIndex]) {
+      // Always scroll to last viewed image before closing (lightbox still covers screen)
+      if (lbImages[lbIndex]) {
         lbImages[lbIndex].closest('.gallery-item').scrollIntoView({ behavior: 'instant', block: 'center' });
       }
       document.body.style.overflow = '';
@@ -805,6 +806,7 @@
             lbResetTrack(true);
           }
         } else if (axis === 'y' && Math.abs(dy) > 100) {
+          if (lbImages[lbIndex]) lbImages[lbIndex].closest('.gallery-item').scrollIntoView({ behavior: 'instant', block: 'center' });
           lb.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
           lb.style.transform = `translateY(${dy > 0 ? '100vh' : '-100vh'})`;
           lb.style.opacity = '0';
