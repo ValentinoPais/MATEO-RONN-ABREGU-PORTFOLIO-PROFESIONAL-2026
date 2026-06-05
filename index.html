@@ -637,14 +637,18 @@
 
     function closeLightbox(fromSwipe) {
       const lb = document.getElementById('lightbox');
-      if (!fromSwipe) {
-        lb.classList.remove('open');
-        lb.style.transform = '';
-        lb.style.opacity = '';
-      }
-      document.body.style.overflow = '';
       if (lbImages[lbIndex]) {
         lbImages[lbIndex].closest('.gallery-item').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      document.body.style.overflow = '';
+      if (!fromSwipe) {
+        lb.style.transition = 'opacity 0.2s ease';
+        lb.style.opacity = '0';
+        setTimeout(() => {
+          lb.classList.remove('open');
+          lb.style.opacity = '';
+          lb.style.transition = '';
+        }, 200);
       }
     }
 
