@@ -345,12 +345,24 @@
       .hamburger { display: flex; }
       .gallery {
         grid-template-columns: repeat(2, 1fr);
-        grid-auto-rows: calc((100vw - 42px) / 2);
-        gap: 10px; padding: 0 16px 10px;
+        grid-auto-rows: auto;
+        gap: 8px;
+        padding: 0 12px 8px;
       }
-      .gallery-item.img-v    { grid-column: span 1; grid-row: span 3; }
-      .gallery-item.img-h    { grid-column: span 2; grid-row: span 2; }
-      .gallery-item.img-v-lg { grid-column: span 1; grid-row: span 3; }
+      .gallery-item.img-v,
+      .gallery-item.img-v-lg {
+        grid-column: span 1;
+        grid-row: span 1;
+      }
+      .gallery-item.img-h {
+        grid-column: span 2;
+        grid-row: span 1;
+      }
+      .gallery-item img {
+        width: 100%;
+        height: auto;
+        object-fit: unset;
+      }
       .section-label { padding: 32px 20px; }
       #about { padding: 0 20px; margin: 60px auto; }
       #contact { padding: 48px 20px; }
@@ -416,6 +428,7 @@
       <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-24.JPG" alt="Show" /></div>
       <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-39.JPG" alt="Show" /></div>
       <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-108.JPG" alt="Show" /></div>
+      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-3.JPG" alt="Show" /></div>
       <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-96.JPG" alt="Show" /></div>
       <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-104.JPG" alt="Show" /></div>
       <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-112.JPG" alt="Show" /></div>
@@ -489,6 +502,31 @@
         else { img.addEventListener('load', onLoad); img.addEventListener('error', onLoad); }
       });
     })();
+
+    function fixOddVerticals() {
+      if (window.innerWidth > 600) {
+        document.querySelectorAll('.gallery-item.img-v, .gallery-item.img-v-lg')
+          .forEach(el => el.style.gridColumn = '');
+        return;
+      }
+      document.querySelectorAll('.gallery').forEach(gallery => {
+        const items = Array.from(gallery.children);
+        items.forEach(el => el.style.gridColumn = '');
+        const isV = el => el.classList.contains('img-v') || el.classList.contains('img-v-lg');
+        let i = 0;
+        while (i < items.length) {
+          if (isV(items[i])) {
+            let j = i;
+            while (j < items.length && isV(items[j])) j++;
+            if ((j - i) % 2 === 1) items[j - 1].style.gridColumn = 'span 2';
+            i = j;
+          } else { i++; }
+        }
+      });
+    }
+
+    window.addEventListener('resize', fixOddVerticals);
+    document.addEventListener('DOMContentLoaded', fixOddVerticals);
 
     function logoClick(e) {
       e.preventDefault();
