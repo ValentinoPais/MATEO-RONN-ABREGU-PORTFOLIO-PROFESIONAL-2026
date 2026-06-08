@@ -106,18 +106,18 @@ etc. — cualquier imagen sirve).
     directamente a cualquier foto con un click.
 
 
-RESUMEN — TODO LO QUE PODÉS HACER VOS SOLO, CUANDO QUIERAS
+MACHETE DE REFERENCIA DE LAS DIFERENTES SECCIONES
 --------------------------------------------
-  ✓ Agregar una sección nueva       → creá una carpeta nueva en la raíz
-  ✓ Sacar una sección               → borrá (o movela afuera) esa carpeta
-  ✓ Renombrar una sección           → renombrá la carpeta
-  ✓ Reordenar las secciones         → reordená/renombrá/numerá las carpetas
-  ✓ Agregar un artista/producción   → creá una carpeta nueva adentro de
+  Agregar una sección nueva       → creá una carpeta nueva en la raíz
+  Sacar una sección               → borrá (o movela afuera) esa carpeta
+  Renombrar una sección           → renombrá la carpeta
+  Reordenar las secciones         → reordená/renombrá/numerá las carpetas
+  Agregar un artista/producción   → creá una carpeta nueva adentro de
                                        la sección correspondiente
-  ✓ Sacar un artista                → borrá (o movela afuera) esa carpeta
-  ✓ Cambiar la portada de un artista → renombrá la foto que querés de
+  Sacar un artista                → borrá (o movela afuera) esa carpeta
+  Cambiar la portada de un artista → renombrá la foto que querés de
                                        portada para que quede primera
-  ✓ Agregar/sacar/reordenar fotos   → subí, borrá o renombrá archivos
+  Agregar/sacar/reordenar fotos   → subí, borrá o renombrá archivos
                                        dentro de la carpeta del artista
 
 Todos estos cambios se ven reflejados en la página automáticamente —
@@ -135,4 +135,4 @@ simplemente no le crea tarjeta — no rompe nada, solo no aparece hasta
 que subas al menos una foto.
 
 Cualquier duda sobre esta organización, este mismo documento te sirve
-de referencia. ¡Y eso es todo — el resto lo hace la página sola!
+de referencia. ¡FIN!
