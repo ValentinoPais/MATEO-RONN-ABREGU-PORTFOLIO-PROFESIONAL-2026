@@ -369,19 +369,31 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      width: 26px;
-      height: 26px;
-      margin: -13px 0 0 -13px;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.15);
-      border-top-color: rgba(255,255,255,0.65);
+      width: 56px;
+      height: 56px;
+      margin: -28px 0 0 -28px;
+      border-radius: 14px;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s ease;
       z-index: 199;
     }
+    .lb-loader::after {
+      content: '';
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.2);
+      border-top-color: rgba(255,255,255,0.75);
+    }
     .lb-loader.show {
       opacity: 1;
+    }
+    .lb-loader.show::after {
       animation: lb-spin 0.85s linear infinite;
     }
     @keyframes lb-spin {
