@@ -139,17 +139,17 @@
       scroll-margin-top: var(--nav-h);
     }
 
-    /* ─── Grid ─── */
-    .gallery {
+    /* ─── Artist / production grid (cover cards) ─── */
+    .artist-grid {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      grid-auto-rows: calc((100vw - 220px) / 6);
+      grid-template-columns: repeat(4, 1fr);
       gap: 28px;
-      padding: 0 40px 12px;
+      padding: 0 40px 80px;
     }
 
-    .gallery-item {
+    .artist-card {
       position: relative;
+      aspect-ratio: 3 / 4;
       overflow: hidden;
       cursor: pointer;
       user-select: none;
@@ -157,11 +157,7 @@
       -webkit-tap-highlight-color: transparent;
     }
 
-    .gallery-item.img-v    { grid-column: span 2; grid-row: span 3; }
-    .gallery-item.img-h    { grid-column: span 3; grid-row: span 2; }
-    .gallery-item.img-v-lg { grid-column: span 4; grid-row: span 6; }
-
-    .gallery-item img {
+    .artist-card img {
       width: 100%;
       height: 100%;
       object-fit: cover;
@@ -171,7 +167,7 @@
     }
 
     @media (hover: hover) {
-      .gallery-item:hover img {
+      .artist-card:hover img {
         transform: scale(1.05);
         filter: brightness(1.2) saturate(4) hue-rotate(45deg) contrast(1.3);
       }
@@ -182,8 +178,22 @@
       25%  { filter: brightness(1.2) saturate(4) hue-rotate(45deg) contrast(1.3); transform: scale(1.05); }
       100% { filter: brightness(0.88) saturate(0.9); transform: scale(1); }
     }
-    .gallery-item.lb-flash img {
+    .artist-card.lb-flash img {
       animation: lb-flash 0.9s ease forwards;
+    }
+
+    .artist-name {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 18px 20px;
+      background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text);
+      pointer-events: none;
     }
 
 
@@ -312,11 +322,64 @@
 
     .lb-slide img {
       max-width: 90vw;
-      max-height: 90vh;
+      max-height: min(88vh, calc(100vh - 96px));
       object-fit: contain;
       user-select: none;
       pointer-events: none;
       display: block;
+    }
+
+    .lightbox-title {
+      position: fixed;
+      top: 28px; left: 32px;
+      font-family: var(--font-display);
+      font-size: 16px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      z-index: 201;
+      pointer-events: none;
+    }
+
+    /* ─── Filmstrip (lightbox thumbnail strip) ─── */
+    #lb-filmstrip {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      max-width: 92vw;
+      overflow-x: auto;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: rgba(20,20,20,0.55);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      z-index: 203;
+      scrollbar-width: none;
+    }
+    #lb-filmstrip::-webkit-scrollbar { display: none; }
+    #lb-filmstrip.hidden { display: none; }
+
+    .lb-thumb {
+      width: 50px;
+      height: 50px;
+      flex-shrink: 0;
+      object-fit: cover;
+      cursor: pointer;
+      border-radius: 3px;
+      opacity: 0.45;
+      filter: brightness(0.75) saturate(0.8);
+      transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
+    }
+    .lb-thumb.active {
+      opacity: 1;
+      filter: brightness(1.05) saturate(1.15);
+      transform: scale(1.15);
+    }
+    @media (hover: hover) {
+      .lb-thumb:not(.active):hover { opacity: 0.8; }
     }
 
     .lightbox-close {
@@ -365,39 +428,26 @@
 
     /* ─── Responsive ─── */
     @media (max-width: 900px) {
-      .gallery {
-        grid-template-columns: repeat(4, 1fr);
-        grid-auto-rows: calc((100vw - 120px) / 4);
+      .artist-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        padding: 0 40px 60px;
       }
-      .gallery-item.img-v    { grid-column: span 2; grid-row: span 3; }
-      .gallery-item.img-h    { grid-column: span 2; grid-row: span 1; }
-      .gallery-item.img-v-lg { grid-column: span 2; grid-row: span 3; }
     }
 
     @media (max-width: 600px) {
       nav { padding: 0 20px; }
       .nav-links { display: none; }
       .hamburger { display: flex; }
-      .gallery {
+      .artist-grid {
         grid-template-columns: repeat(2, 1fr);
-        grid-auto-rows: auto;
-        gap: 8px;
-        padding: 0 12px 8px;
+        gap: 14px;
+        padding: 0 20px 48px;
       }
-      .gallery-item.img-v,
-      .gallery-item.img-v-lg {
-        grid-column: span 1;
-        grid-row: span 1;
-      }
-      .gallery-item.img-h {
-        grid-column: span 2;
-        grid-row: span 1;
-      }
-      .gallery-item img {
-        width: 100%;
-        height: auto;
-        object-fit: unset;
-      }
+      .artist-name { font-size: 15px; padding: 14px; }
+      .lightbox-title { top: 22px; left: 20px; font-size: 13px; }
+      #lb-filmstrip { bottom: 14px; gap: 6px; padding: 8px 10px; }
+      .lb-thumb { width: 38px; height: 38px; }
       .section-label { padding: 32px 20px; }
       #about { padding: 0 20px; margin: 60px auto; }
       #contact { padding: 48px 20px; }
@@ -412,66 +462,19 @@
   <!-- Nav -->
   <nav>
     <a href="#" class="nav-logo" id="navLogo" onclick="logoClick(event)">Mateo Ronn Abregu</a>
-    <ul class="nav-links">
-      <li><a href="#produ">Moda</a></li>
-      <li><a href="#shows">Shows</a></li>
-      <li><a href="#about">About</a></li>
-      <li><a href="#contact">Contacto</a></li>
-    </ul>
+    <ul class="nav-links" id="navLinks"></ul>
     <button class="hamburger" onclick="toggleMenu()" aria-label="Menú">
       <span></span><span></span><span></span>
     </button>
   </nav>
 
   <!-- Mobile menu -->
-  <div class="mobile-menu" id="mobileMenu">
-    <a href="#produ" onclick="toggleMenu()">Moda</a>
-    <a href="#shows" onclick="toggleMenu()">Shows</a>
-    <a href="#about" onclick="toggleMenu()">About</a>
-    <a href="#contact" onclick="toggleMenu()">Contacto</a>
-  </div>
+  <div class="mobile-menu" id="mobileMenu"></div>
 
   <main>
 
-    <!-- ── Moda ── -->
-    <p class="section-label" id="produ">Moda</p>
-    <div class="gallery">
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-1.JPG" alt="Moda" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-2.JPG" alt="Moda" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-3.JPG" alt="Moda" /></div>
-      <div class="gallery-item img-v-lg" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-4.JPG" alt="Moda" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-16.JPG" alt="Moda" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-6.JPG" alt="Moda" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-7.JPG" alt="Moda" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-8.JPG" alt="Moda" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-9.JPG" alt="Moda" /></div>
-      <div class="gallery-item img-v-lg" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-10.JPG" alt="Moda" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-11.JPG" alt="Moda" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-12.JPG" alt="Moda" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-13.JPG" alt="Moda" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-14.JPG" alt="Moda" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/produ/ronnfotografia_-15.JPG" alt="Moda" /></div>
-    </div>
-
-    <!-- ── Shows ── -->
-    <p class="section-label" id="shows">Shows</p>
-    <div class="gallery">
-      <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-13.JPG" alt="Show" /></div>
-      <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-21.JPG" alt="Show" /></div>
-      <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-29.JPG" alt="Show" /></div>
-      <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-37.JPG" alt="Show" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-24.JPG" alt="Show" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-39.JPG" alt="Show" /></div>
-      <div class="gallery-item img-v" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-108.JPG" alt="Show" /></div>
-      <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-96.JPG" alt="Show" /></div>
-      <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-104.JPG" alt="Show" /></div>
-      <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-112.JPG" alt="Show" /></div>
-      <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-120.JPG" alt="Show" /></div>
-      <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-128.JPG" alt="Show" /></div>
-      <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-136.JPG" alt="Show" /></div>
-      <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-140.JPG" alt="Show" /></div>
-      <div class="gallery-item img-h" onclick="openLightbox(this)"><img src="img/shows/ronnfotografia_-148.JPG" alt="Show" /></div>
-    </div>
+    <!-- Secciones generadas dinámicamente desde Drive (o datos de respaldo) -->
+    <div id="dynamicSections"></div>
 
     <!-- ── About ── -->
     <section id="about">
@@ -497,6 +500,7 @@
   <!-- Lightbox -->
   <div class="lightbox" id="lightbox">
     <button class="lightbox-close" onclick="closeLightbox()">×</button>
+    <p class="lightbox-title" id="lbTitle"></p>
     <div class="lightbox-zone prev" id="lbPrev" onclick="lbNavBtn(-1)"><span class="lightbox-caret">&#8249;</span></div>
     <div id="lb-track">
       <div class="lb-slide"><img id="lb-img-left" src="" alt="" /></div>
@@ -504,24 +508,209 @@
       <div class="lb-slide"><img id="lb-img-right" src="" alt="" /></div>
     </div>
     <div class="lightbox-zone next" id="lbNext" onclick="lbNavBtn(1)"><span class="lightbox-caret">&#8250;</span></div>
+    <div id="lb-filmstrip"></div>
   </div>
 
   <script>
-    (function() {
-      document.body.classList.add('loading');
+    /* ════════════════════════════════════════════════════════════
+       CONFIGURACIÓN DE GOOGLE DRIVE
+       ════════════════════════════════════════════════════════════
+       Completá estos dos valores (ver GUIA_crear_api_key_google_drive.txt)
+       y poné enabled: true para que la página cargue todo desde Drive.
+       Mientras esté en false, se usan los datos de FALLBACK_DATA de abajo. */
+    const DRIVE_CONFIG = {
+      enabled: true,
+      apiKey: 'AIzaSyDZ2okaUjD6fll__OAX3qMQmTJem0uSYxE',
+      rootFolderId: '1i5ds2rvrHKU8RHBQ4mhn6rR3dgk0tQ31',
+    };
+
+    /* Datos de respaldo (se usan si Drive está desactivado o falla).
+       Cada sección tiene: id, etiqueta visible, y una lista de
+       artistas/producciones — cada uno con nombre y sus fotos
+       (la primera foto de la lista se usa como portada). */
+    const FALLBACK_DATA = [
+      {
+        id: 'shows', label: 'Shows',
+        artists: [
+          { name: 'Skrillex', images: [
+            'img/shows/ronnfotografia_-13.JPG','img/shows/ronnfotografia_-21.JPG',
+            'img/shows/ronnfotografia_-29.JPG','img/shows/ronnfotografia_-24.JPG',
+            'img/shows/ronnfotografia_-37.JPG'
+          ]},
+          { name: 'Duki', images: [
+            'img/shows/ronnfotografia_-96.JPG','img/shows/ronnfotografia_-104.JPG',
+            'img/shows/ronnfotografia_-39.JPG','img/shows/ronnfotografia_-112.JPG',
+            'img/shows/ronnfotografia_-120.JPG'
+          ]},
+          { name: 'Linkin Park', images: [
+            'img/shows/ronnfotografia_-128.JPG','img/shows/ronnfotografia_-136.JPG',
+            'img/shows/ronnfotografia_-108.JPG','img/shows/ronnfotografia_-140.JPG',
+            'img/shows/ronnfotografia_-148.JPG'
+          ]},
+        ]
+      },
+      {
+        id: 'moda', label: 'Moda',
+        artists: [
+          { name: 'Producción 01', images: [
+            'img/produ/ronnfotografia_-1.JPG','img/produ/ronnfotografia_-2.JPG',
+            'img/produ/ronnfotografia_-3.JPG','img/produ/ronnfotografia_-4.JPG',
+            'img/produ/ronnfotografia_-16.JPG'
+          ]},
+          { name: 'Producción 02', images: [
+            'img/produ/ronnfotografia_-6.JPG','img/produ/ronnfotografia_-7.JPG',
+            'img/produ/ronnfotografia_-8.JPG','img/produ/ronnfotografia_-9.JPG',
+            'img/produ/ronnfotografia_-10.JPG'
+          ]},
+          { name: 'Producción 03', images: [
+            'img/produ/ronnfotografia_-11.JPG','img/produ/ronnfotografia_-12.JPG',
+            'img/produ/ronnfotografia_-13.JPG','img/produ/ronnfotografia_-14.JPG',
+            'img/produ/ronnfotografia_-15.JPG'
+          ]},
+        ]
+      },
+    ];
+
+    /* ─── Helpers de Google Drive ─── */
+    function driveImageUrl(fileId, size) {
+      return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size || 1600}`;
+    }
+
+    // Saca prefijos numéricos de orden: "1 - Skrillex" / "01_Skrillex" → "Skrillex"
+    function cleanDriveName(name) {
+      return name.replace(/^\s*\d+[\s_\-.]*/, '').trim() || name;
+    }
+
+    function slugify(str) {
+      const accents = { 'á':'a','é':'e','í':'i','ó':'o','ú':'u','ñ':'n','ü':'u' };
+      return str.toLowerCase()
+        .split('').map(ch => accents[ch] || ch).join('')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-+|-+$)/g, '') || 'seccion';
+    }
+
+    async function driveListChildren(folderId, opts) {
+      opts = opts || {};
+      let q = `'${folderId}' in parents and trashed = false`;
+      if (opts.foldersOnly) q += ` and mimeType = 'application/vnd.google-apps.folder'`;
+      if (opts.imagesOnly)  q += ` and mimeType contains 'image/'`;
+      const url = 'https://www.googleapis.com/drive/v3/files'
+        + `?q=${encodeURIComponent(q)}`
+        + `&orderBy=name_natural`
+        + `&fields=files(id,name)`
+        + `&pageSize=300`
+        + `&key=${DRIVE_CONFIG.apiKey}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Drive API respondió ' + res.status);
+      const data = await res.json();
+      return data.files || [];
+    }
+
+    async function loadSectionsFromDrive() {
+      const sectionFolders = await driveListChildren(DRIVE_CONFIG.rootFolderId, { foldersOnly: true });
+      const sections = [];
+      for (const sf of sectionFolders) {
+        const label = cleanDriveName(sf.name);
+        const id = slugify(label);
+        const artistFolders = await driveListChildren(sf.id, { foldersOnly: true });
+        const artists = [];
+        for (const af of artistFolders) {
+          const files = await driveListChildren(af.id, { imagesOnly: true });
+          if (!files.length) continue;
+          artists.push({ name: cleanDriveName(af.name), images: files.map(f => driveImageUrl(f.id)) });
+        }
+        if (artists.length) sections.push({ id, label, artists });
+      }
+      if (!sections.length) throw new Error('No se encontraron secciones en Drive');
+      return sections;
+    }
+
+    async function loadSectionsData() {
+      if (!DRIVE_CONFIG.enabled) return FALLBACK_DATA;
+      try {
+        return await loadSectionsFromDrive();
+      } catch (err) {
+        console.error('No se pudo cargar la galería desde Drive — usando datos de respaldo.', err);
+        return FALLBACK_DATA;
+      }
+    }
+
+    /* ─── Render: secciones, grillas de portadas y nav ─── */
+    let firstSectionId = null;
+
+    function buildNav(sections) {
+      const navLinks = document.getElementById('navLinks');
+      const mobileMenu = document.getElementById('mobileMenu');
+      navLinks.innerHTML = '';
+      mobileMenu.innerHTML = '';
+      const entries = sections.map(s => ({ id: s.id, label: s.label }))
+        .concat([{ id: 'about', label: 'About' }, { id: 'contact', label: 'Contacto' }]);
+      entries.forEach(entry => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = '#' + entry.id;
+        a.textContent = entry.label;
+        li.appendChild(a);
+        navLinks.appendChild(li);
+
+        const a2 = document.createElement('a');
+        a2.href = '#' + entry.id;
+        a2.textContent = entry.label;
+        a2.addEventListener('click', toggleMenu);
+        mobileMenu.appendChild(a2);
+      });
+    }
+
+    function renderSections(sections) {
+      const container = document.getElementById('dynamicSections');
+      container.innerHTML = '';
+      firstSectionId = sections[0] ? sections[0].id : null;
+
+      sections.forEach(section => {
+        const labelEl = document.createElement('p');
+        labelEl.className = 'section-label';
+        labelEl.id = section.id;
+        labelEl.textContent = section.label;
+        container.appendChild(labelEl);
+
+        const grid = document.createElement('div');
+        grid.className = 'artist-grid';
+        container.appendChild(grid);
+
+        section.artists.forEach((artist, idx) => {
+          if (!artist.images || !artist.images.length) return;
+          const card = document.createElement('div');
+          card.className = 'artist-card';
+
+          const img = document.createElement('img');
+          img.src = artist.images[0];
+          img.alt = artist.name;
+          if (idx >= 4) img.loading = 'lazy';
+
+          const name = document.createElement('span');
+          name.className = 'artist-name';
+          name.textContent = artist.name;
+
+          card.appendChild(img);
+          card.appendChild(name);
+          card.addEventListener('click', () => openArtistLightbox(artist));
+
+          artist.cardEl = card;
+          grid.appendChild(card);
+        });
+      });
+
+      buildNav(sections);
+    }
+
+    /* ─── Loader: espera solo las primeras portadas visibles ─── */
+    function runLoader() {
       const loaderName = document.getElementById('loader-name');
-      const allImgs = Array.from(document.querySelectorAll('.gallery img'));
-
-      // Only wait for the first 8 images (above the fold)
-      const eagerImgs = allImgs.slice(0, 8);
-      // The rest load lazily
-      allImgs.slice(8).forEach(img => img.setAttribute('loading', 'lazy'));
-
+      const allImgs = Array.from(document.querySelectorAll('.artist-card img'));
+      const eagerImgs = allImgs.slice(0, 6);
       let loaded = 0;
 
-      function setProgress(p) {
-        loaderName.style.setProperty('--p', p + '%');
-      }
+      function setProgress(p) { loaderName.style.setProperty('--p', p + '%'); }
 
       function onLoad() {
         loaded++;
@@ -545,63 +734,52 @@
         if (img.complete && img.naturalWidth > 0) { onLoad(); }
         else { img.addEventListener('load', onLoad); img.addEventListener('error', onLoad); }
       });
-    })();
+    }
+
+    async function init() {
+      document.body.classList.add('loading');
+      const sections = await loadSectionsData();
+      renderSections(sections);
+      runLoader();
+    }
+
+    init();
 
     window.scrollTo(0, 0);
     history.scrollRestoration = 'manual';
-
-    function fixOddVerticals() {
-      if (window.innerWidth > 600) {
-        document.querySelectorAll('.gallery-item.img-v, .gallery-item.img-v-lg')
-          .forEach(el => el.style.gridColumn = '');
-        return;
-      }
-      document.querySelectorAll('.gallery').forEach(gallery => {
-        const items = Array.from(gallery.children);
-        items.forEach(el => el.style.gridColumn = '');
-        const isV = el => el.classList.contains('img-v') || el.classList.contains('img-v-lg');
-        let i = 0;
-        while (i < items.length) {
-          if (isV(items[i])) {
-            let j = i;
-            while (j < items.length && isV(items[j])) j++;
-            if ((j - i) % 2 === 1) items[j - 1].style.gridColumn = 'span 2';
-            i = j;
-          } else { i++; }
-        }
-      });
-    }
-
-    window.addEventListener('resize', fixOddVerticals);
-    document.addEventListener('DOMContentLoaded', fixOddVerticals);
 
     function logoClick(e) {
       e.preventDefault();
       const about = document.getElementById('about');
       const atOrBelowAbout = about.getBoundingClientRect().top < window.innerHeight;
-      const target = atOrBelowAbout ? '#produ' : '#about';
-      document.querySelector(target).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const targetId = atOrBelowAbout ? firstSectionId : 'about';
+      const targetEl = targetId && document.getElementById(targetId);
+      if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function toggleMenu() {
       document.getElementById('mobileMenu').classList.toggle('open');
     }
 
-    // Lightbox
-    let lbImages = [], lbIndex = 0;
+    /* ════════════════════════════════════════════════════════════
+       LIGHTBOX — navega SOLO las imágenes del artista/producción
+       que se clickeó, e incluye un filmstrip de miniaturas.
+       ════════════════════════════════════════════════════════════ */
+    let lbImages = [], lbIndex = 0, lbCurrentArtist = null;
     const track = () => document.getElementById('lb-track');
     const imgC  = () => document.getElementById('lightboxImg');
     const imgL  = () => document.getElementById('lb-img-left');
     const imgR  = () => document.getElementById('lb-img-right');
 
     function lbUpdateSlides() {
-      imgC().src = lbImages[lbIndex]?.src || '';
-      imgL().src = lbImages[lbIndex - 1]?.src || '';
-      imgR().src = lbImages[lbIndex + 1]?.src || '';
+      imgC().src = lbImages[lbIndex] || '';
+      imgL().src = lbImages[lbIndex - 1] || '';
+      imgR().src = lbImages[lbIndex + 1] || '';
       imgL().style.opacity = lbIndex > 0 ? '1' : '0';
       imgR().style.opacity = lbIndex < lbImages.length - 1 ? '1' : '0';
       document.getElementById('lbPrev').classList.toggle('hidden', lbIndex === 0);
       document.getElementById('lbNext').classList.toggle('hidden', lbIndex === lbImages.length - 1);
+      lbUpdateFilmstripActive();
     }
 
     function lbResetTrack(animate) {
@@ -611,19 +789,22 @@
 
     const isMobile = () => window.matchMedia('(pointer: coarse)').matches;
 
-    function openLightbox(el) {
-      const gallery = el.closest('.gallery');
-      lbImages = Array.from(gallery.querySelectorAll('.gallery-item img'));
-      lbIndex = lbImages.indexOf(el.querySelector('img'));
+    function openArtistLightbox(artist) {
+      lbImages = artist.images;
+      lbIndex = 0;
+      lbCurrentArtist = artist;
+      document.getElementById('lbTitle').textContent = artist.name;
       lbUpdateSlides();
+      lbBuildFilmstrip();
       lbResetTrack(false);
-      document.getElementById('lightbox').style.transform = '';
-      document.getElementById('lightbox').style.opacity = '';
-      document.getElementById('lightbox').classList.add('open');
+      const lb = document.getElementById('lightbox');
+      lb.style.transform = '';
+      lb.style.opacity = '';
+      lb.classList.add('open');
       document.body.style.overflow = 'hidden';
       // Mobile: scroll background NOW while lightbox covers screen
-      if (isMobile() && lbImages[lbIndex]) {
-        lbImages[lbIndex].closest('.gallery-item').scrollIntoView({ behavior: 'instant', block: 'center' });
+      if (isMobile() && artist.cardEl) {
+        artist.cardEl.scrollIntoView({ behavior: 'instant', block: 'center' });
       }
     }
 
@@ -639,15 +820,16 @@
         track().style.transition = 'none';
         track().style.transform = 'translateX(-100vw)';
         // Update center to current lbIndex so no stale image appears
-        imgC().src = lbImages[lbIndex]?.src || '';
+        imgC().src = lbImages[lbIndex] || '';
       }
 
-      if (dir > 0) { imgR().src = lbImages[next]?.src || ''; imgR().style.opacity = '1'; }
-      else         { imgL().src = lbImages[next]?.src || ''; imgL().style.opacity = '1'; }
+      if (dir > 0) { imgR().src = lbImages[next] || ''; imgR().style.opacity = '1'; }
+      else         { imgL().src = lbImages[next] || ''; imgL().style.opacity = '1'; }
 
       lbIndex = next;
       document.getElementById('lbPrev').classList.toggle('hidden', lbIndex === 0);
       document.getElementById('lbNext').classList.toggle('hidden', lbIndex === lbImages.length - 1);
+      lbUpdateFilmstripActive();
 
       requestAnimationFrame(() => {
         track().style.transition = 'transform 0.2s ease';
@@ -661,21 +843,64 @@
       }, 200);
     }
 
-    function flashLastImage() {
-      if (!lbImages[lbIndex]) return;
-      const item = lbImages[lbIndex].closest('.gallery-item');
+    /* ─── Filmstrip de miniaturas ─── */
+    function lbBuildFilmstrip() {
+      const strip = document.getElementById('lb-filmstrip');
+      strip.innerHTML = '';
+      if (lbImages.length <= 1) { strip.classList.add('hidden'); return; }
+      strip.classList.remove('hidden');
+      lbImages.forEach((src, i) => {
+        const t = document.createElement('img');
+        t.className = 'lb-thumb' + (i === lbIndex ? ' active' : '');
+        t.src = src;
+        t.alt = '';
+        t.loading = 'lazy';
+        t.addEventListener('click', e => {
+          e.stopPropagation();
+          lbJumpTo(i);
+        });
+        strip.appendChild(t);
+      });
+      requestAnimationFrame(lbScrollFilmstripToActive);
+    }
+
+    function lbUpdateFilmstripActive() {
+      const thumbs = document.querySelectorAll('#lb-filmstrip .lb-thumb');
+      thumbs.forEach((t, i) => t.classList.toggle('active', i === lbIndex));
+      lbScrollFilmstripToActive();
+    }
+
+    function lbScrollFilmstripToActive() {
+      const active = document.querySelector('#lb-filmstrip .lb-thumb.active');
+      if (active) active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+
+    function lbJumpTo(i) {
+      if (i === lbIndex || lbNavTimeout) return;
+      lbIndex = i;
+      lbUpdateSlides();
+      lbResetTrack(false);
+    }
+
+    function flashLastCard() {
+      if (!lbCurrentArtist || !lbCurrentArtist.cardEl) return;
+      const item = lbCurrentArtist.cardEl;
       item.classList.remove('lb-flash');
       void item.offsetWidth; // force reflow to restart animation
       item.classList.add('lb-flash');
       setTimeout(() => item.classList.remove('lb-flash'), 900);
     }
 
+    function lbScrollToCard() {
+      if (lbCurrentArtist && lbCurrentArtist.cardEl) {
+        lbCurrentArtist.cardEl.scrollIntoView({ behavior: 'instant', block: 'center' });
+      }
+    }
+
     function closeLightbox(fromSwipe) {
       const lb = document.getElementById('lightbox');
       document.body.style.overflow = ''; // remove lock FIRST so scroll applies
-      if (lbImages[lbIndex]) {
-        lbImages[lbIndex].closest('.gallery-item').scrollIntoView({ behavior: 'instant', block: 'center' });
-      }
+      lbScrollToCard();
       if (!fromSwipe) {
         lb.style.transition = 'opacity 0.18s ease';
         lb.style.opacity = '0';
@@ -683,7 +908,7 @@
           lb.classList.remove('open');
           lb.style.opacity = '';
           lb.style.transition = '';
-          flashLastImage();
+          flashLastCard();
         }, 180);
       }
     }
@@ -705,7 +930,7 @@
       let startX = 0, startY = 0, axis = null, dragging = false, moved = false;
 
       lb.addEventListener('mousedown', e => {
-        if (e.target.closest('.lightbox-zone') || e.target.closest('.lightbox-close')) return;
+        if (e.target.closest('.lightbox-zone') || e.target.closest('.lightbox-close') || e.target.closest('#lb-filmstrip')) return;
         startX = e.clientX;
         startY = e.clientY;
         dragging = true;
@@ -744,7 +969,7 @@
           lbNavBtn(dx < 0 ? 1 : -1);
         } else if (axis === 'y' && Math.abs(dy) > 100) {
           document.body.style.overflow = '';
-          if (lbImages[lbIndex]) lbImages[lbIndex].closest('.gallery-item').scrollIntoView({ behavior: 'instant', block: 'center' });
+          lbScrollToCard();
           lb.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
           lb.style.transform = `translateY(${dy > 0 ? '100vh' : '-100vh'})`;
           lb.style.opacity = '0';
@@ -753,7 +978,7 @@
             lb.style.transform = '';
             lb.style.opacity = '';
             lb.style.transition = '';
-            flashLastImage();
+            flashLastCard();
           }, 180);
         } else {
           lb.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
@@ -770,9 +995,11 @@
     // Touch: horizontal = carousel, vertical = close
     (function() {
       const lb = document.getElementById('lightbox');
-      let startX = 0, startY = 0, axis = null;
+      let startX = 0, startY = 0, axis = null, ignore = false;
 
       lb.addEventListener('touchstart', e => {
+        ignore = !!e.target.closest('#lb-filmstrip');
+        if (ignore) return;
         startX = e.touches[0].clientX;
         startY = e.touches[0].clientY;
         axis = null;
@@ -781,6 +1008,7 @@
       }, { passive: true });
 
       lb.addEventListener('touchmove', e => {
+        if (ignore) return;
         const dx = e.touches[0].clientX - startX;
         const dy = e.touches[0].clientY - startY;
         if (!axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
@@ -796,6 +1024,7 @@
       }, { passive: true });
 
       lb.addEventListener('touchend', e => {
+        if (ignore) { ignore = false; return; }
         const dx = e.changedTouches[0].clientX - startX;
         const dy = e.changedTouches[0].clientY - startY;
         if (axis === 'x') {
@@ -806,7 +1035,7 @@
           }
         } else if (axis === 'y' && Math.abs(dy) > 100) {
           document.body.style.overflow = '';
-          if (lbImages[lbIndex]) lbImages[lbIndex].closest('.gallery-item').scrollIntoView({ behavior: 'instant', block: 'center' });
+          lbScrollToCard();
           lb.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
           lb.style.transform = `translateY(${dy > 0 ? '100vh' : '-100vh'})`;
           lb.style.opacity = '0';
@@ -814,7 +1043,7 @@
             lb.classList.remove('open');
             lb.style.transform = '';
             lb.style.opacity = '';
-            flashLastImage();
+            flashLastCard();
           }, 180);
         } else {
           lb.style.transition = 'transform 0.2s ease, opacity 0.2s ease';

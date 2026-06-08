@@ -1,0 +1,98 @@
+GUÍA — CREAR LA API KEY DE GOOGLE PARA CONECTAR LA PÁGINA CON DRIVE
+====================================================================
+
+Esto lo hacés vos UNA SOLA VEZ. Una vez armado, le pasás la página
+funcionando a Mateo — él de ahí en más solo va a tocar carpetas y fotos
+en Drive (ver GUIA_manejo_de_la_pagina_para_mateo.txt), nunca esta
+configuración.
+
+Usá la cuenta de Google donde va a vivir la carpeta con las fotos del
+portfolio — puede ser la tuya o la de Mateo, como les quede más cómodo
+para administrarla a futuro.
+
+
+PASO 1 — Crear un proyecto en Google Cloud
+--------------------------------------------
+1. Entrá a https://console.cloud.google.com/
+2. Iniciá sesión con esa cuenta de Google.
+3. Arriba a la izquierda, click en el selector de proyectos → "Proyecto nuevo".
+4. Nombralo, por ejemplo: "portfolio-ronnfotografia".
+5. Click en "Crear" y esperá unos segundos a que se genere.
+
+
+PASO 2 — Activar la Google Drive API
+--------------------------------------------
+1. Con el proyecto ya seleccionado (arriba), abrí el menú ☰ (esquina superior
+   izquierda) → "APIs y servicios" → "Biblioteca".
+2. Buscá "Google Drive API".
+3. Entrá y apretá "Habilitar".
+
+
+PASO 3 — Crear la clave (API Key)
+--------------------------------------------
+1. Menú ☰ → "APIs y servicios" → "Credenciales".
+2. Arriba, "+ Crear credenciales" → "Clave de API".
+3. Se va a generar una clave (una serie de letras y números). Copiala y
+   guardala en algún lugar seguro por ahora — me la vas a pasar después.
+
+
+PASO 4 — Restringir la clave (paso de seguridad, NO te lo saltees)
+--------------------------------------------
+Esto evita que alguien más use tu clave desde otra página.
+
+1. En la lista de credenciales, click sobre la clave que acabás de crear
+   para editarla.
+2. En "Restricciones de la aplicación" elegí "Sitios web" (referencias HTTP).
+3. Agregá la dirección de tu página de GitHub Pages, por ejemplo:
+       https://tu-usuario.github.io/*
+   (cambiá "tu-usuario" por tu usuario real de GitHub. El asterisco al final
+   es importante — cubre todas las páginas del sitio).
+4. Más abajo, en "Restricciones de API", elegí "Restringir clave" y
+   seleccioná solamente "Google Drive API".
+5. Guardar.
+
+Nota: como esta página es 100% estática (sin servidor propio), la clave va
+a quedar visible en el código. Es normal y está bien — restringida de esta
+forma, solo puede usarse desde tu dominio y solo para leer archivos de Drive,
+nada más.
+
+
+PASO 5 — Compartir la carpeta de Drive (solo lectura, para cualquiera)
+--------------------------------------------
+1. En Google Drive, creá (o ubicá) la carpeta principal del portfolio —
+   la que va a contener todo (ver GUIA_manejo_de_la_pagina_para_mateo.txt
+   para cómo se organiza por dentro — convendría armarla junto con Mateo,
+   ya que después la va a administrar él).
+2. Click derecho sobre esa carpeta → "Compartir" → "Cambiar a cualquier
+   persona con el enlace".
+3. Asegurate de que el permiso sea "Lector" (no "Editor").
+4. Esto se hereda a todo lo que haya adentro (subcarpetas e imágenes), así
+   que no hace falta repetirlo en cada una.
+
+
+PASO 6 — Copiar el ID de la carpeta principal
+--------------------------------------------
+1. Abrí esa carpeta principal en Drive desde el navegador.
+2. Mirá la URL: algo como
+       https://drive.google.com/drive/folders/1A2b3C4d5E6f7G8h9I0jKlMnOpQrSt
+3. El ID es la parte que va después de "/folders/":
+       1A2b3C4d5E6f7G8h9I0jKlMnOpQrSt
+4. Copiá ese ID.
+
+
+PASO 7 — Pasarme los dos datos
+--------------------------------------------
+Cuando tengas:
+  • La API Key (paso 3, restringida según el paso 4)
+  • El ID de la carpeta principal (paso 6)
+
+pasámelos acá y conecto la página para que cargue todo automáticamente
+desde Drive.
+
+
+¿Cuánto cuesta esto?
+--------------------------------------------
+Nada. Google Cloud requiere una cuenta (puede pedir una tarjeta para
+verificar identidad la primera vez), pero la Drive API tiene una cuota
+gratuita diaria muchísimo más alta de lo que un portfolio fotográfico
+va a necesitar. No se te va a cobrar por esto.

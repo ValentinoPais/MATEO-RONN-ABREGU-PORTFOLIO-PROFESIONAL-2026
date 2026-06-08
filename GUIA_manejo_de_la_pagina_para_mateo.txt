@@ -1,0 +1,138 @@
+CÓMO MANEJAR TU PÁGINA — GUÍA PARA MATEO
+====================================================================
+
+Mateo: esta página se arma SOLA a partir de una carpeta de Google Drive.
+No necesitás tocar código ni pedirle nada a nadie para actualizarla:
+organizás carpetas y fotos en Drive, y la página se actualiza sola, sin
+que nadie tenga que hacer nada más del otro lado.
+
+Toda la lógica se basa en UNA sola idea:
+
+    CARPETA PRINCIPAL → SECCIONES → ARTISTAS / PRODUCCIONES → FOTOS
+
+A continuación te explico cada nivel.
+
+
+NIVEL 1 — La carpeta principal
+--------------------------------------------
+Es la carpeta raíz del portfolio (ya está compartida y conectada a la
+página — esa parte quedó configurada de una vez y no hace falta que la
+toques). Adentro de ella va TODO lo demás. Solo entrás y trabajás en lo
+que está adentro.
+
+
+NIVEL 2 — Las secciones (las "pestañas" del menú de la página)
+--------------------------------------------
+Cada carpeta que pongas DENTRO de la carpeta principal se convierte
+automáticamente en una sección/pestaña del menú de navegación.
+
+Ejemplo: hoy hay dos → "Shows" y "Moda". Si en algún momento querés
+agregar, por ejemplo, "Books" o "Eventos", alcanza con crear una carpeta
+nueva con ese nombre — la página la va a mostrar sola, con su propio
+botón en el menú.
+
+  • El ORDEN en que aparecen las secciones es el mismo orden en que
+    aparecen las carpetas en Drive. Si querés que "Shows" siga apareciendo
+    primero, simplemente dejá esa carpeta primera en la lista (podés
+    arrastrarla o renombrarla para que quede arriba alfabéticamente).
+
+  • Tip para controlar el orden sin depender del abecedario: podés
+    anteponerle un número al nombre de la carpeta, así:
+        1 - Shows
+        2 - Moda
+    La página IGNORA esos números al mostrar el nombre (en el menú vas
+    a ver simplemente "Shows" y "Moda"), pero los usa para saber en qué
+    orden ponerlos. Esto te da control total sin pensar en el alfabeto.
+
+  • "About" y "Contacto" NO salen de Drive — son fijos, ya están escritos
+    directamente en la página. No hace falta crear carpetas para ellos.
+
+
+NIVEL 3 — Los artistas / producciones (las "tarjetas" dentro de cada sección)
+--------------------------------------------
+Adentro de cada carpeta de sección (por ejemplo, dentro de "Shows"), creás
+una carpeta por cada artista, banda o producción.
+
+Ejemplo dentro de "Shows":
+    Shows/
+      ├── Skrillex/
+      ├── Duki/
+      └── Linkin Park/
+
+Cada una de estas carpetas se convierte en una TARJETA dentro de esa
+sección de la página. Al hacer click en la tarjeta de "Duki", se abre
+una galería que muestra ÚNICAMENTE las fotos de Duki — no las de Skrillex
+ni las de Linkin Park. Cada artista tiene su propio "mini álbum" separado.
+
+  • El nombre de la carpeta es el nombre que va a aparecer en la tarjeta
+    y en el título de la galería. Escribilo tal cual querés que se vea
+    (con mayúsculas, tildes, etc. — la página lo respeta).
+
+  • El ORDEN de las tarjetas dentro de una sección también sigue el orden
+    de las carpetas en Drive. Mismo truco que antes: si querés un orden
+    específico, podés numerarlas:
+        1 - Skrillex
+        2 - Duki
+        3 - Linkin Park
+    Y de nuevo, esos números no se muestran en la página — solo ordenan.
+
+
+NIVEL 4 — Las fotos (lo que se ve adentro de cada galería)
+--------------------------------------------
+Adentro de cada carpeta de artista van las fotos de ESE artista, y nada
+más. Subí las que quieras, en el formato que ya venís usando (JPG, PNG,
+etc. — cualquier imagen sirve).
+
+  • LA PRIMERA FOTO de la carpeta es la que se usa como "portada": es la
+    imagen que se ve en la tarjeta principal, antes de hacer click.
+    Al abrir la galería, también es la primera que aparece.
+
+    ¿Cómo sabe la página cuál es "la primera"? Por el orden en que
+    aparecen los archivos dentro de la carpeta — que en Drive normalmente
+    es alfabético/numérico por nombre de archivo. Si querés estar 100%
+    seguro de cuál va a ser la portada, lo más simple es renombrar esa
+    foto para que empiece con "1" o con "a", por ejemplo:
+        1-portada.jpg
+        2-foto.jpg
+        3-foto.jpg
+    O directamente fijarte que el nombre de archivo de la foto que querés
+    de portada quede primero en orden alfabético/numérico dentro de la
+    carpeta.
+
+  • El resto de las fotos se muestra, dentro de la galería de ese artista,
+    en el mismo orden en que aparecen sus archivos en la carpeta. Podés
+    deslizar (o usar las flechas) para pasar de una a otra, y abajo de
+    la imagen aparece una tira de miniaturas que te deja saltar
+    directamente a cualquier foto con un click.
+
+
+RESUMEN — TODO LO QUE PODÉS HACER VOS SOLO, CUANDO QUIERAS
+--------------------------------------------
+  ✓ Agregar una sección nueva       → creá una carpeta nueva en la raíz
+  ✓ Sacar una sección               → borrá (o movela afuera) esa carpeta
+  ✓ Renombrar una sección           → renombrá la carpeta
+  ✓ Reordenar las secciones         → reordená/renombrá/numerá las carpetas
+  ✓ Agregar un artista/producción   → creá una carpeta nueva adentro de
+                                       la sección correspondiente
+  ✓ Sacar un artista                → borrá (o movela afuera) esa carpeta
+  ✓ Cambiar la portada de un artista → renombrá la foto que querés de
+                                       portada para que quede primera
+  ✓ Agregar/sacar/reordenar fotos   → subí, borrá o renombrá archivos
+                                       dentro de la carpeta del artista
+
+Todos estos cambios se ven reflejados en la página automáticamente —
+nadie tiene que tocar código ni configurar nada del otro lado. Lo único
+que pedimos es que no borres ni muevas la CARPETA PRINCIPAL ni le
+cambies los permisos de "compartir": eso ya quedó configurado para que
+todo funcione, y tocarlo podría hacer que la página deje de cargar las
+fotos.
+
+
+UNA ÚLTIMA ACLARACIÓN
+--------------------------------------------
+Si una carpeta de artista queda vacía (sin fotos adentro), la página
+simplemente no le crea tarjeta — no rompe nada, solo no aparece hasta
+que subas al menos una foto.
+
+Cualquier duda sobre esta organización, este mismo documento te sirve
+de referencia. ¡Y eso es todo — el resto lo hace la página sola!
