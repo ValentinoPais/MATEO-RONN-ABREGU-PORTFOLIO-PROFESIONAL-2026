@@ -46,7 +46,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 40px;
+      padding: 0 20px;
       background: var(--bg);
       z-index: 100;
       border-bottom: 1px solid #1a1a1a;
@@ -135,7 +135,7 @@
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--muted);
-      padding: 40px 40px;
+      padding: 28px 20px 8px;
       scroll-margin-top: var(--nav-h);
     }
 
@@ -245,32 +245,28 @@
       margin-bottom: 16px;
     }
 
-    /* ─── Contact / Footer ─── */
-    #contact {
-      border-top: 1px solid #1a1a1a;
-      padding: 60px 40px;
+    /* ─── Contacto (unificado dentro de About) ─── */
+    .contact-row {
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
       flex-wrap: wrap;
-      gap: 32px;
+      gap: 24px;
+      margin-top: 32px;
+      padding-top: 28px;
+      border-top: 1px solid #1a1a1a;
     }
 
-    .contact-info h2 {
-      font-family: var(--font-display);
-      font-size: 18px;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 16px;
+    .contact-info {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
     }
 
     .contact-info a {
       font-family: var(--font-display);
-      display: block;
       font-size: 16px;
       color: var(--text);
-      margin-bottom: 8px;
       transition: color 0.2s;
     }
     .contact-info a[href^="https"]:hover { color: var(--muted); }
@@ -507,9 +503,9 @@
       .lightbox-title { top: 22px; left: 20px; font-size: 13px; }
       #lb-filmstrip { bottom: 14px; gap: 6px; padding: 8px 10px; }
       .lb-thumb { width: 38px; height: 38px; }
-      .section-label { padding: 32px 20px; }
+      .section-label { padding: 24px 10px 6px; }
       #about { padding: 0 20px; margin: 60px auto; }
-      #contact { padding: 48px 20px; }
+      .contact-row { padding-top: 24px; margin-top: 24px; }
     }
   </style>
 </head>
@@ -535,24 +531,21 @@
     <!-- Secciones generadas dinámicamente desde Drive (o datos de respaldo) -->
     <div id="dynamicSections"></div>
 
-    <!-- ── About ── -->
+    <!-- ── About + Contacto (unificadas) ── -->
     <section id="about">
       <h2>About</h2>
       <p>
         Mateo Ronn Abregu alias RONNPORNOGRAFIA es reconocido mundialmente por su sensualidad, su estilo, su aura y sus conocimientos como sexólogo profesional. Espero que en este portfolio usted encuentre paz y reconocimiento internacional. Saludos a la familia.
       </p>
-    </section>
-
-    <!-- ── Contact ── -->
-    <footer id="contact">
-      <div class="contact-info">
-        <h2>Contacto</h2>
-        <!-- Reemplazá con tu email e Instagram reales -->
-        <a href="mailto:mateoron33@gmail.com">mateoron33@gmail.com</a>
-        <a href="https://instagram.com/ronnfotografia_" target="_blank" rel="noopener">@ronnfotografia_</a>
+      <div class="contact-row">
+        <div class="contact-info">
+          <!-- Reemplazá con tu email e Instagram reales -->
+          <a href="mailto:mateoron33@gmail.com">mateoron33@gmail.com</a>
+          <a href="https://instagram.com/ronnfotografia_" target="_blank" rel="noopener">@ronnfotografia_</a>
+        </div>
+        <span class="footer-name">© 2026 Mateo Ronn Abregu</span>
       </div>
-      <span class="footer-name">© 2026 Mateo Ronn Abregu</span>
-    </footer>
+    </section>
 
   </main>
 
@@ -661,7 +654,7 @@
       navLinks.innerHTML = '';
       mobileMenu.innerHTML = '';
       const entries = sections.map(s => ({ id: s.id, label: s.label }))
-        .concat([{ id: 'about', label: 'About' }, { id: 'contact', label: 'Contacto' }]);
+        .concat([{ id: 'about', label: 'About' }]);
       entries.forEach(entry => {
         const li = document.createElement('li');
         const a = document.createElement('a');
