@@ -551,6 +551,12 @@
       return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size || 1600}`;
     }
 
+    // Reescribe el tamaño (sz=wN) de una URL de Drive ya generada — para pedir
+    // una versión liviana (miniatura) en vez de la de máxima resolución.
+    function driveThumbUrl(src, size) {
+      return src.replace(/sz=w\d+/, 'sz=w' + size);
+    }
+
     // Saca prefijos numéricos de orden: "1 - Skrillex" / "01_Skrillex" → "Skrillex"
     function cleanDriveName(name) {
       return name.replace(/^\s*\d+[\s_\-.]*/, '').trim() || name;
@@ -868,7 +874,7 @@
       lbImages.forEach((src, i) => {
         const t = document.createElement('img');
         t.className = 'lb-thumb' + (i === lbIndex ? ' active' : '');
-        t.src = src;
+        t.src = driveThumbUrl(src, 200);
         t.alt = '';
         t.loading = 'lazy';
         t.addEventListener('click', e => {
