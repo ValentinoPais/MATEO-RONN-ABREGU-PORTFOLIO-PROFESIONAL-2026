@@ -139,14 +139,24 @@
       scroll-margin-top: var(--nav-h);
     }
 
+    .empty-message {
+      font-family: var(--font-display);
+      font-size: 18px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-align: center;
+      padding: 120px 40px;
+    }
+
     /* ─── Artist / production grid (cover cards) ─── */
     .artist-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       grid-auto-rows: 10px;
       grid-auto-flow: row dense;
       gap: 28px;
-      padding: 0 40px 80px;
+      padding: 0 40px;
     }
 
     .artist-card {
@@ -194,6 +204,19 @@
       text-transform: uppercase;
       color: var(--text);
       pointer-events: none;
+    }
+
+    /* En mouse/desktop el nombre queda oculto y aparece (con su difuminado
+       de contraste) solo al pasar el mouse — así no tapa la foto.
+       En touch no hay hover real, así que se mantiene siempre visible. */
+    @media (hover: hover) {
+      .artist-name {
+        opacity: 0;
+        transition: opacity 0.35s ease;
+      }
+      .artist-card:hover .artist-name {
+        opacity: 1;
+      }
     }
 
 
@@ -429,9 +452,9 @@
     /* ─── Responsive ─── */
     @media (max-width: 900px) {
       .artist-grid {
-        grid-template-columns: repeat(3, 1fr);
+        grid-template-columns: repeat(2, 1fr);
         gap: 20px;
-        padding: 0 40px 60px;
+        padding: 0 40px;
       }
     }
 
@@ -442,7 +465,7 @@
       .artist-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 14px;
-        padding: 0 20px 48px;
+        padding: 0 20px;
       }
       .artist-name { font-size: 15px; padding: 14px; }
       .lightbox-title { top: 22px; left: 20px; font-size: 13px; }
@@ -516,60 +539,12 @@
        CONFIGURACIÓN DE GOOGLE DRIVE
        ════════════════════════════════════════════════════════════
        Completá estos dos valores (ver GUIA_crear_api_key_google_drive.txt)
-       y poné enabled: true para que la página cargue todo desde Drive.
-       Mientras esté en false, se usan los datos de FALLBACK_DATA de abajo. */
+       y poné enabled: true para que la página cargue todo desde Drive. */
     const DRIVE_CONFIG = {
       enabled: true,
       apiKey: 'AIzaSyDZ2okaUjD6fll__OAX3qMQmTJem0uSYxE',
       rootFolderId: '1i5ds2rvrHKU8RHBQ4mhn6rR3dgk0tQ31',
     };
-
-    /* Datos de respaldo (se usan si Drive está desactivado o falla).
-       Cada sección tiene: id, etiqueta visible, y una lista de
-       artistas/producciones — cada uno con nombre y sus fotos
-       (la primera foto de la lista se usa como portada). */
-    const FALLBACK_DATA = [
-      {
-        id: 'shows', label: 'Shows',
-        artists: [
-          { name: 'Skrillex', images: [
-            'img/shows/ronnfotografia_-13.JPG','img/shows/ronnfotografia_-21.JPG',
-            'img/shows/ronnfotografia_-29.JPG','img/shows/ronnfotografia_-24.JPG',
-            'img/shows/ronnfotografia_-37.JPG'
-          ]},
-          { name: 'Duki', images: [
-            'img/shows/ronnfotografia_-96.JPG','img/shows/ronnfotografia_-104.JPG',
-            'img/shows/ronnfotografia_-39.JPG','img/shows/ronnfotografia_-112.JPG',
-            'img/shows/ronnfotografia_-120.JPG'
-          ]},
-          { name: 'Linkin Park', images: [
-            'img/shows/ronnfotografia_-128.JPG','img/shows/ronnfotografia_-136.JPG',
-            'img/shows/ronnfotografia_-108.JPG','img/shows/ronnfotografia_-140.JPG',
-            'img/shows/ronnfotografia_-148.JPG'
-          ]},
-        ]
-      },
-      {
-        id: 'moda', label: 'Moda',
-        artists: [
-          { name: 'Producción 01', images: [
-            'img/produ/ronnfotografia_-1.JPG','img/produ/ronnfotografia_-2.JPG',
-            'img/produ/ronnfotografia_-3.JPG','img/produ/ronnfotografia_-4.JPG',
-            'img/produ/ronnfotografia_-16.JPG'
-          ]},
-          { name: 'Producción 02', images: [
-            'img/produ/ronnfotografia_-6.JPG','img/produ/ronnfotografia_-7.JPG',
-            'img/produ/ronnfotografia_-8.JPG','img/produ/ronnfotografia_-9.JPG',
-            'img/produ/ronnfotografia_-10.JPG'
-          ]},
-          { name: 'Producción 03', images: [
-            'img/produ/ronnfotografia_-11.JPG','img/produ/ronnfotografia_-12.JPG',
-            'img/produ/ronnfotografia_-13.JPG','img/produ/ronnfotografia_-14.JPG',
-            'img/produ/ronnfotografia_-15.JPG'
-          ]},
-        ]
-      },
-    ];
 
     /* ─── Helpers de Google Drive ─── */
     function driveImageUrl(fileId, size) {
@@ -621,17 +596,16 @@
         }
         if (artists.length) sections.push({ id, label, artists });
       }
-      if (!sections.length) throw new Error('No se encontraron secciones en Drive');
       return sections;
     }
 
     async function loadSectionsData() {
-      if (!DRIVE_CONFIG.enabled) return FALLBACK_DATA;
+      if (!DRIVE_CONFIG.enabled) return [];
       try {
         return await loadSectionsFromDrive();
       } catch (err) {
-        console.error('No se pudo cargar la galería desde Drive — usando datos de respaldo.', err);
-        return FALLBACK_DATA;
+        console.error('No se pudo cargar la galería desde Drive.', err);
+        return [];
       }
     }
 
@@ -693,6 +667,17 @@
     function renderSections(sections) {
       const container = document.getElementById('dynamicSections');
       container.innerHTML = '';
+
+      if (!sections || !sections.length) {
+        firstSectionId = null;
+        const empty = document.createElement('p');
+        empty.className = 'empty-message';
+        empty.textContent = 'Todavía no hay nada para mostrar.';
+        container.appendChild(empty);
+        buildNav([]);
+        return;
+      }
+
       firstSectionId = sections[0] ? sections[0].id : null;
 
       sections.forEach(section => {
