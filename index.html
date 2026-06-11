@@ -175,6 +175,9 @@
       display: block;
       transition: transform 0.6s ease;
       filter: brightness(0.88) saturate(0.9);
+      pointer-events: none;
+      -webkit-touch-callout: none;
+      -webkit-user-drag: none;
     }
 
     @media (hover: hover) {
@@ -351,6 +354,8 @@
       object-fit: contain;
       user-select: none;
       pointer-events: none;
+      -webkit-touch-callout: none;
+      -webkit-user-drag: none;
       display: block;
       transition: opacity 0.25s ease;
     }
@@ -1013,6 +1018,16 @@
       if (e.key === 'Escape') closeLightbox();
       if (e.key === 'ArrowLeft') lbNavBtn(-1);
       if (e.key === 'ArrowRight') lbNavBtn(1);
+    });
+
+    // ─── Protección de imágenes ───
+    // Bloquea clic derecho sobre cards y lightbox
+    document.addEventListener('contextmenu', e => {
+      if (e.target.closest('.artist-card, .lightbox')) e.preventDefault();
+    });
+    // Bloquea drag (arrastrar imagen al escritorio o a otra pestaña)
+    document.addEventListener('dragstart', e => {
+      if (e.target.tagName === 'IMG') e.preventDefault();
     });
 
     // Mouse drag (desktop)
