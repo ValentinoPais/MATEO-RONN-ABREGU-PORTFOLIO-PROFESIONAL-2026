@@ -342,6 +342,7 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      background: #000;
     }
 
     .lb-slide img {
@@ -351,7 +352,10 @@
       user-select: none;
       pointer-events: none;
       display: block;
+      transition: opacity 0.25s ease;
     }
+    /* imagen en negro mientras no cargó — evita flashes de imagen anterior */
+    .lb-slide img.lb-img-loading { opacity: 0 !important; }
 
     .lightbox-title {
       position: fixed;
@@ -406,7 +410,7 @@
       position: fixed;
       bottom: 20px;
       left: 50%;
-      transform: translateX(-50%);
+      transform: translateX(-50%) translateY(calc(100% + 40px));
       display: flex;
       gap: 8px;
       max-width: 92vw;
@@ -418,6 +422,10 @@
       backdrop-filter: blur(6px);
       z-index: 203;
       scrollbar-width: none;
+      transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    #lb-filmstrip.visible {
+      transform: translateX(-50%) translateY(0);
     }
     #lb-filmstrip::-webkit-scrollbar { display: none; }
     #lb-filmstrip.hidden { display: none; }
@@ -842,10 +850,25 @@
       imgEl.addEventListener('error', finish, { once: true });
     }
 
+    // Asigna src y agrega lb-img-loading hasta que la imagen cargue.
+    // Evita que se vea una imagen anterior mientras la nueva está cargando.
+    function lbLoad(imgEl, src) {
+      if (!imgEl) return;
+      imgEl.src = src || '';
+      if (src && (!imgEl.complete || !imgEl.naturalWidth)) {
+        imgEl.classList.add('lb-img-loading');
+        const done = () => imgEl.classList.remove('lb-img-loading');
+        imgEl.addEventListener('load',  done, { once: true });
+        imgEl.addEventListener('error', done, { once: true });
+      } else {
+        imgEl.classList.remove('lb-img-loading');
+      }
+    }
+
     function lbUpdateSlides() {
-      imgC().src = lbImages[lbIndex] || '';
-      imgL().src = lbImages[lbIndex - 1] || '';
-      imgR().src = lbImages[lbIndex + 1] || '';
+      lbLoad(imgC(), lbImages[lbIndex]);
+      lbLoad(imgL(), lbImages[lbIndex - 1]);
+      lbLoad(imgR(), lbImages[lbIndex + 1]);
       imgL().style.opacity = lbIndex > 0 ? '1' : '0';
       imgR().style.opacity = lbIndex < lbImages.length - 1 ? '1' : '0';
       document.getElementById('lbPrev').classList.toggle('hidden', lbIndex === 0);
@@ -892,11 +915,11 @@
         track().style.transition = 'none';
         track().style.transform = 'translateX(-100vw)';
         // Update center to current lbIndex so no stale image appears
-        imgC().src = lbImages[lbIndex] || '';
+        lbLoad(imgC(), lbImages[lbIndex]);
       }
 
-      if (dir > 0) { imgR().src = lbImages[next] || ''; imgR().style.opacity = '1'; lbWatchLoading(imgR()); }
-      else         { imgL().src = lbImages[next] || ''; imgL().style.opacity = '1'; lbWatchLoading(imgL()); }
+      if (dir > 0) { lbLoad(imgR(), lbImages[next]); imgR().style.opacity = '1'; lbWatchLoading(imgR()); }
+      else         { lbLoad(imgL(), lbImages[next]); imgL().style.opacity = '1'; lbWatchLoading(imgL()); }
 
       lbIndex = next;
       document.getElementById('lbPrev').classList.toggle('hidden', lbIndex === 0);
@@ -919,6 +942,7 @@
     function lbBuildFilmstrip() {
       const strip = document.getElementById('lb-filmstrip');
       strip.innerHTML = '';
+      strip.classList.remove('visible');
       if (lbImages.length <= 1) { strip.classList.add('hidden'); return; }
       strip.classList.remove('hidden');
       lbImages.forEach((src, i) => {
@@ -934,6 +958,8 @@
         strip.appendChild(t);
       });
       requestAnimationFrame(lbScrollFilmstripToActive);
+      // Animar: sube desde abajo con un pequeño rebote
+      requestAnimationFrame(() => requestAnimationFrame(() => strip.classList.add('visible')));
     }
 
     function lbUpdateFilmstripActive() {
