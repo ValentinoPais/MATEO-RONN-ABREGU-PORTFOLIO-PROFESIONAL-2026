@@ -21,6 +21,7 @@
       --muted: #999;
       --accent: #e8e8e8;
       --nav-h: 80px;
+      --nav-space: 80px; /* alto real del nav (en celu son 2 renglones); lo ajusta el JS */
       --font: 'Adobe Garamond', Times, serif;
       --font-display: 'Bebas Neue', sans-serif;
     }
@@ -124,19 +125,19 @@
 
     /* ─── Main wrapper ─── */
     main {
-      padding-top: var(--nav-h);
+      padding-top: var(--nav-space);
     }
 
     /* ─── Section titles ─── */
     .section-label {
       font-family: var(--font-display);
-      font-size: 18px;
+      font-size: 24px;
       font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--muted);
-      padding: 28px 20px 8px;
-      scroll-margin-top: var(--nav-h);
+      padding: 44px 20px 14px;
+      scroll-margin-top: var(--nav-space);
     }
 
     .empty-message {
@@ -515,9 +516,28 @@
     }
 
     @media (max-width: 600px) {
-      nav { padding: 0 20px; }
-      .nav-links { display: none; }
-      .hamburger { display: flex; }
+      /* Nav en dos renglones: el nombre arriba y las secciones visibles justo
+         debajo (antes quedaban escondidas en el menú hamburguesa). */
+      nav {
+        flex-wrap: wrap;
+        height: auto;
+        padding: 12px 16px 10px;
+        row-gap: 8px;
+      }
+      .nav-logo {
+        flex-basis: 100%;
+        text-align: center;
+        font-size: 30px;
+      }
+      .nav-links {
+        display: flex;
+        flex-basis: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 6px 18px;
+      }
+      .nav-links a { font-size: 16px; }
+      .hamburger { display: none; }
       .artist-grid {
         grid-template-columns: 1fr;
         grid-auto-rows: 320px;
@@ -528,7 +548,7 @@
       .lightbox-title { top: 22px; left: 20px; font-size: 13px; }
       #lb-filmstrip { bottom: 14px; gap: 6px; padding: 8px 10px; }
       .lb-thumb { width: 38px; height: 38px; }
-      .section-label { padding: 24px 10px 6px; }
+      .section-label { font-size: 21px; padding: 34px 10px 10px; }
       #about { padding: 0 20px; margin-top: 60px; }
       .contact-row { margin: 32px -20px 0; padding: 24px 20px; }
     }
@@ -826,6 +846,20 @@
 
     window.scrollTo(0, 0);
     history.scrollRestoration = 'manual';
+
+    /* En celular el nav ocupa dos renglones (nombre + secciones), así que su
+       alto es variable. Medimos el nav real y lo guardamos en --nav-space para
+       que el contenido y el scroll a cada sección dejen el espacio justo. */
+    function syncNavHeight() {
+      const navEl = document.querySelector('nav');
+      if (navEl) document.documentElement.style.setProperty('--nav-space', navEl.offsetHeight + 'px');
+    }
+    if (window.ResizeObserver) {
+      const navEl = document.querySelector('nav');
+      if (navEl) new ResizeObserver(syncNavHeight).observe(navEl);
+    }
+    window.addEventListener('resize', syncNavHeight);
+    window.addEventListener('load', syncNavHeight);
 
     function logoClick(e) {
       e.preventDefault();
