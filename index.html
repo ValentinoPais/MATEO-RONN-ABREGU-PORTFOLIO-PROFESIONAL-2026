@@ -644,20 +644,29 @@
 
     async function loadSectionsFromDrive() {
       const sectionFolders = await driveListChildren(DRIVE_CONFIG.rootFolderId, { foldersOnly: true });
-      const sections = [];
-      for (const sf of sectionFolders) {
+
+      // Antes esto era secuencial: se esperaba (await) carpeta por carpeta, una
+      // tras otra, así que el tiempo de carga crecía con CADA carpeta nueva que
+      // Mateo agregaba en Drive (1 + secciones + artistas pedidos en fila).
+      // Ahora se piden todas en paralelo con Promise.all: la espera total pasa
+      // a ser ~la del nivel más lento, no la suma de todas. Promise.all conserva
+      // el orden del array, así que el orden de Drive (orderBy=name_natural) se
+      // respeta igual.
+      const sections = await Promise.all(sectionFolders.map(async (sf) => {
         const label = cleanDriveName(sf.name);
         const id = slugify(label);
         const artistFolders = await driveListChildren(sf.id, { foldersOnly: true });
-        const artists = [];
-        for (const af of artistFolders) {
+
+        const artists = (await Promise.all(artistFolders.map(async (af) => {
           const files = await driveListChildren(af.id, { imagesOnly: true });
-          if (!files.length) continue;
-          artists.push({ name: cleanDriveName(af.name), images: files.map(f => driveImageUrl(f.id)) });
-        }
-        if (artists.length) sections.push({ id, label, artists });
-      }
-      return sections;
+          if (!files.length) return null;
+          return { name: cleanDriveName(af.name), images: files.map(f => driveImageUrl(f.id)) };
+        }))).filter(Boolean);
+
+        return artists.length ? { id, label, artists } : null;
+      }));
+
+      return sections.filter(Boolean);
     }
 
     async function loadSectionsData() {
@@ -764,18 +773,19 @@
     function runLoader() {
       const loaderName = document.getElementById('loader-name');
       const allImgs = Array.from(document.querySelectorAll('.artist-card img'));
-      const eagerImgs = allImgs.slice(0, 6);
-      let loaded = 0;
+      // Solo esperamos las portadas "eager". Las que tienen loading="lazy"
+      // (idx >= 4) pueden no dispararse nunca si quedan fuera de pantalla, y
+      // como el loader bloquea el scroll, antes esto podía dejar la pantalla
+      // de carga colgada esperando una imagen que el navegador nunca pedía.
+      const eagerImgs = allImgs.filter(img => img.loading !== 'lazy').slice(0, 6);
+      let loaded = 0, finished = false;
 
       function setProgress(p) { loaderName.style.setProperty('--p', p + '%'); }
 
-      function onLoad() {
-        loaded++;
-        setProgress(Math.round((loaded / eagerImgs.length) * 100));
-        if (loaded === eagerImgs.length) finish();
-      }
-
       function finish() {
+        if (finished) return;
+        finished = true;
+        clearTimeout(safety);
         setProgress(100);
         setTimeout(() => {
           document.body.classList.remove('loading');
@@ -784,6 +794,16 @@
           setTimeout(() => loader.remove(), 700);
         }, 300);
       }
+
+      function onLoad() {
+        loaded++;
+        if (eagerImgs.length) setProgress(Math.round((loaded / eagerImgs.length) * 100));
+        if (loaded >= eagerImgs.length) finish();
+      }
+
+      // Red de seguridad: pase lo que pase (red lenta, imagen que no carga),
+      // nunca dejamos el loader más de 4s — las fotos siguen cargando detrás.
+      const safety = setTimeout(finish, 4000);
 
       if (eagerImgs.length === 0) { finish(); return; }
 
