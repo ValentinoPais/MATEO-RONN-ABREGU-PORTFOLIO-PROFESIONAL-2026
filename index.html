@@ -359,8 +359,10 @@
       display: block;
       transition: opacity 0.25s ease;
     }
-    /* imagen en negro mientras no cargó — evita flashes de imagen anterior */
-    .lb-slide img.lb-img-loading { opacity: 0 !important; }
+    /* Imagen oculta mientras no está decodificada. transition:none hace que la
+       foto ANTERIOR desaparezca al instante en vez de "fundirse" durante 0.25s
+       mientras se carga la nueva — ese fundido de la foto vieja era el flash. */
+    .lb-slide img.lb-img-loading { opacity: 0 !important; transition: none !important; }
 
     .lightbox-title {
       position: fixed;
@@ -878,18 +880,33 @@
       imgEl.addEventListener('error', finish, { once: true });
     }
 
-    // Asigna src y agrega lb-img-loading hasta que la imagen cargue.
-    // Evita que se vea una imagen anterior mientras la nueva está cargando.
+    // Asigna src y mantiene la imagen oculta hasta que su bitmap está
+    // DECODIFICADO. Antes solo esperábamos 'load' (o el flag .complete), pero
+    // eso no garantiza que el <img> ya pueda pintar la nueva foto: durante la
+    // decodificación el elemento seguía mostrando su imagen anterior, y al
+    // recentrar el carrusel se veía esa foto vieja (el flash de la primera vez).
     function lbLoad(imgEl, src) {
       if (!imgEl) return;
-      imgEl.src = src || '';
-      if (src && (!imgEl.complete || !imgEl.naturalWidth)) {
-        imgEl.classList.add('lb-img-loading');
-        const done = () => imgEl.classList.remove('lb-img-loading');
-        imgEl.addEventListener('load',  done, { once: true });
-        imgEl.addEventListener('error', done, { once: true });
+      src = src || '';
+
+      // Ya tiene este src: no lo reasignamos (evita re-decodificar y parpadear
+      // al navegar a una imagen ya precargada o al recentrar el carrusel).
+      if (imgEl.getAttribute('src') === src) {
+        if (src && imgEl.complete && imgEl.naturalWidth) imgEl.classList.remove('lb-img-loading');
+        return;
+      }
+
+      imgEl.classList.add('lb-img-loading'); // ocultar al instante (sin fundido)
+      imgEl.src = src;
+      if (!src) { imgEl.classList.remove('lb-img-loading'); return; }
+
+      // Revelar solo cuando el bitmap esté listo, y solo si el src no cambió.
+      const reveal = () => { if (imgEl.getAttribute('src') === src) imgEl.classList.remove('lb-img-loading'); };
+      if (imgEl.decode) {
+        imgEl.decode().then(reveal).catch(reveal);
       } else {
-        imgEl.classList.remove('lb-img-loading');
+        imgEl.addEventListener('load',  reveal, { once: true });
+        imgEl.addEventListener('error', reveal, { once: true });
       }
     }
 
