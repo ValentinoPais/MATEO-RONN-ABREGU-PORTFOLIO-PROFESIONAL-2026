@@ -851,62 +851,67 @@
     const imgR  = () => document.getElementById('lb-img-right');
     const lbLoader = () => document.getElementById('lbLoader');
 
-    // Loader minimalista: solo aparece si la imagen tarda más de ~180ms
-    // (evita parpadeos en cargas rápidas/cacheadas) y nunca bloquea el
-    // input del usuario — es puramente visual (pointer-events: none).
-    // El token evita carreras al navegar rápido entre imágenes.
+    // Set de URLs cuyo bitmap YA decodificamos al menos una vez. Si una imagen
+    // está acá sabemos que pinta al instante (está en caché): la mostramos sin
+    // ocultar, así VOLVER a una foto ya vista no parpadea. El precargado de
+    // vecinos va "calentando" este set, por eso ir a la siguiente/anterior fluye.
+    let lbDecoded = new Set();
+
+    // Spinner — REGLA: si el slot presentado está "cargando" (oculto), se ve el
+    // ícono de carga al instante; la pantalla nunca queda en negro pelado. Si la
+    // imagen ya está lista, no se muestra nada. Es puramente visual
+    // (pointer-events: none) y el token evita carreras al navegar rápido.
     let lbLoadToken = 0;
-    let lbLoaderShowTimer = null;
     function lbWatchLoading(imgEl) {
       const loader = lbLoader();
       if (!loader || !imgEl) return;
       const token = ++lbLoadToken;
 
-      clearTimeout(lbLoaderShowTimer);
-      loader.classList.remove('show');
+      // El spinner sigue el estado real del slot: solo si está marcado cargando.
+      if (!imgEl.classList.contains('lb-img-loading')) { loader.classList.remove('show'); return; }
+      loader.classList.add('show');
 
-      if (imgEl.complete && imgEl.naturalWidth) return;
-
-      lbLoaderShowTimer = setTimeout(() => {
-        if (token === lbLoadToken) loader.classList.add('show');
-      }, 180);
-
-      const finish = () => {
-        if (token !== lbLoadToken) return;
-        clearTimeout(lbLoaderShowTimer);
-        loader.classList.remove('show');
-      };
-      imgEl.addEventListener('load', finish, { once: true });
-      imgEl.addEventListener('error', finish, { once: true });
+      const finish = () => { if (token === lbLoadToken) loader.classList.remove('show'); };
+      if (imgEl.decode) imgEl.decode().then(finish).catch(finish);
+      else { imgEl.addEventListener('load', finish, { once: true }); imgEl.addEventListener('error', finish, { once: true }); }
     }
 
-    // Asigna src y mantiene la imagen oculta hasta que su bitmap está
-    // DECODIFICADO. Antes solo esperábamos 'load' (o el flag .complete), pero
-    // eso no garantiza que el <img> ya pueda pintar la nueva foto: durante la
-    // decodificación el elemento seguía mostrando su imagen anterior, y al
-    // recentrar el carrusel se veía esa foto vieja (el flash de la primera vez).
+    // Asigna el src de un slot y decide cómo mostrarlo:
+    //  • Mismo src (slot ya precargado al que navegamos): no se reasigna → no
+    //    re-decodifica ni parpadea.
+    //  • Imagen ya vista (en lbDecoded): está en caché y pinta al instante, así
+    //    que se muestra SIN ocultar → volver a una foto anterior no parpadea.
+    //  • Primera vez: se oculta al instante (nunca se ve la foto anterior) y se
+    //    revela recién cuando el bitmap está DECODIFICADO. Mientras tanto el slot
+    //    queda "cargando" y lo cubre el spinner — nunca negro pelado.
     function lbLoad(imgEl, src) {
       if (!imgEl) return;
       src = src || '';
 
-      // Ya tiene este src: no lo reasignamos (evita re-decodificar y parpadear
-      // al navegar a una imagen ya precargada o al recentrar el carrusel).
       if (imgEl.getAttribute('src') === src) {
         if (src && imgEl.complete && imgEl.naturalWidth) imgEl.classList.remove('lb-img-loading');
         return;
       }
 
+      if (!src) { imgEl.src = ''; imgEl.classList.remove('lb-img-loading'); return; }
+
+      if (lbDecoded.has(src)) {
+        imgEl.src = src;
+        imgEl.classList.remove('lb-img-loading');
+        return;
+      }
+
       imgEl.classList.add('lb-img-loading'); // ocultar al instante (sin fundido)
       imgEl.src = src;
-      if (!src) { imgEl.classList.remove('lb-img-loading'); return; }
-
-      // Revelar solo cuando el bitmap esté listo, y solo si el src no cambió.
-      const reveal = () => { if (imgEl.getAttribute('src') === src) imgEl.classList.remove('lb-img-loading'); };
+      const reveal = (ok) => {
+        if (ok) lbDecoded.add(src);
+        if (imgEl.getAttribute('src') === src) imgEl.classList.remove('lb-img-loading');
+      };
       if (imgEl.decode) {
-        imgEl.decode().then(reveal).catch(reveal);
+        imgEl.decode().then(() => reveal(true)).catch(() => reveal(false));
       } else {
-        imgEl.addEventListener('load',  reveal, { once: true });
-        imgEl.addEventListener('error', reveal, { once: true });
+        imgEl.addEventListener('load',  () => reveal(true),  { once: true });
+        imgEl.addEventListener('error', () => reveal(false), { once: true });
       }
     }
 
