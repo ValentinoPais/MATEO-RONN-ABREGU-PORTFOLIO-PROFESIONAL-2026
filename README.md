@@ -8,8 +8,6 @@ Drive API**, so Mateo adds, removes and reorders photos himself — no developer
 
 https://github.com/user-attachments/assets/10851a74-5016-405d-873d-7cca40514b75
 
-![Preview](./preview.png)
-
 #### What it solves
 A photographer's portfolio changes constantly. Instead of hardcoding images (and being called every
 time something changes), the site reads directly from the client's Google Drive — drop a photo into a
