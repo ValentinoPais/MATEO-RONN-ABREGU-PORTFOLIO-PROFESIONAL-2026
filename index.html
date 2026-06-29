@@ -816,6 +816,13 @@
       return grid.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     }
 
+    // Las VERTICALES (ar < 1) cuentan como un poco más anchas SOLO para decidir
+    // cuántas entran por fila → entran menos por fila → la fila queda más alta →
+    // las fotos verticales se ven más grandes. El relleno usa siempre la
+    // proporción REAL, así que NO se recorta nada. Subí/bajá este número para
+    // que las verticales sean aún más grandes (más alto) o más chicas.
+    const PORTRAIT_BOOST = 1.4;
+
     // Reparte las cards guardadas en grid._cards ([{el, ar}]) en filas justificadas.
     function justifyGrid(grid) {
       const cards = grid._cards;
@@ -827,16 +834,19 @@
       grid.style.gap = gap + 'px';
       grid.innerHTML = ''; // reconstruimos las filas (las cards son los MISMOS nodos)
 
-      let row = [], sumAR = 0;
+      const arGroup = (ar) => (ar < 1 ? ar * PORTRAIT_BOOST : ar); // solo para agrupar
+
+      let row = [], sumGroup = 0;
       const flush = (isLast) => {
         const rowEl = document.createElement('div');
         rowEl.className = 'jrow';
         rowEl.style.gap = gap + 'px';
         const gaps = gap * (row.length - 1);
-        const hFull = (W - gaps) / sumAR;                 // altura para llenar el ancho
+        const sumAR = row.reduce((s, it) => s + it.ar, 0); // proporciones REALES (sin recorte)
+        const hFull = (W - gaps) / sumAR;                  // altura para llenar el ancho
         // Filas completas: siempre se estiran. Última fila: solo si no se agranda
-        // de más (hasta 1.4× la altura objetivo); si no, altura objetivo sin estirar.
-        const stretch = !isLast || hFull <= targetH * 1.4;
+        // de más; si no, queda a la altura objetivo (sin estirar) y centrada.
+        const stretch = !isLast || hFull <= targetH * 1.6;
         row.forEach(it => {
           it.el.style.height = '100%';
           if (stretch) { it.el.style.flex = it.ar + ' 0 0'; it.el.style.width = ''; }
@@ -849,9 +859,9 @@
 
       cards.forEach(it => {
         row.push(it);
-        sumAR += it.ar;
-        const naturalW = sumAR * targetH + gap * (row.length - 1);
-        if (naturalW >= W) { flush(false); row = []; sumAR = 0; }
+        sumGroup += arGroup(it.ar);
+        const naturalW = sumGroup * targetH + gap * (row.length - 1);
+        if (naturalW >= W) { flush(false); row = []; sumGroup = 0; }
       });
       if (row.length) flush(true);
     }
