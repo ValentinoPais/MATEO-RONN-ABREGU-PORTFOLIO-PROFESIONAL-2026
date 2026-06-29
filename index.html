@@ -940,18 +940,13 @@
 
     function logoClick(e) {
       e.preventDefault();
-      const about = document.getElementById('about');
-      const scrollToTop = () => {
-        const top = firstSectionId && document.getElementById(firstSectionId);
-        if (top) top.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        else window.scrollTo({ top: 0, behavior: 'smooth' });
-      };
-      // Si no hay About (about.txt vacío/borrado), el logo siempre vuelve arriba.
-      if (!aboutHasText || !about || about.hidden) { scrollToTop(); return; }
-      // Con About visible: alterna entre el inicio y About.
-      const atOrBelowAbout = about.getBoundingClientRect().top < window.innerHeight;
-      if (atOrBelowAbout) scrollToTop();
-      else about.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Si estamos al final de la página → subir arriba de todo.
+      // Si no → bajar al final de todo (el footer/contacto).
+      const doc = document.documentElement;
+      const scrollY = window.scrollY || window.pageYOffset;
+      const maxScroll = doc.scrollHeight - window.innerHeight;
+      const atBottom = scrollY >= maxScroll - 4; // margen de 4px por redondeos
+      window.scrollTo({ top: atBottom ? 0 : doc.scrollHeight, behavior: 'smooth' });
     }
 
     function toggleMenu() {
