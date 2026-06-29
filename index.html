@@ -1244,6 +1244,7 @@
       if (h.indexOf('ajustes') !== -1 || h.indexOf('tweak') !== -1) buildTweakPanel();
     }
     window.addEventListener('hashchange', maybeBuildPanel);
+    maybeBuildPanel(); // si la URL ya trae #ajustes, mostrar el panel YA (sin esperar a Drive)
 
     async function init() {
       document.body.classList.add('loading');
