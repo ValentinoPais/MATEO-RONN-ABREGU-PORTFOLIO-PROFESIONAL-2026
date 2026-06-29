@@ -24,6 +24,22 @@
       --nav-space: 80px; /* alto real del nav (en celu son 2 renglones); lo ajusta el JS */
       --font: 'Adobe Garamond', Times, serif;
       --font-display: 'Bebas Neue', sans-serif;
+
+      /* ── Ajustables en vivo desde el panel (abrí la página con #ajustes) ──
+         Estos valores son los que después dejamos fijos en código. ── */
+      --nav-logo-size: 36px;
+      --nav-link-size: 18px;
+      --section-label-size: 24px;
+      --section-label-align: left;
+      --artist-name-size: 20px;
+      --about-h2-size: 18px;
+      --about-p-size: 22px;
+      --about-max-width: 640px;
+      --about-align: left;
+      --contact-link-size: 16px;
+      --footer-name-size: 15px;
+      --contact-align: center;   /* justify-content: flex-start | center | flex-end */
+      --row-align: center;       /* alineación de la última fila incompleta de la galería */
     }
 
     /* ─── Base ─── */
@@ -55,7 +71,7 @@
 
     .nav-logo {
       font-family: var(--font-display);
-      font-size: 36px;
+      font-size: var(--nav-logo-size);
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -73,7 +89,7 @@
 
     .nav-links a {
       font-family: var(--font-display);
-      font-size: 18px;
+      font-size: var(--nav-link-size);
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--muted);
@@ -131,11 +147,12 @@
     /* ─── Section titles ─── */
     .section-label {
       font-family: var(--font-display);
-      font-size: 24px;
+      font-size: var(--section-label-size);
       font-weight: 700;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: #fff;
+      text-align: var(--section-label-align);
       padding: 44px 20px 14px;
       scroll-margin-top: var(--nav-space);
     }
@@ -161,7 +178,7 @@
     }
     .jrow {
       display: flex;
-      justify-content: center; /* centra la última fila incompleta (las llenas no tienen hueco) */
+      justify-content: var(--row-align); /* alineación de la última fila incompleta */
       gap: 10px;            /* el JS lo ajusta por pantalla */
       /* la altura de cada fila la fija el JS */
     }
@@ -209,7 +226,7 @@
       padding: 18px 20px;
       background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
       font-family: var(--font-display);
-      font-size: 20px;
+      font-size: var(--artist-name-size);
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
@@ -238,13 +255,14 @@
     }
 
     .about-text {
-      max-width: 640px;
+      max-width: var(--about-max-width);
       margin: 0 auto;
+      text-align: var(--about-align);
     }
 
     #about h2 {
       font-family: var(--font-display);
-      font-size: 18px;
+      font-size: var(--about-h2-size);
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--muted);
@@ -253,7 +271,7 @@
 
     #about p {
       font-family: var(--font-display);
-      font-size: 22px;
+      font-size: var(--about-p-size);
       font-weight: 400;
       line-height: 1.7;
       color: #d0d0d0;
@@ -265,7 +283,7 @@
     /* ─── Footer / Contacto (siempre visible, línea a todo el ancho) ─── */
     .contact-row {
       display: flex;
-      justify-content: center;
+      justify-content: var(--contact-align);
       align-items: center;
       flex-wrap: wrap;
       gap: 24px;
@@ -283,7 +301,7 @@
 
     .contact-info a {
       font-family: var(--font-display);
-      font-size: 16px;
+      font-size: var(--contact-link-size);
       color: var(--text);
       transition: color 0.2s;
     }
@@ -291,7 +309,7 @@
 
     .footer-name {
       font-family: var(--font-display);
-      font-size: 15px;
+      font-size: var(--footer-name-size);
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: #333;
@@ -804,11 +822,39 @@
        (si no, queda a la altura objetivo y alineada a la izquierda, para que
        una sola foto no se agrande de forma exagerada). ───────────────────── */
 
+    /* ════════════════════════════════════════════════════════════
+       AJUSTES EN VIVO (TWEAKS)
+       TODOS los valores que se pueden tocar desde el panel (abrí la
+       página con #ajustes). Lo que quede acá es lo que se ve por
+       defecto — es lo que dejamos fijo cuando Ronn manda su config. ── */
+    const TWEAKS = {
+      // Galería de portadas
+      rowHeight: 405,        // alto de fila objetivo (px, en desktop)
+      gap: 10,               // espacio entre fotos (px)
+      portraitBoost: 1.9,    // qué tan más grandes se ven las verticales
+      stretchCap: 1.6,       // tope para estirar la última fila
+      rowAlign: 'center',    // left | center | right  (fila incompleta)
+      // Tipografía (px) y alineación
+      navLogoSize: 36,
+      navLinkSize: 18,
+      sectionLabelSize: 24,
+      sectionLabelAlign: 'left',   // left | center | right
+      artistNameSize: 20,
+      aboutH2Size: 18,
+      aboutPSize: 22,
+      aboutMaxWidth: 640,
+      aboutAlign: 'left',          // left | center | right
+      contactLinkSize: 16,
+      footerNameSize: 15,
+      contactAlign: 'center',      // left | center | right
+    };
+
     function justifyParams() {
-      const w = window.innerWidth;
-      if (w <= 600) return { targetH: 270, gap: 6 };   // ~+35% (antes 200)
-      if (w <= 900) return { targetH: 350, gap: 8 };   // ~+35% (antes 260)
-      return { targetH: 405, gap: 10 };                // ~+35% (antes 300)
+      const w = window.innerWidth, H = TWEAKS.rowHeight, g = TWEAKS.gap;
+      // En tablet/mobile se baja proporcional (mismas relaciones de antes).
+      if (w <= 600) return { targetH: Math.round(H * 0.667), gap: Math.max(2, g - 4) };
+      if (w <= 900) return { targetH: Math.round(H * 0.864), gap: Math.max(2, g - 2) };
+      return { targetH: H, gap: g };
     }
 
     function gridUsableWidth(grid) {
@@ -816,15 +862,9 @@
       return grid.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     }
 
-    // Las VERTICALES (ar < 1) cuentan como un poco más anchas SOLO para decidir
-    // cuántas entran por fila → entran menos por fila → la fila queda más alta →
-    // las fotos verticales se ven más grandes. El relleno usa siempre la
-    // proporción REAL, así que NO se recorta nada. Subí/bajá este número para
-    // que las verticales sean aún más grandes (más alto) o más chicas.
-    // OJO: el tamaño va EN PASOS (depende de cuántas entran por fila), así que
-    // subir un poco puede no cambiar nada hasta que cruza al paso siguiente.
-    const PORTRAIT_BOOST = 1.9;
-
+    // Las VERTICALES (ar < 1) cuentan como más anchas SOLO para agrupar → entran
+    // menos por fila → la fila queda más alta → se ven más grandes. El relleno usa
+    // la proporción REAL (no recorta). El valor vive en TWEAKS.portraitBoost.
     // Reparte las cards guardadas en grid._cards ([{el, ar}]) en filas justificadas.
     function justifyGrid(grid) {
       const cards = grid._cards;
@@ -836,7 +876,7 @@
       grid.style.gap = gap + 'px';
       grid.innerHTML = ''; // reconstruimos las filas (las cards son los MISMOS nodos)
 
-      const arGroup = (ar) => (ar < 1 ? ar * PORTRAIT_BOOST : ar); // solo para agrupar
+      const arGroup = (ar) => (ar < 1 ? ar * TWEAKS.portraitBoost : ar); // solo para agrupar
 
       let row = [], sumGroup = 0;
       const flush = (isLast) => {
@@ -848,7 +888,7 @@
         const hFull = (W - gaps) / sumAR;                  // altura para llenar el ancho
         // Filas completas: siempre se estiran. Última fila: solo si no se agranda
         // de más; si no, queda a la altura objetivo (sin estirar) y centrada.
-        const stretch = !isLast || hFull <= targetH * 1.6;
+        const stretch = !isLast || hFull <= targetH * TWEAKS.stretchCap;
         row.forEach(it => {
           it.el.style.height = '100%';
           if (stretch) { it.el.style.flex = it.ar + ' 0 0'; it.el.style.width = ''; }
@@ -1012,6 +1052,199 @@
       }
     }
 
+    /* ════════════════════════════════════════════════════════════
+       PANEL DE AJUSTES EN VIVO  (se abre agregando #ajustes a la URL)
+       Mové los sliders y mirá los cambios al instante. Abajo hay un
+       cuadro con TODOS los valores: copialo y mandámelo, o pegá uno y
+       la página se actualiza sola. No aparece para los visitantes. ── */
+    const DEFAULT_TWEAKS = { ...TWEAKS }; // copia de los valores por defecto (para "volver")
+
+    function alignToFlex(a) { return a === 'left' ? 'flex-start' : a === 'right' ? 'flex-end' : 'center'; }
+
+    function applyTweaks() {
+      const s = document.documentElement.style;
+      s.setProperty('--nav-logo-size', TWEAKS.navLogoSize + 'px');
+      s.setProperty('--nav-link-size', TWEAKS.navLinkSize + 'px');
+      s.setProperty('--section-label-size', TWEAKS.sectionLabelSize + 'px');
+      s.setProperty('--section-label-align', TWEAKS.sectionLabelAlign);
+      s.setProperty('--artist-name-size', TWEAKS.artistNameSize + 'px');
+      s.setProperty('--about-h2-size', TWEAKS.aboutH2Size + 'px');
+      s.setProperty('--about-p-size', TWEAKS.aboutPSize + 'px');
+      s.setProperty('--about-max-width', TWEAKS.aboutMaxWidth + 'px');
+      s.setProperty('--about-align', TWEAKS.aboutAlign);
+      s.setProperty('--contact-link-size', TWEAKS.contactLinkSize + 'px');
+      s.setProperty('--footer-name-size', TWEAKS.footerNameSize + 'px');
+      s.setProperty('--contact-align', alignToFlex(TWEAKS.contactAlign));
+      s.setProperty('--row-align', alignToFlex(TWEAKS.rowAlign));
+      justifyAll(); // re-acomoda la galería con rowHeight/gap/boost/cap nuevos
+    }
+
+    const TWEAK_KEYS = ['rowHeight','gap','portraitBoost','stretchCap','rowAlign','navLogoSize','navLinkSize','sectionLabelSize','sectionLabelAlign','artistNameSize','aboutH2Size','aboutPSize','aboutMaxWidth','aboutAlign','contactLinkSize','footerNameSize','contactAlign'];
+    const ALIGN_KEYS = ['rowAlign','sectionLabelAlign','aboutAlign','contactAlign'];
+
+    function serializeTweaks() { return TWEAK_KEYS.map(k => k + ' = ' + TWEAKS[k]).join('\n'); }
+    function parseTweaks(text) {
+      const out = {};
+      String(text).split('\n').forEach(line => {
+        const m = line.match(/^\s*([A-Za-z][A-Za-z0-9]*)\s*[=:]\s*(.+?)\s*$/);
+        if (!m || TWEAK_KEYS.indexOf(m[1]) === -1) return;
+        const k = m[1], raw = m[2];
+        if (ALIGN_KEYS.indexOf(k) !== -1) { const v = raw.toLowerCase(); if (['left','center','right'].indexOf(v) !== -1) out[k] = v; }
+        else { const n = parseFloat(raw); if (!isNaN(n)) out[k] = n; }
+      });
+      return out;
+    }
+
+    const PANEL_CONTROLS = [
+      { group: 'Galería' },
+      { key: 'rowHeight', label: 'Alto de las filas', min: 150, max: 700, step: 5, unit: 'px' },
+      { key: 'gap', label: 'Espacio entre fotos', min: 0, max: 40, step: 1, unit: 'px' },
+      { key: 'portraitBoost', label: 'Tamaño de verticales', min: 1, max: 2.6, step: 0.05, unit: '×' },
+      { key: 'stretchCap', label: 'Tope última fila', min: 1, max: 3, step: 0.1, unit: '×' },
+      { key: 'rowAlign', label: 'Última fila incompleta', align: true },
+      { group: 'Tamaño de textos' },
+      { key: 'navLogoSize', label: 'Nombre (arriba)', min: 16, max: 64, step: 1, unit: 'px' },
+      { key: 'navLinkSize', label: 'Menú', min: 10, max: 32, step: 1, unit: 'px' },
+      { key: 'sectionLabelSize', label: 'Título de sección', min: 12, max: 56, step: 1, unit: 'px' },
+      { key: 'artistNameSize', label: 'Nombre sobre la foto', min: 10, max: 44, step: 1, unit: 'px' },
+      { key: 'aboutH2Size', label: 'About — título', min: 10, max: 44, step: 1, unit: 'px' },
+      { key: 'aboutPSize', label: 'About — texto', min: 12, max: 44, step: 1, unit: 'px' },
+      { key: 'aboutMaxWidth', label: 'About — ancho', min: 300, max: 1000, step: 10, unit: 'px' },
+      { key: 'contactLinkSize', label: 'Contacto — links', min: 10, max: 32, step: 1, unit: 'px' },
+      { key: 'footerNameSize', label: 'Contacto — ©', min: 10, max: 28, step: 1, unit: 'px' },
+      { group: 'Alineación (izq / centro / der)' },
+      { key: 'sectionLabelAlign', label: 'Título de sección', align: true },
+      { key: 'aboutAlign', label: 'About (texto)', align: true },
+      { key: 'contactAlign', label: 'Contacto', align: true },
+    ];
+
+    let panelSyncing = false; // evita loops entre los sliders y el cuadro de texto
+
+    function buildTweakPanel() {
+      if (document.getElementById('tweakPanel')) return;
+
+      const style = document.createElement('style');
+      style.textContent = [
+        '#tweakPanel{position:fixed;top:12px;right:12px;width:300px;max-height:calc(100vh - 24px);overflow:auto;background:rgba(18,18,18,.96);color:#e8e8e8;border:1px solid #2a2a2a;border-radius:10px;z-index:9999;font-family:system-ui,sans-serif;font-weight:400;font-size:12px;box-shadow:0 10px 40px rgba(0,0,0,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}',
+        '#tweakPanel header{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:rgba(18,18,18,.98);border-bottom:1px solid #2a2a2a;}',
+        '#tweakPanel header b{font-size:13px;letter-spacing:.04em;text-transform:uppercase;}',
+        '#tweakPanel header button{background:none;border:none;color:#999;cursor:pointer;font-size:18px;line-height:1;}',
+        '#tweakPanel .tp-body{padding:8px 12px 12px;}',
+        '#tweakPanel .tp-group{margin:13px 0 4px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:#ff5a5f;}',
+        '#tweakPanel .tp-row{margin:9px 0;}',
+        '#tweakPanel .tp-row label{display:flex;justify-content:space-between;margin-bottom:3px;color:#ccc;}',
+        '#tweakPanel .tp-row .tp-val{color:#fff;font-variant-numeric:tabular-nums;}',
+        '#tweakPanel input[type=range]{width:100%;accent-color:#ff5a5f;cursor:pointer;margin:0;}',
+        '#tweakPanel .tp-align{display:flex;gap:4px;}',
+        '#tweakPanel .tp-align button{flex:1;background:#1f1f1f;border:1px solid #333;color:#bbb;padding:5px 0;border-radius:5px;cursor:pointer;font-size:11px;}',
+        '#tweakPanel .tp-align button.on{background:#ff5a5f;border-color:#ff5a5f;color:#111;font-weight:600;}',
+        '#tweakPanel textarea{width:100%;height:150px;margin-top:6px;background:#0e0e0e;color:#cfcfcf;border:1px solid #333;border-radius:6px;padding:8px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.5;resize:vertical;white-space:pre;}',
+        '#tweakPanel .tp-actions{display:flex;gap:6px;margin-top:6px;}',
+        '#tweakPanel .tp-actions button{flex:1;background:#1f1f1f;border:1px solid #333;color:#e8e8e8;padding:7px 0;border-radius:6px;cursor:pointer;font-size:12px;}',
+        '#tweakPanel .tp-actions button:hover{border-color:#ff5a5f;}',
+        '#tweakPanel .tp-hint{margin-top:8px;color:#777;font-size:10.5px;line-height:1.5;}'
+      ].join('');
+      document.head.appendChild(style);
+
+      const panel = document.createElement('div');
+      panel.id = 'tweakPanel';
+      const header = document.createElement('header');
+      const title = document.createElement('b'); title.textContent = 'Ajustes en vivo';
+      const close = document.createElement('button'); close.textContent = '×'; close.title = 'Cerrar';
+      close.onclick = () => { panel.remove(); style.remove(); };
+      header.appendChild(title); header.appendChild(close);
+      panel.appendChild(header);
+
+      const body = document.createElement('div'); body.className = 'tp-body';
+      panel.appendChild(body);
+
+      const valEls = {}, rangeEls = {}, alignWraps = {};
+
+      function markAlign(key) {
+        const wrap = alignWraps[key]; if (!wrap) return;
+        wrap.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.opt === TWEAKS[key]));
+      }
+      function refreshText() { panelSyncing = true; ta.value = serializeTweaks(); panelSyncing = false; }
+      function syncControls() {
+        Object.keys(rangeEls).forEach(k => { rangeEls[k].value = TWEAKS[k]; valEls[k].el.textContent = TWEAKS[k] + valEls[k].unit; });
+        Object.keys(alignWraps).forEach(markAlign);
+      }
+
+      PANEL_CONTROLS.forEach(ctrl => {
+        if (ctrl.group) {
+          const g = document.createElement('div'); g.className = 'tp-group'; g.textContent = ctrl.group;
+          body.appendChild(g); return;
+        }
+        const row = document.createElement('div'); row.className = 'tp-row';
+        if (ctrl.align) {
+          const lab = document.createElement('label');
+          const span = document.createElement('span'); span.textContent = ctrl.label; lab.appendChild(span);
+          row.appendChild(lab);
+          const wrap = document.createElement('div'); wrap.className = 'tp-align';
+          [['left','Izq'],['center','Centro'],['right','Der']].forEach(([opt, txt]) => {
+            const b = document.createElement('button'); b.textContent = txt; b.dataset.opt = opt;
+            b.onclick = () => { TWEAKS[ctrl.key] = opt; applyTweaks(); markAlign(ctrl.key); refreshText(); };
+            wrap.appendChild(b);
+          });
+          alignWraps[ctrl.key] = wrap;
+          row.appendChild(wrap);
+        } else {
+          const lab = document.createElement('label');
+          const span = document.createElement('span'); span.textContent = ctrl.label;
+          const val = document.createElement('span'); val.className = 'tp-val';
+          lab.appendChild(span); lab.appendChild(val);
+          const range = document.createElement('input');
+          range.type = 'range'; range.min = ctrl.min; range.max = ctrl.max; range.step = ctrl.step;
+          range.oninput = () => {
+            TWEAKS[ctrl.key] = parseFloat(range.value);
+            val.textContent = range.value + (ctrl.unit || '');
+            applyTweaks(); refreshText();
+          };
+          valEls[ctrl.key] = { el: val, unit: ctrl.unit || '' };
+          rangeEls[ctrl.key] = range;
+          row.appendChild(lab); row.appendChild(range);
+        }
+        body.appendChild(row);
+      });
+
+      const ta = document.createElement('textarea'); ta.id = 'tweakConfig'; ta.spellcheck = false;
+      ta.oninput = () => {
+        if (panelSyncing) return;
+        Object.assign(TWEAKS, parseTweaks(ta.value));
+        applyTweaks();
+        syncControls(); // actualiza sliders/botones; NO reescribe el textarea mientras tipea
+      };
+
+      const actions = document.createElement('div'); actions.className = 'tp-actions';
+      const copyBtn = document.createElement('button'); copyBtn.textContent = '📋 Copiar config';
+      copyBtn.onclick = () => {
+        ta.select();
+        const done = () => { copyBtn.textContent = '✓ ¡Copiado!'; setTimeout(() => { copyBtn.textContent = '📋 Copiar config'; }, 1400); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, done);
+        else { try { document.execCommand('copy'); } catch (e) {} done(); }
+      };
+      const resetBtn = document.createElement('button'); resetBtn.textContent = '↺ Default';
+      resetBtn.onclick = () => { Object.assign(TWEAKS, DEFAULT_TWEAKS); applyTweaks(); syncControls(); refreshText(); };
+      actions.appendChild(copyBtn); actions.appendChild(resetBtn);
+
+      const hint = document.createElement('div'); hint.className = 'tp-hint';
+      hint.textContent = 'Tocá los sliders y mirá los cambios al toque. Cuando te guste, “Copiar config” y mandámelo. (Este panel solo aparece con #ajustes en la URL.)';
+
+      body.appendChild(ta);
+      body.appendChild(actions);
+      body.appendChild(hint);
+      document.body.appendChild(panel);
+
+      syncControls();
+      refreshText();
+    }
+
+    function maybeBuildPanel() {
+      const h = (location.hash || '').toLowerCase();
+      if (h.indexOf('ajustes') !== -1 || h.indexOf('tweak') !== -1) buildTweakPanel();
+    }
+    window.addEventListener('hashchange', maybeBuildPanel);
+
     async function init() {
       document.body.classList.add('loading');
       // Galería y About se piden en paralelo. renderAbout va PRIMERO para que
@@ -1019,7 +1252,9 @@
       const [sections, aboutText] = await Promise.all([loadSectionsData(), loadAboutText()]);
       renderAbout(aboutText);
       renderSections(sections);
+      applyTweaks();        // TWEAKS manda sobre las variables CSS + la galería
       runLoader();
+      maybeBuildPanel();    // muestra el panel solo si la URL tiene #ajustes
     }
 
     init();
