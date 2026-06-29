@@ -821,7 +821,9 @@
     // las fotos verticales se ven más grandes. El relleno usa siempre la
     // proporción REAL, así que NO se recorta nada. Subí/bajá este número para
     // que las verticales sean aún más grandes (más alto) o más chicas.
-    const PORTRAIT_BOOST = 1.4;
+    // OJO: el tamaño va EN PASOS (depende de cuántas entran por fila), así que
+    // subir un poco puede no cambiar nada hasta que cruza al paso siguiente.
+    const PORTRAIT_BOOST = 1.9;
 
     // Reparte las cards guardadas en grid._cards ([{el, ar}]) en filas justificadas.
     function justifyGrid(grid) {
