@@ -150,20 +150,26 @@
       padding: 120px 40px;
     }
 
-    /* ─── Artist / production grid (cover cards) ─── */
-    .artist-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-auto-rows: 300px;
-      grid-auto-flow: row dense;
-      gap: 10px;
+    /* ─── Artist / production gallery (filas justificadas, estilo Flickr) ───
+       Cada fila la arma el JS (justify): misma altura, ancho de cada portada
+       según su proporción real. Por eso ya no se recorta nada. ───────────── */
+    .jgrid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;            /* el JS lo ajusta por pantalla */
       padding: 0 20px;
+    }
+    .jrow {
+      display: flex;
+      gap: 10px;            /* el JS lo ajusta por pantalla */
+      /* la altura de cada fila la fija el JS */
     }
 
     .artist-card {
       position: relative;
       overflow: hidden;
       cursor: pointer;
+      min-width: 0;         /* deja que el flex controle el ancho (no el contenido) */
       user-select: none;
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
@@ -509,12 +515,7 @@
 
     /* ─── Responsive ─── */
     @media (max-width: 900px) {
-      .artist-grid {
-        grid-template-columns: repeat(2, 1fr);
-        grid-auto-rows: 240px;
-        gap: 8px;
-        padding: 0 16px;
-      }
+      .jgrid { padding: 0 16px; }
     }
 
     @media (max-width: 600px) {
@@ -549,12 +550,7 @@
       .nav-links li { flex-shrink: 0; }
       .nav-links a { font-size: 16px; white-space: nowrap; }
       .hamburger { display: none; }
-      .artist-grid {
-        grid-template-columns: 1fr;
-        grid-auto-rows: 320px;
-        gap: 6px;
-        padding: 0 10px;
-      }
+      .jgrid { padding: 0 10px; }
       .artist-name { display: none; }
       .lightbox-title { top: 22px; left: 20px; font-size: 13px; }
       #lb-filmstrip { bottom: 14px; gap: 6px; padding: 8px 10px; }
@@ -667,10 +663,16 @@
       let q = `'${folderId}' in parents and trashed = false`;
       if (opts.foldersOnly) q += ` and mimeType = 'application/vnd.google-apps.folder'`;
       if (opts.imagesOnly)  q += ` and mimeType contains 'image/'`;
+      // Para imágenes pedimos también su ancho/alto real (imageMediaMetadata):
+      // así la grilla justificada conoce las proporciones antes de cargar las
+      // fotos y no hay "salto" de layout.
+      const fields = opts.imagesOnly
+        ? 'files(id,name,imageMediaMetadata(width,height))'
+        : 'files(id,name)';
       const url = 'https://www.googleapis.com/drive/v3/files'
         + `?q=${encodeURIComponent(q)}`
         + `&orderBy=name_natural`
-        + `&fields=files(id,name)`
+        + `&fields=${fields}`
         + `&pageSize=300`
         + `&key=${DRIVE_CONFIG.apiKey}`;
       const res = await fetch(url);
@@ -697,7 +699,13 @@
         const artists = (await Promise.all(artistFolders.map(async (af) => {
           const files = await driveListChildren(af.id, { imagesOnly: true });
           if (!files.length) return null;
-          return { name: cleanDriveName(af.name), images: files.map(f => driveImageUrl(f.id)) };
+          const meta = files[0].imageMediaMetadata || {}; // dims de la PORTADA (1ra foto)
+          return {
+            name: cleanDriveName(af.name),
+            images: files.map(f => driveImageUrl(f.id)),
+            coverW: meta.width || null,
+            coverH: meta.height || null,
+          };
         }))).filter(Boolean);
 
         return artists.length ? { id, label, artists } : null;
@@ -787,14 +795,77 @@
       });
     }
 
-    /* ─── Grid 2-tiers: portrait = span 2, landscape = span 1.
-       Con grid-auto-rows: 300px el slot 1 mide 300px y el slot 2 mide
-       300+10+300 = 610px — siempre alineados entre columnas. ─── */
-    function applyMasonrySpan(card, img) {
-      if (!img.naturalWidth || !img.naturalHeight) return;
-      const isPortrait = img.naturalHeight > img.naturalWidth;
-      card.style.gridRowEnd = isPortrait ? 'span 2' : 'span 1';
+    /* ─── Galería justificada (estilo Flickr / Google Photos) ──────────────
+       Agrupa las portadas en filas de igual altura; el ancho de cada portada
+       sale de su proporción REAL, y la fila se estira para llenar el ancho.
+       Resultado: nada se recorta y las horizontales ocupan más que las
+       verticales. La última fila solo se estira si está bastante completa
+       (si no, queda a la altura objetivo y alineada a la izquierda, para que
+       una sola foto no se agrande de forma exagerada). ───────────────────── */
+
+    function justifyParams() {
+      const w = window.innerWidth;
+      if (w <= 600) return { targetH: 200, gap: 6 };
+      if (w <= 900) return { targetH: 260, gap: 8 };
+      return { targetH: 300, gap: 10 };
     }
+
+    function gridUsableWidth(grid) {
+      const cs = getComputedStyle(grid);
+      return grid.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    }
+
+    // Reparte las cards guardadas en grid._cards ([{el, ar}]) en filas justificadas.
+    function justifyGrid(grid) {
+      const cards = grid._cards;
+      if (!cards || !cards.length) return;
+      const { targetH, gap } = justifyParams();
+      const W = gridUsableWidth(grid);
+      if (W <= 0) return;
+
+      grid.style.gap = gap + 'px';
+      grid.innerHTML = ''; // reconstruimos las filas (las cards son los MISMOS nodos)
+
+      let row = [], sumAR = 0;
+      const flush = (isLast) => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'jrow';
+        rowEl.style.gap = gap + 'px';
+        const gaps = gap * (row.length - 1);
+        const hFull = (W - gaps) / sumAR;                 // altura para llenar el ancho
+        // Filas completas: siempre se estiran. Última fila: solo si no se agranda
+        // de más (hasta 1.4× la altura objetivo); si no, altura objetivo sin estirar.
+        const stretch = !isLast || hFull <= targetH * 1.4;
+        row.forEach(it => {
+          it.el.style.height = '100%';
+          if (stretch) { it.el.style.flex = it.ar + ' 0 0'; it.el.style.width = ''; }
+          else { it.el.style.flex = '0 0 auto'; it.el.style.width = (it.ar * targetH) + 'px'; }
+          rowEl.appendChild(it.el);
+        });
+        rowEl.style.height = (stretch ? hFull : targetH) + 'px';
+        grid.appendChild(rowEl);
+      };
+
+      cards.forEach(it => {
+        row.push(it);
+        sumAR += it.ar;
+        const naturalW = sumAR * targetH + gap * (row.length - 1);
+        if (naturalW >= W) { flush(false); row = []; sumAR = 0; }
+      });
+      if (row.length) flush(true);
+    }
+
+    function justifyAll() {
+      document.querySelectorAll('.jgrid').forEach(justifyGrid);
+    }
+
+    // Recalcular en resize / cambio de orientación, con un pequeño debounce.
+    let justifyTimer = null;
+    function scheduleJustify() {
+      clearTimeout(justifyTimer);
+      justifyTimer = setTimeout(justifyAll, 120);
+    }
+    window.addEventListener('resize', scheduleJustify);
 
     function renderSections(sections) {
       const container = document.getElementById('dynamicSections');
@@ -820,7 +891,8 @@
         container.appendChild(labelEl);
 
         const grid = document.createElement('div');
-        grid.className = 'artist-grid';
+        grid.className = 'jgrid';
+        grid._cards = [];
         container.appendChild(grid);
 
         section.artists.forEach((artist, idx) => {
@@ -832,8 +904,6 @@
           img.src = artist.images[0];
           img.alt = artist.name;
           if (idx >= 4) img.loading = 'lazy';
-          img.addEventListener('load', () => applyMasonrySpan(card, img));
-          if (img.complete && img.naturalWidth) applyMasonrySpan(card, img);
 
           const name = document.createElement('span');
           name.className = 'artist-name';
@@ -844,8 +914,28 @@
           card.addEventListener('click', () => openArtistLightbox(artist));
 
           artist.cardEl = card;
-          grid.appendChild(card);
+
+          // Proporción inicial: la que dio Drive (imageMediaMetadata). Si no hay,
+          // arrancamos con 1.5 provisorio y la corregimos al cargar la imagen.
+          const item = {
+            el: card,
+            ar: (artist.coverW && artist.coverH) ? (artist.coverW / artist.coverH) : 1.5,
+          };
+          grid._cards.push(item);
+
+          // Al cargar el thumbnail usamos su proporción REAL (cubre EXIF/rotación
+          // o portadas sin metadata) y, si cambió, reacomodamos las filas.
+          const fixAR = () => {
+            if (img.naturalWidth && img.naturalHeight) {
+              const real = img.naturalWidth / img.naturalHeight;
+              if (Math.abs(real - item.ar) / item.ar > 0.01) { item.ar = real; scheduleJustify(); }
+            }
+          };
+          img.addEventListener('load', fixAR);
+          if (img.complete && img.naturalWidth) fixAR();
         });
+
+        justifyGrid(grid);
       });
 
       buildNav(sections);
