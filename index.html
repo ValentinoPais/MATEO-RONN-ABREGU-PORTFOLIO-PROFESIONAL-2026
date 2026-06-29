@@ -251,16 +251,18 @@
       line-height: 1.7;
       color: #d0d0d0;
       margin-bottom: 16px;
+      white-space: pre-line; /* respeta los saltos de línea de about.txt */
     }
+    #about p:last-child { margin-bottom: 0; }
 
-    /* ─── Contacto (unificado dentro de About, línea a todo el ancho) ─── */
+    /* ─── Footer / Contacto (siempre visible, línea a todo el ancho) ─── */
     .contact-row {
       display: flex;
       justify-content: center;
       align-items: center;
       flex-wrap: wrap;
       gap: 24px;
-      margin: 48px -40px 0;
+      margin-top: 80px;
       padding: 28px 40px;
       border-top: 1px solid #1a1a1a;
     }
@@ -559,7 +561,7 @@
       .lb-thumb { width: 38px; height: 38px; }
       .section-label { font-size: 21px; padding: 34px 10px 10px; }
       #about { padding: 0 20px; margin-top: 60px; }
-      .contact-row { margin: 32px -20px 0; padding: 24px 20px; }
+      .contact-row { margin-top: 60px; padding: 24px 20px; }
     }
   </style>
 </head>
@@ -585,23 +587,27 @@
     <!-- Secciones generadas dinámicamente desde Drive (o datos de respaldo) -->
     <div id="dynamicSections"></div>
 
-    <!-- ── About + Contacto (unificadas, formato footer con línea a todo el ancho) ── -->
-    <section id="about">
+    <!-- ── About ──────────────────────────────────────────────────────
+         El texto sale del archivo "about.txt" en la carpeta PRINCIPAL de
+         Drive (mismo sistema que las carpetas de fotos, pero para texto).
+         · Con texto  → se muestra esta sección con ese texto.
+         · Vacío / no existe → la sección queda oculta y se saca del menú.
+         Lo llena el JS (loadAboutText/renderAbout). ───────────────────── -->
+    <section id="about" hidden>
       <div class="about-text">
         <h2>About</h2>
-        <p>
-          Mateo Ronn Abregu alias RONNPORNOGRAFIA es reconocido mundialmente por su sensualidad, su estilo, su aura y sus conocimientos como sexólogo profesional. Espero que en este portfolio usted encuentre paz y reconocimiento internacional. Saludos a la familia.
-        </p>
-      </div>
-      <div class="contact-row">
-        <div class="contact-info">
-          <!-- Reemplazá con tu email e Instagram reales -->
-          <a href="mailto:mateoron33@gmail.com">mateoron33@gmail.com</a>
-          <a href="https://instagram.com/ronnfotografia_" target="_blank" rel="noopener">@ronnfotografia_</a>
-        </div>
-        <span class="footer-name">© 2026 Mateo Ronn Abregu</span>
+        <p id="aboutText"></p>
       </div>
     </section>
+
+    <!-- ── Footer / Contacto (SIEMPRE visible, no depende de about.txt) ── -->
+    <footer class="contact-row">
+      <div class="contact-info">
+        <a href="mailto:mateoron33@gmail.com">mateoron33@gmail.com</a>
+        <a href="https://instagram.com/ronnfotografia_" target="_blank" rel="noopener">@ronnfotografia_</a>
+      </div>
+      <span class="footer-name">© 2026 Mateo Ronn Abregu</span>
+    </footer>
 
   </main>
 
@@ -710,16 +716,61 @@
       }
     }
 
+    /* ─── About: lee el texto de presentación desde la carpeta principal ───
+       Soporta DOS formatos en Drive (lo que esté primero):
+         • Un "Documento de Google" llamado  about      (lo natural y fácil de editar)
+         • Un archivo de texto común llamado about.txt
+       Si no existe, está vacío, o falla la lectura → devuelve '' (About oculto).
+       Usa la misma API key de solo-lectura que el resto de la página. */
+    async function loadAboutText() {
+      if (!DRIVE_CONFIG.enabled) return '';
+      try {
+        // 1) Buscar el archivo "about" (Doc) o "about.txt" en la carpeta principal.
+        const q = `'${DRIVE_CONFIG.rootFolderId}' in parents and trashed = false`
+          + ` and (name = 'about' or name = 'about.txt')`
+          + ` and mimeType != 'application/vnd.google-apps.folder'`;
+        const listUrl = 'https://www.googleapis.com/drive/v3/files'
+          + `?q=${encodeURIComponent(q)}`
+          + `&fields=files(id,name,mimeType)`
+          + `&orderBy=name`
+          + `&pageSize=1`
+          + `&key=${DRIVE_CONFIG.apiKey}`;
+        const listRes = await fetch(listUrl);
+        if (!listRes.ok) throw new Error('Drive API respondió ' + listRes.status);
+        const file = ((await listRes.json()).files || [])[0];
+        if (!file) return ''; // no existe → About oculto (se trata como vacío)
+
+        // 2) Bajar el texto. Un Documento de Google NO tiene "bytes" descargables:
+        //    se EXPORTA a texto plano. Un .txt común se baja directo con alt=media.
+        const isGoogleDoc = file.mimeType === 'application/vnd.google-apps.document';
+        const contentUrl = isGoogleDoc
+          ? `https://www.googleapis.com/drive/v3/files/${file.id}/export?mimeType=text/plain&key=${DRIVE_CONFIG.apiKey}`
+          : `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${DRIVE_CONFIG.apiKey}`;
+        const contentRes = await fetch(contentUrl);
+        if (!contentRes.ok) throw new Error('No se pudo leer el About (' + contentRes.status + ')');
+        const text = await contentRes.text();
+        // Saca el BOM inicial (U+FEFF) que a veces agrega el export y normaliza los saltos de línea.
+        const noBom = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+        return noBom.replace(/\r\n/g, '\n').trim();
+      } catch (err) {
+        console.error('No se pudo cargar el About desde Drive.', err);
+        return '';
+      }
+    }
+
     /* ─── Render: secciones, grillas de portadas y nav ─── */
     let firstSectionId = null;
+    let aboutHasText = false; // lo define renderAbout() según el contenido de about.txt
 
     function buildNav(sections) {
       const navLinks = document.getElementById('navLinks');
       const mobileMenu = document.getElementById('mobileMenu');
       navLinks.innerHTML = '';
       mobileMenu.innerHTML = '';
-      const entries = sections.map(s => ({ id: s.id, label: s.label }))
-        .concat([{ id: 'about', label: 'About' }]);
+      // "About" solo aparece en el menú si about.txt tiene texto (igual que las
+      // secciones: si no hay contenido, no se muestra el botón).
+      const entries = sections.map(s => ({ id: s.id, label: s.label }));
+      if (aboutHasText) entries.push({ id: 'about', label: 'About' });
       entries.forEach(entry => {
         const li = document.createElement('li');
         const a = document.createElement('a');
@@ -844,9 +895,26 @@
       });
     }
 
+    /* ─── About: muestra u oculta la sección según el texto de about.txt ─── */
+    function renderAbout(text) {
+      const section = document.getElementById('about');
+      const p = document.getElementById('aboutText');
+      aboutHasText = !!text;
+      if (aboutHasText) {
+        p.textContent = text;      // textContent (no innerHTML) → seguro ante HTML
+        section.hidden = false;
+      } else {
+        p.textContent = '';
+        section.hidden = true;     // vacío o borrado → About oculto
+      }
+    }
+
     async function init() {
       document.body.classList.add('loading');
-      const sections = await loadSectionsData();
+      // Galería y About se piden en paralelo. renderAbout va PRIMERO para que
+      // buildNav (dentro de renderSections) ya sepa si debe incluir "About".
+      const [sections, aboutText] = await Promise.all([loadSectionsData(), loadAboutText()]);
+      renderAbout(aboutText);
       renderSections(sections);
       runLoader();
     }
@@ -873,10 +941,17 @@
     function logoClick(e) {
       e.preventDefault();
       const about = document.getElementById('about');
+      const scrollToTop = () => {
+        const top = firstSectionId && document.getElementById(firstSectionId);
+        if (top) top.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        else window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+      // Si no hay About (about.txt vacío/borrado), el logo siempre vuelve arriba.
+      if (!aboutHasText || !about || about.hidden) { scrollToTop(); return; }
+      // Con About visible: alterna entre el inicio y About.
       const atOrBelowAbout = about.getBoundingClientRect().top < window.innerHeight;
-      const targetId = atOrBelowAbout ? firstSectionId : 'about';
-      const targetEl = targetId && document.getElementById(targetId);
-      if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (atOrBelowAbout) scrollToTop();
+      else about.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     function toggleMenu() {

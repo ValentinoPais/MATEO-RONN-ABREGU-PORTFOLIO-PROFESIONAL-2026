@@ -44,8 +44,11 @@ botón en el menú.
     a ver simplemente "Shows" y "Moda"), pero los usa para saber en qué
     orden ponerlos. Esto te da control total sin pensar en el alfabeto.
 
-  • "About" y "Contacto" NO salen de Drive — son fijos, ya están escritos
-    directamente en la página. No hace falta crear carpetas para ellos.
+  • El "About" SÍ se maneja desde Drive, pero con un DOCUMENTO DE GOOGLE
+    (no una carpeta). Ver "NIVEL 5 — La sección About" más abajo.
+
+  • El "Contacto" (mail, Instagram y el © de abajo de todo) es fijo: está
+    escrito directamente en la página y aparece SIEMPRE. No depende de Drive.
 
 
 NIVEL 3 — Los artistas / producciones (las "tarjetas" dentro de cada sección)
@@ -106,6 +109,48 @@ etc. — cualquier imagen sirve).
     directamente a cualquier foto con un click.
 
 
+NIVEL 5 — La sección About (un Documento de Google)
+--------------------------------------------
+El "About" (ese textito de presentación) funciona igual que las carpetas,
+pero en vez de una carpeta es un DOCUMENTO DE GOOGLE llamado:
+
+    about
+
+Ese documento va DENTRO de la carpeta principal (al mismo nivel que las
+carpetas de secciones como "Shows" o "Moda", no adentro de ellas). Para
+crearlo: click derecho dentro de la carpeta principal → "Documento de
+Google". Nombralo exactamente  about  (en minúscula, sin nada más).
+
+La regla es simple:
+
+  • Si el documento "about" tiene texto → la página muestra la sección
+    "About" con EXACTAMENTE ese texto (y aparece el botón "About" en el menú).
+
+  • Si está vacío (o no existe)         → la sección "About" no aparece, y
+    tampoco su botón en el menú. La página no se rompe: solo no la muestra.
+
+Para cambiar el About, abrís el documento "about" como cualquier Google
+Docs, escribís (o borrás) lo que quieras, y listo — se guarda solo. Los
+saltos de línea / párrafos que pongas se respetan en la página.
+
+IMPORTANTE — si lo borrás:
+  Si en algún momento borrás el documento "about" por completo, la página
+  lo toma igual que si estuviera vacío: simplemente no muestra el About (no
+  se rompe nada). Para que el About vuelva, creá de nuevo un Documento de
+  Google llamado  about  en la carpeta principal (vacío si todavía no querés
+  que se vea, o con texto para que aparezca).
+  (No hace falta tocar permisos: al estar dentro de la carpeta principal,
+  hereda solo el "compartir" que ya está configurado.)
+
+Nota técnica (no hace falta que hagas nada): la página también acepta, si
+algún día preferís, un archivo de texto común llamado "about.txt" en vez del
+documento de Google. Cualquiera de los dos sirve; con el Documento de Google
+alcanza y es lo más cómodo de editar.
+
+El Contacto (mail, Instagram y el ©) NO depende del About: queda siempre
+visible abajo de todo, haya o no haya About.
+
+
 MACHETE DE REFERENCIA DE LAS DIFERENTES SECCIONES
 --------------------------------------------
   Agregar una sección nueva       → creá una carpeta nueva en la raíz
@@ -119,6 +164,9 @@ MACHETE DE REFERENCIA DE LAS DIFERENTES SECCIONES
                                        portada para que quede primera
   Agregar/sacar/reordenar fotos   → subí, borrá o renombrá archivos
                                        dentro de la carpeta del artista
+  Poner / cambiar el About        → escribí el texto en el Documento de
+                                       Google "about" (en la carpeta principal)
+  Sacar el About                  → dejá el documento "about" vacío (o borralo)
 
 Todos estos cambios se ven reflejados en la página automáticamente —
 nadie tiene que tocar código ni configurar nada del otro lado. Lo único
