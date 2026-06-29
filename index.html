@@ -161,6 +161,7 @@
     }
     .jrow {
       display: flex;
+      justify-content: center; /* centra la última fila incompleta (las llenas no tienen hueco) */
       gap: 10px;            /* el JS lo ajusta por pantalla */
       /* la altura de cada fila la fija el JS */
     }
@@ -805,9 +806,9 @@
 
     function justifyParams() {
       const w = window.innerWidth;
-      if (w <= 600) return { targetH: 200, gap: 6 };
-      if (w <= 900) return { targetH: 260, gap: 8 };
-      return { targetH: 300, gap: 10 };
+      if (w <= 600) return { targetH: 270, gap: 6 };   // ~+35% (antes 200)
+      if (w <= 900) return { targetH: 350, gap: 8 };   // ~+35% (antes 260)
+      return { targetH: 405, gap: 10 };                // ~+35% (antes 300)
     }
 
     function gridUsableWidth(grid) {
