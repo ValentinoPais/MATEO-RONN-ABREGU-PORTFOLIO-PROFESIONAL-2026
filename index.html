@@ -97,7 +97,7 @@
       flex: none;
       width: var(--nav-logo-mark-size);
       height: var(--nav-logo-mark-size);
-      perspective: 320px;              /* profundidad 3D (menos px = más marcado) */
+      perspective: 240px;              /* profundidad 3D (menos px = más marcado / exagerado) */
     }
     .coin {
       position: absolute;              /* llena el mark (evita el bug de height:100% en flex item) */
@@ -126,19 +126,9 @@
       background: #000;
       transform: rotateY(180deg);
     }
-    /* Giro tipo moneda al hacer click (lo dispara el JS agregando .spin).
-       La curva NO es lineal: arranca con impulso, desacelera, se pasa un
-       poquito de la vuelta (overshoot) y rebota para asentarse → no robótico.
-       Velocidad: cambiá la duración (0.55s) de abajo. */
-    @keyframes logo-coin-spin {
-      0%   { transform: rotateY(0deg)   scale(1);    animation-timing-function: cubic-bezier(.5,0,.75,.4); }  /* impulso: acelera */
-      60%  { transform: rotateY(300deg) scale(1.17); animation-timing-function: cubic-bezier(.25,.6,.25,1); } /* desacelera */
-      80%  { transform: rotateY(384deg) scale(1.05); animation-timing-function: ease-in-out; }                /* overshoot: pasa 360 */
-      100% { transform: rotateY(360deg) scale(1);    }                                                        /* rebota y se asienta */
-    }
-    .nav-logo-mark.spin .coin {
-      animation: logo-coin-spin 0.55s;
-    }
+    /* El giro al click lo maneja el JS (setupLogo → spinFrom) con requestAnimationFrame,
+       porque el EJE del giro depende de DÓNDE clickeás: abajo → gira vertical,
+       al costado → lateral, en una esquina → diagonal, como una moneda impulsada. */
 
     .nav-name:hover { color: var(--text); }
     .nav-links a:hover { color: var(--text); }
@@ -1393,60 +1383,124 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       window.scrollTo({ top: atBottom ? 0 : doc.scrollHeight, behavior: 'smooth' });
     }
 
-    /* ─── Loguito: giro tipo moneda al click + inclinación 3D siguiendo el mouse ───
-       El giro se ajusta en la animación CSS "logo-coin-spin"; el tilt con
-       MAX_TILT (grados), LIFT (px que se levanta) y POP (cuánto se agranda). */
+    /* ─── Loguito: inclinación 3D EXAGERADA en hover + giro "moneda" al click ───
+       El giro sale impulsado DESDE donde clickeás: si tocás el borde de abajo gira
+       vertical, si tocás un costado gira lateral, en una esquina en diagonal.
+       Perillas: HOVER_TILT / HOVER_LIFT / HOVER_POP (hover) y SPIN_MS / SPIN_TURNS (giro). */
     (function setupLogo() {
       const mark = document.getElementById('navLogoMark');
       const coin = mark && mark.querySelector('.coin');
       if (!coin) return;
-      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-      /* Giro tipo moneda al hacer click (también funciona al tocar en el celu). */
-      if (!reduceMotion) {
-        mark.addEventListener('click', function () {
-          mark.classList.remove('spin');
-          void mark.offsetWidth;        // reinicia la animación aunque ya estuviera girando
-          mark.classList.add('spin');
-        });
-        coin.addEventListener('animationend', function () {
-          // Cortamos la transición un instante para que NO "desgire" al volver a neutro.
-          coin.style.transition = 'none';
-          mark.classList.remove('spin');
-          void coin.offsetWidth;
-          coin.style.transition = '';
-        });
-      }
+      const HOVER_TILT = 30;   // inclinación máx. en hover (grados) — exagerado
+      const HOVER_POP  = 1.16; // cuánto se agranda en hover (crece desde el centro)
+      const SPIN_MS    = 340;  // duración del giro al click (un instante, bien rápido)
+      const SPIN_TURNS = 1;    // vueltas completas por click
 
-      /* Inclinación 3D siguiendo el mouse: solo en dispositivos con mouse. */
-      const noHover = window.matchMedia('(hover: none)').matches;
-      if (noHover || reduceMotion) return;
+      const TR_FAST = 'transform .12s ease-out';                 // seguimiento ágil del mouse
+      const TR_SLOW = 'transform .55s cubic-bezier(.2,.7,.3,1)'; // vuelta suave a neutro
 
-      const MAX_TILT = 20;  // inclinación máxima en los bordes (grados)
-      const LIFT = 6;       // px que se proyecta hacia arriba
-      const POP = 1.11;     // cuánto se acerca/agranda
-      let raf = null, pending = null;
+      let hovering = false, spinning = false, tiltRX = 0, tiltRY = 0, raf = null, spinToken = 0;
 
-      function apply(rx, ry) {
+      function renderTilt() {
+        if (spinning) return;
+        const pop = hovering ? HOVER_POP : 1;   // crece desde el centro (sin subir → no se escapa)
         coin.style.transform =
-          'translateY(-' + LIFT + 'px) scale(' + POP + ') rotateX(' + rx + 'deg) rotateY(' + ry + 'deg)';
+          'scale(' + pop + ') rotateX(' + tiltRX.toFixed(2) + 'deg) rotateY(' + tiltRY.toFixed(2) + 'deg)';
       }
       function onMove(e) {
         const r = mark.getBoundingClientRect();
         const px = (e.clientX - r.left) / r.width;   // 0 (izq) .. 1 (der)
         const py = (e.clientY - r.top) / r.height;   // 0 (arriba) .. 1 (abajo)
-        const ry = (px - 0.5) * 2 * MAX_TILT;        // se inclina hacia el cursor
-        const rx = -(py - 0.5) * 2 * MAX_TILT;
-        pending = [rx, ry];
-        if (!raf) raf = requestAnimationFrame(function () { raf = null; if (pending) apply(pending[0], pending[1]); });
+        tiltRY = (px - 0.5) * 2 * HOVER_TILT;         // se inclina hacia el cursor
+        tiltRX = -(py - 0.5) * 2 * HOVER_TILT;
+        if (!raf) raf = requestAnimationFrame(function () { raf = null; renderTilt(); });
       }
-      mark.addEventListener('mouseenter', function () { mark.classList.add('is-hover'); });
+
+      // Efectito de sonido: un "blip" corto con PITCH RANDOM en cada giro (Web Audio,
+      // sin archivos externos). El contexto se crea en el primer click (gesto del usuario).
+      let audioCtx = null;
+      function playSpinSound() {
+        try {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (!AC) return;
+          if (!audioCtx) audioCtx = new AC();
+          if (audioCtx.state === 'suspended') audioCtx.resume();
+          const t = audioCtx.currentTime;
+          // Pitch random sobre una escala pentatónica (suena piola, medio retro por el logo pixelado).
+          const scale = [0, 2, 4, 7, 9];
+          const semis = scale[(Math.random() * scale.length) | 0] + 12 * ((Math.random() * 2) | 0);
+          const freq = 523.25 * Math.pow(2, semis / 12);            // base Do5
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, t);
+          osc.frequency.exponentialRampToValueAtTime(freq * 1.6, t + 0.07);  // "chirp" de giro
+          gain.gain.setValueAtTime(0.0001, t);
+          gain.gain.exponentialRampToValueAtTime(0.2, t + 0.008);            // ataque rápido
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);          // decae
+          osc.connect(gain).connect(audioCtx.destination);
+          osc.start(t);
+          osc.stop(t + 0.26);
+        } catch (e) {}
+      }
+
+      // Golpe fuerte al principio que decae (easeOutQuint): casi toda la vuelta
+      // pasa en el primer instante y después afloja y se asienta.
+      function easeOutQuint(p) { return 1 - Math.pow(1 - p, 5); }
+
+      function spinFrom(clientX, clientY) {
+        playSpinSound();                          // sonidito con pitch random en cada giro
+        const r = mark.getBoundingClientRect();   // el mark NO se transforma → centro estable
+        let dx = (clientX - (r.left + r.width  / 2)) / (r.width  / 2);   // -1 (izq) .. 1 (der)
+        let dy = (clientY - (r.top  + r.height / 2)) / (r.height / 2);   // -1 (arriba) .. 1 (abajo)
+        if (Math.hypot(dx, dy) < 0.18) { dx = 1; dy = 0; }              // click al centro → lateral por defecto
+        // Eje perpendicular al punto tocado, orientado para "empujar" ese punto hacia adentro.
+        const ax = -dy, ay = dx;
+        const total = 360 * SPIN_TURNS;
+        const myToken = ++spinToken;
+        spinning = true;
+        coin.style.transition = 'none';
+        const t0 = performance.now();
+        function frame(now) {
+          if (myToken !== spinToken) return;                            // otro click más nuevo tomó el control
+          const p = Math.min(1, (now - t0) / SPIN_MS);
+          const e = easeOutQuint(p);
+          const ang = total * e;
+          const pop = 1 + 0.16 * Math.sin(Math.PI * e);                 // "pop" desde el centro al pasar de canto
+          coin.style.transform = 'scale(' + pop.toFixed(3) + ') rotate3d(' + ax.toFixed(3) + ',' + ay.toFixed(3) + ',0,' + ang.toFixed(1) + 'deg)';
+          if (p < 1) { requestAnimationFrame(frame); }
+          else {
+            spinning = false;
+            // Volver a neutro SIN transición para que NO "desgire" (esa 2da vuelta que veías).
+            coin.style.transition = 'none';
+            coin.style.transform = '';
+            void coin.offsetWidth;                       // aplica el cambio al instante
+            coin.style.transition = hovering ? TR_FAST : TR_SLOW;
+          }
+        }
+        requestAnimationFrame(frame);
+      }
+
+      // Click / tap: gira impulsada desde el punto tocado (anda también en celular).
+      // Frenamos el click acá para que NO dispare el scroll del logo (logoClick):
+      // el click en la moneda SOLO gira, no mueve la página.
+      mark.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        spinFrom(e.clientX, e.clientY);
+      });
+
+      // Inclinación siguiendo el mouse: solo en dispositivos con mouse.
+      if (window.matchMedia('(hover: none)').matches) return;
+      mark.addEventListener('mouseenter', function () { hovering = true; coin.style.transition = TR_FAST; renderTilt(); });
       mark.addEventListener('mousemove', onMove);
       mark.addEventListener('mouseleave', function () {
-        mark.classList.remove('is-hover');
+        hovering = false; tiltRX = 0; tiltRY = 0;
         if (raf) { cancelAnimationFrame(raf); raf = null; }
-        pending = null;
-        coin.style.transform = '';   // vuelve suave a la posición neutra (transición del CSS)
+        coin.style.transition = TR_SLOW;
+        renderTilt();
       });
     })();
 
