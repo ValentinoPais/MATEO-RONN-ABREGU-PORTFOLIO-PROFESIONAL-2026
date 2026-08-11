@@ -35,7 +35,7 @@
       --about-h2-size: 18px;
       --about-p-size: 22px;
       --about-max-width: 900px;
-      --about-align: justify;
+      --about-align: left;
       --contact-link-size: 16px;
       --footer-name-size: 15px;
       --contact-align: center;   /* justify-content: flex-start | center | flex-end */
@@ -749,6 +749,17 @@
          • Un archivo de texto común llamado about.txt
        Si no existe, está vacío, o falla la lectura → devuelve '' (About oculto).
        Usa la misma API key de solo-lectura que el resto de la página. */
+
+    /* Texto de ejemplo que se muestra SOLO si la lectura desde Drive FALLA
+       (sin internet → sirve para probar la página offline, o si Drive se cae).
+       Si Drive responde bien pero no existe el archivo "about", el About sigue
+       quedando oculto como antes. Editá libremente este texto de prueba. */
+    const ABOUT_FALLBACK = `Soy Mateo Ronn Abregu, fotógrafo, vivo en Buenos Aires, Argentina.
+Mi trabajo se expande desde la música hasta la moda. Hace más de tres años formo parte de la escena underground de la música urbana, un recorrido que me permitió desarrollar una visión y un estilo propio.
+Trabajo en proyectos de distintos formatos, tanto junto a artistas como con marcas, buscando construir imágenes con identidad y una mirada personal.
+A lo largo de estos años tuve la oportunidad de trabajar junto a algunas de las productoras más importantes de la industria, como DF Entertainment, Indie Folks, Boomerang y Dale Play.
+Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá de la fotografía de shows, explorando nuevos espacios dentro de la moda y el audiovisual, desde videoclips hasta, eventualmente, la ficción. Me interesa que cada nuevo formato sea una forma distinta de llevar mi mirada y construir un universo propio.`;
+
     async function loadAboutText() {
       if (!DRIVE_CONFIG.enabled) return '';
       try {
@@ -780,8 +791,8 @@
         const noBom = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
         return noBom.replace(/\r\n/g, '\n').trim();
       } catch (err) {
-        console.error('No se pudo cargar el About desde Drive.', err);
-        return '';
+        console.error('No se pudo cargar el About desde Drive. Muestro el texto de ejemplo.', err);
+        return ABOUT_FALLBACK; // sin conexión / Drive caído → texto de ejemplo (permite probar offline)
       }
     }
 
@@ -843,7 +854,7 @@
       aboutH2Size: 18,
       aboutPSize: 22,
       aboutMaxWidth: 900,
-      aboutAlign: 'justify',       // left | center | right | justify
+      aboutAlign: 'left',          // left | center | right | justify
       contactLinkSize: 16,
       footerNameSize: 15,
       contactAlign: 'center',      // left | center | right
