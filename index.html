@@ -34,8 +34,8 @@
       --artist-name-size: 20px;
       --about-h2-size: 18px;
       --about-p-size: 22px;
-      --about-max-width: 640px;
-      --about-align: left;
+      --about-max-width: 900px;
+      --about-align: justify;
       --contact-link-size: 16px;
       --footer-name-size: 15px;
       --contact-align: center;   /* justify-content: flex-start | center | flex-end */
@@ -842,8 +842,8 @@
       artistNameSize: 20,
       aboutH2Size: 18,
       aboutPSize: 22,
-      aboutMaxWidth: 640,
-      aboutAlign: 'left',          // left | center | right
+      aboutMaxWidth: 900,
+      aboutAlign: 'justify',       // left | center | right | justify
       contactLinkSize: 16,
       footerNameSize: 15,
       contactAlign: 'center',      // left | center | right
@@ -1089,7 +1089,7 @@
         const m = line.match(/^\s*([A-Za-z][A-Za-z0-9]*)\s*[=:]\s*(.+?)\s*$/);
         if (!m || TWEAK_KEYS.indexOf(m[1]) === -1) return;
         const k = m[1], raw = m[2];
-        if (ALIGN_KEYS.indexOf(k) !== -1) { const v = raw.toLowerCase(); if (['left','center','right'].indexOf(v) !== -1) out[k] = v; }
+        if (ALIGN_KEYS.indexOf(k) !== -1) { const v = raw.toLowerCase(); if (['left','center','right','justify'].indexOf(v) !== -1) out[k] = v; }
         else { const n = parseFloat(raw); if (!isNaN(n)) out[k] = n; }
       });
       return out;
@@ -1114,7 +1114,7 @@
       { key: 'footerNameSize', label: 'Contacto — ©', min: 10, max: 28, step: 1, unit: 'px' },
       { group: 'Alineación (izq / centro / der)' },
       { key: 'sectionLabelAlign', label: 'Título de sección', align: true },
-      { key: 'aboutAlign', label: 'About (texto)', align: true },
+      { key: 'aboutAlign', label: 'About (texto)', align: true, justify: true },
       { key: 'contactAlign', label: 'Contacto', align: true },
     ];
 
@@ -1190,7 +1190,10 @@
           const span = document.createElement('span'); span.textContent = ctrl.label; lab.appendChild(span);
           row.appendChild(lab);
           const wrap = document.createElement('div'); wrap.className = 'tp-align';
-          [['left','Izq'],['center','Centro'],['right','Der']].forEach(([opt, txt]) => {
+          const alignOpts = ctrl.justify
+            ? [['left','Izq'],['center','Centro'],['right','Der'],['justify','Justif.']]
+            : [['left','Izq'],['center','Centro'],['right','Der']];
+          alignOpts.forEach(([opt, txt]) => {
             const b = document.createElement('button'); b.textContent = txt; b.dataset.opt = opt;
             b.onclick = () => { TWEAKS[ctrl.key] = opt; applyTweaks(); markAlign(ctrl.key); refreshText(); };
             wrap.appendChild(b);
