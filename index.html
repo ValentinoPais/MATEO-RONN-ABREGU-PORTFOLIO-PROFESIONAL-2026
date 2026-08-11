@@ -92,7 +92,7 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       white-space: nowrap;
-      transition: text-shadow 0.3s ease, color 0.3s ease;
+      transition: transform 0.2s ease;
     }
 
     /* ─── Loguito: moneda de DOS CARAS (frente = gato, dorso = negro) ───
@@ -135,7 +135,10 @@
        porque el EJE del giro depende de DÓNDE clickeás: abajo → gira vertical,
        al costado → lateral, en una esquina → diagonal, como una moneda impulsada. */
 
-    .nav-name:hover { color: var(--text); }
+    /* Hover del nombre: apenas se agranda cuando estás por clickearlo. */
+    .nav-name:hover {
+      transform: scale(1.05);
+    }
     .nav-links a:hover { color: var(--text); }
 
     .nav-links {
@@ -1414,14 +1417,15 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         coin.style.transform =
           'scale(' + pop + ') rotateX(' + tiltRX.toFixed(2) + 'deg) rotateY(' + tiltRY.toFixed(2) + 'deg)';
       }
-      function onMove(e) {
+      function setTilt(clientX, clientY) {
         const r = mark.getBoundingClientRect();
-        const px = (e.clientX - r.left) / r.width;   // 0 (izq) .. 1 (der)
-        const py = (e.clientY - r.top) / r.height;   // 0 (arriba) .. 1 (abajo)
-        tiltRY = (px - 0.5) * 2 * HOVER_TILT;         // se inclina hacia el cursor
+        const px = (clientX - r.left) / r.width;      // 0 (izq) .. 1 (der)
+        const py = (clientY - r.top) / r.height;      // 0 (arriba) .. 1 (abajo)
+        tiltRY = (px - 0.5) * 2 * HOVER_TILT;          // se inclina hacia el cursor/dedo
         tiltRX = -(py - 0.5) * 2 * HOVER_TILT;
         if (!raf) raf = requestAnimationFrame(function () { raf = null; renderTilt(); });
       }
+      function onMove(e) { setTilt(e.clientX, e.clientY); }
 
       // Efectito de sonido: un "blip" corto con PITCH RANDOM en cada giro (Web Audio,
       // sin archivos externos). El contexto se crea en el primer click (gesto del usuario).
@@ -1491,16 +1495,53 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         requestAnimationFrame(frame);
       }
 
-      // Click / tap: gira impulsada desde el punto tocado (anda también en celular).
-      // Frenamos el click acá para que NO dispare el scroll del logo (logoClick):
-      // el click en la moneda SOLO gira, no mueve la página.
+      // ── Click con MOUSE (PC): gira. Frenamos el click para que NO dispare el
+      //    scroll del logo (logoClick): la moneda SOLO gira, no mueve la página.
+      let lastTouchEnd = 0;
       mark.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
+        if (performance.now() - lastTouchEnd < 600) return;   // vino de un toque → lo maneja touchend
         spinFrom(e.clientX, e.clientY);
       });
 
-      // Inclinación siguiendo el mouse: solo en dispositivos con mouse.
+      // ── TÁCTIL (celu): lo mismo que el hover del mouse pero con el dedo.
+      //    Mantener el dedo = se agranda y sigue el dedo; soltar = vuelve;
+      //    un toque corto = gira (como el click en la PC).
+      if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+        let tStart = 0, tX = 0, tY = 0, tMoved = false;
+        mark.addEventListener('touchstart', function (e) {
+          const t = e.touches[0];
+          tStart = performance.now(); tX = t.clientX; tY = t.clientY; tMoved = false;
+          if (!spinning) { hovering = true; coin.style.transition = TR_FAST; setTilt(t.clientX, t.clientY); }
+        }, { passive: true });
+        mark.addEventListener('touchmove', function (e) {
+          const t = e.touches[0];
+          if (Math.abs(t.clientX - tX) > 8 || Math.abs(t.clientY - tY) > 8) tMoved = true;
+          if (!spinning) { setTilt(t.clientX, t.clientY); e.preventDefault(); }  // no scrollear mientras se juega con la moneda
+        }, { passive: false });
+        mark.addEventListener('touchend', function (e) {
+          e.preventDefault();                                  // evita el click emulado (giro doble / scroll)
+          lastTouchEnd = performance.now();
+          const quickTap = (performance.now() - tStart < 300) && !tMoved;
+          hovering = false;
+          if (quickTap) {
+            spinFrom(tX, tY);                                  // toque corto → gira desde donde tocaste
+          } else {                                             // fue "mantener" → soltar y volver a neutro
+            if (raf) { cancelAnimationFrame(raf); raf = null; }
+            tiltRX = 0; tiltRY = 0;
+            coin.style.transition = TR_SLOW;
+            renderTilt();
+          }
+        }, { passive: false });
+        mark.addEventListener('touchcancel', function () {
+          hovering = false; tiltRX = 0; tiltRY = 0;
+          if (raf) { cancelAnimationFrame(raf); raf = null; }
+          coin.style.transition = TR_SLOW; renderTilt();
+        }, { passive: true });
+      }
+
+      // ── Inclinación siguiendo el MOUSE: solo en dispositivos con mouse.
       if (window.matchMedia('(hover: none)').matches) return;
       mark.addEventListener('mouseenter', function () { hovering = true; coin.style.transition = TR_FAST; renderTilt(); });
       mark.addEventListener('mousemove', onMove);
