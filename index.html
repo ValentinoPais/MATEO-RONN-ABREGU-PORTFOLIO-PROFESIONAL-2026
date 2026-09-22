@@ -33,10 +33,13 @@
       --section-label-size: 24px;
       --section-label-align: center;
       --artist-name-size: 20px;
+      --lightbox-title-size: 26px;  /* nombre del artista arriba a la izq. en la foto abierta (celu: 75%) */
       --about-h2-size: 18px;
       --about-p-size: 22px;
       --about-max-width: 900px;
-      --about-align: left;
+      --about-align: justify;       /* justificado = el texto arma un bloque parejo */
+      --about-hyphens: auto;        /* guiones al cortar palabras (solo cuando está justificado) */
+      --about-block-gap: 16px;      /* separación entre bloques del About (uno por cada salto de línea) */
       --contact-link-size: 16px;
       --footer-name-size: 15px;
       --contact-align: center;   /* justify-content: flex-start | center | flex-end */
@@ -328,18 +331,26 @@
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--muted);
-      text-align: center;          /* título "ABOUT" centrado (el cuerpo del texto queda a la izquierda) */
+      text-align: center;          /* título "ABOUT" centrado (el cuerpo del texto va justificado) */
       margin-bottom: 24px;
     }
 
+    /* Texto del About en BLOQUES parejos (bordes rectos a los dos lados):
+       cada salto de línea del documento "about" es un bloque aparte (lo arma
+       renderAbout), con una separación chica entre uno y otro. Justificado +
+       guiones al cortar palabras largas, así los espacios entre palabras no
+       quedan exagerados. */
     #about p {
       font-family: var(--font-display);
       font-size: var(--about-p-size);
       font-weight: 400;
       line-height: 1.7;
       color: #d0d0d0;
-      margin-bottom: 16px;
-      white-space: pre-line; /* respeta los saltos de línea de about.txt */
+      margin-bottom: var(--about-block-gap);   /* separación entre bloques */
+      -webkit-hyphens: var(--about-hyphens);
+      hyphens: var(--about-hyphens);
+      hyphenate-limit-chars: 6 3 3;   /* no cortar palabras cortas ni dejar sílabas sueltas */
+      text-wrap: pretty;              /* evita que el último renglón quede con 1-2 palabras */
     }
     #about p:last-child { margin-bottom: 0; }
 
@@ -457,11 +468,17 @@
 
     .lightbox-title {
       position: fixed;
-      top: 28px; left: 32px;
+      /* centrado en altura con la × de cerrar (su centro está a 38px del borde) */
+      top: calc(38px - var(--lightbox-title-size) * 0.625); left: 32px;
+      max-width: calc(100vw - 120px);   /* nunca se mete abajo de la × */
       font-family: var(--font-display);
-      font-size: 16px;
+      font-size: var(--lightbox-title-size);
+      line-height: 1.25;                /* alto justo para que no se corten tildes ni la Ñ */
       letter-spacing: 0.14em;
       text-transform: uppercase;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;          /* nombres muy largos: terminan en "…" */
       color: var(--muted);
       z-index: 201;
       pointer-events: none;
@@ -521,12 +538,19 @@
       z-index: 203;
       scrollbar-width: none;
       transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+      -webkit-user-select: none;
+      user-select: none;          /* arrastrar con el mouse no selecciona las miniaturas */
     }
     #lb-filmstrip.visible {
       transform: translateX(-50%) translateY(0);
     }
     #lb-filmstrip::-webkit-scrollbar { display: none; }
     #lb-filmstrip.hidden { display: none; }
+    /* Mientras se arrastra con el mouse (PC): manito cerrada y sin el hover
+       de las miniaturas que van pasando por debajo del cursor. */
+    #lb-filmstrip.dragging,
+    #lb-filmstrip.dragging .lb-thumb { cursor: grabbing; }
+    #lb-filmstrip.dragging .lb-thumb:not(.active) { opacity: 0.45; }
 
     .lb-thumb {
       width: 50px;
@@ -642,7 +666,12 @@
       .hamburger { display: none; }
       .jgrid { padding: 0 10px; }
       .artist-name { display: none; }
-      .lightbox-title { top: 22px; left: 20px; font-size: 13px; }
+      .lightbox-title {
+        --lightbox-title-size-m: calc(var(--lightbox-title-size) * 0.75);
+        top: calc(38px - var(--lightbox-title-size-m) * 0.625); left: 20px;
+        font-size: var(--lightbox-title-size-m);
+        max-width: calc(100vw - 100px);
+      }
       #lb-filmstrip { bottom: 14px; gap: 6px; padding: 8px 10px; }
       .lb-thumb { width: 38px; height: 38px; }
       .section-label { font-size: 21px; padding: 34px 10px 10px; }
@@ -690,7 +719,7 @@
     <section id="about" hidden>
       <div class="about-text">
         <h2>About</h2>
-        <p id="aboutText"></p>
+        <div id="aboutText"></div>
       </div>
     </section>
 
@@ -930,10 +959,12 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       sectionLabelSize: 24,
       sectionLabelAlign: 'center', // left | center | right
       artistNameSize: 20,
+      lightboxTitleSize: 26,       // nombre del artista en la foto abierta (en celu: 75%)
       aboutH2Size: 18,
       aboutPSize: 22,
       aboutMaxWidth: 900,
-      aboutAlign: 'left',          // left | center | right | justify
+      aboutBlockGap: 16,           // separación entre bloques del About (px)
+      aboutAlign: 'justify',       // left | center | right | justify (justify = bloque parejo)
       contactLinkSize: 16,
       footerNameSize: 15,
       contactAlign: 'center',      // left | center | right
@@ -1128,19 +1159,62 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       });
     }
 
-    /* ─── About: muestra u oculta la sección según el texto de about.txt ─── */
+    /* ─── About: muestra u oculta la sección según el texto de about.txt ───
+       Cada salto de línea del documento (cada Enter) arma un BLOQUE de texto
+       aparte, justificado, con una separación chica entre bloques. Las líneas
+       vacías no suman bloques ni espacio extra. */
     function renderAbout(text) {
       const section = document.getElementById('about');
-      const p = document.getElementById('aboutText');
+      const box = document.getElementById('aboutText');
       aboutHasText = !!text;
+      box.textContent = '';
       if (aboutHasText) {
-        p.textContent = text;      // textContent (no innerHTML) → seguro ante HTML
+        text.split(/\r\n|\r|\n/)                             // cada Enter = un bloque aparte
+          .map(block => block.trim())
+          .filter(Boolean)                                    // líneas vacías: se ignoran
+          .map(block => block.replace(/\s+(\S+)$/, '\u00A0$1'))  // las 2 últimas palabras juntas: nunca 1 sola palabra en el último renglón
+          .forEach(block => {
+            const p = document.createElement('p');
+            p.textContent = block;   // textContent (no innerHTML) → seguro ante HTML
+            box.appendChild(p);
+          });
         section.hidden = false;
+        squareAboutBlocks();
       } else {
-        p.textContent = '';
-        section.hidden = true;     // vacío o borrado → About oculto
+        section.hidden = true;       // vacío o borrado → About oculto
       }
     }
+
+    // Último renglón de cada bloque: si ya llega casi al borde (≥ 85% del ancho)
+    // se justifica también → el bloque queda como un rectángulo perfecto. Si es
+    // corto queda a la izquierda, porque estirarlo dejaría huecos enormes.
+    // Se recalcula al cambiar el tamaño de pantalla y cuando termina de cargar
+    // la tipografía (con otra fuente los renglones miden distinto).
+    function squareAboutBlocks() {
+      document.querySelectorAll('#aboutText p').forEach(p => {
+        p.style.textAlignLast = '';
+        if (TWEAKS.aboutAlign !== 'justify' || !p.firstChild) return;
+        const range = document.createRange();
+        range.selectNodeContents(p);
+        // Renglón de más abajo = el último. (No se usa "el último rectángulo de la
+        // lista": con guiones, Firefox agrega el del "-" y daría un falso "lleno".)
+        const rects = Array.from(range.getClientRects()).filter(r => r.width > 0);
+        if (!rects.length) return;
+        const lastTop = Math.max(...rects.map(r => r.top));
+        const lastRight = Math.max(...rects.filter(r => r.top > lastTop - 2).map(r => r.right));
+        const box = p.getBoundingClientRect();
+        if (box.width && (lastRight - box.left) / box.width >= 0.85) p.style.textAlignLast = 'justify';
+      });
+    }
+    // Recalcular cuando cambia el ancho del texto. Se usa ResizeObserver (y no
+    // solo 'resize') porque la barra de scroll de Windows aparece al terminar el
+    // loader y le saca ~17px al texto SIN disparar 'resize'. También al cargar
+    // la tipografía (con otra fuente los renglones miden distinto).
+    let squareRaf = 0;
+    function scheduleSquare() { cancelAnimationFrame(squareRaf); squareRaf = requestAnimationFrame(squareAboutBlocks); }
+    if (window.ResizeObserver) new ResizeObserver(scheduleSquare).observe(document.getElementById('aboutText'));
+    else window.addEventListener('resize', scheduleSquare);
+    if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', scheduleSquare);
 
     /* ════════════════════════════════════════════════════════════
        PANEL DE AJUSTES EN VIVO  (se abre agregando #ajustes a la URL)
@@ -1158,18 +1232,23 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       s.setProperty('--section-label-size', TWEAKS.sectionLabelSize + 'px');
       s.setProperty('--section-label-align', TWEAKS.sectionLabelAlign);
       s.setProperty('--artist-name-size', TWEAKS.artistNameSize + 'px');
+      s.setProperty('--lightbox-title-size', TWEAKS.lightboxTitleSize + 'px');
       s.setProperty('--about-h2-size', TWEAKS.aboutH2Size + 'px');
       s.setProperty('--about-p-size', TWEAKS.aboutPSize + 'px');
       s.setProperty('--about-max-width', TWEAKS.aboutMaxWidth + 'px');
+      s.setProperty('--about-block-gap', TWEAKS.aboutBlockGap + 'px');
       s.setProperty('--about-align', TWEAKS.aboutAlign);
+      // Guiones solo en justificado (es lo que evita huecos grandes entre palabras).
+      s.setProperty('--about-hyphens', TWEAKS.aboutAlign === 'justify' ? 'auto' : 'manual');
       s.setProperty('--contact-link-size', TWEAKS.contactLinkSize + 'px');
       s.setProperty('--footer-name-size', TWEAKS.footerNameSize + 'px');
       s.setProperty('--contact-align', alignToFlex(TWEAKS.contactAlign));
       s.setProperty('--row-align', alignToFlex(TWEAKS.rowAlign));
       justifyAll(); // re-acomoda la galería con rowHeight/gap/boost/cap nuevos
+      squareAboutBlocks(); // el About cambia de ancho/tamaño → recalcular su último renglón
     }
 
-    const TWEAK_KEYS = ['rowHeight','gap','portraitBoost','stretchCap','rowAlign','navLogoSize','navLinkSize','sectionLabelSize','sectionLabelAlign','artistNameSize','aboutH2Size','aboutPSize','aboutMaxWidth','aboutAlign','contactLinkSize','footerNameSize','contactAlign'];
+    const TWEAK_KEYS = ['rowHeight','gap','portraitBoost','stretchCap','rowAlign','navLogoSize','navLinkSize','sectionLabelSize','sectionLabelAlign','artistNameSize','lightboxTitleSize','aboutH2Size','aboutPSize','aboutMaxWidth','aboutBlockGap','aboutAlign','contactLinkSize','footerNameSize','contactAlign'];
     const ALIGN_KEYS = ['rowAlign','sectionLabelAlign','aboutAlign','contactAlign'];
 
     function serializeTweaks() { return TWEAK_KEYS.map(k => k + ' = ' + TWEAKS[k]).join('\n'); }
@@ -1197,9 +1276,11 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       { key: 'navLinkSize', label: 'Menú', min: 10, max: 32, step: 1, unit: 'px' },
       { key: 'sectionLabelSize', label: 'Título de sección', min: 12, max: 56, step: 1, unit: 'px' },
       { key: 'artistNameSize', label: 'Nombre sobre la foto', min: 10, max: 44, step: 1, unit: 'px' },
+      { key: 'lightboxTitleSize', label: 'Nombre en la foto abierta', min: 12, max: 48, step: 1, unit: 'px' },
       { key: 'aboutH2Size', label: 'About — título', min: 10, max: 44, step: 1, unit: 'px' },
       { key: 'aboutPSize', label: 'About — texto', min: 12, max: 44, step: 1, unit: 'px' },
       { key: 'aboutMaxWidth', label: 'About — ancho', min: 300, max: 1000, step: 10, unit: 'px' },
+      { key: 'aboutBlockGap', label: 'About — espacio entre bloques', min: 0, max: 60, step: 1, unit: 'px' },
       { key: 'contactLinkSize', label: 'Contacto — links', min: 10, max: 32, step: 1, unit: 'px' },
       { key: 'footerNameSize', label: 'Contacto — ©', min: 10, max: 28, step: 1, unit: 'px' },
       { group: 'Alineación (izq / centro / der)' },
@@ -1568,68 +1649,125 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     const imgR  = () => document.getElementById('lb-img-right');
     const lbLoader = () => document.getElementById('lbLoader');
 
-    // Set de URLs cuyo bitmap YA decodificamos al menos una vez. Si una imagen
-    // está acá sabemos que pinta al instante (está en caché): la mostramos sin
-    // ocultar, así VOLVER a una foto ya vista no parpadea. El precargado de
-    // vecinos va "calentando" este set, por eso ir a la siguiente/anterior fluye.
+    // Set de URLs que YA se vieron cargadas y decodificadas al menos una vez.
+    // Si una imagen está acá, casi seguro vuelve de la caché al instante: se
+    // muestra sin ocultar, así VOLVER a una foto ya vista no parpadea. El
+    // precargado de vecinos va "calentando" este set (ir a la siguiente fluye).
+    // Igual se verifica que el <img> la tenga lista de verdad (lbIsReady).
     let lbDecoded = new Set();
 
-    // Spinner — REGLA: si el slot presentado está "cargando" (oculto), se ve el
-    // ícono de carga al instante; la pantalla nunca queda en negro pelado. Si la
-    // imagen ya está lista, no se muestra nada. Es puramente visual
-    // (pointer-events: none) y el token evita carreras al navegar rápido.
-    let lbLoadToken = 0;
-    function lbWatchLoading(imgEl) {
+    const lbAbsUrl = (src) => { try { return new URL(src, location.href).href; } catch (e) { return src; } };
+
+    // ¿Este <img> YA MUESTRA `src`, entera? No alcanza con .complete/.naturalWidth:
+    // en FIREFOX, al cambiarle el src a un <img> que ya mostraba una foto, la
+    // nueva queda "pendiente" y se sigue viendo la VIEJA hasta que la nueva baja
+    // entera (mientras tanto naturalWidth y currentSrc son los de la vieja).
+    // Por eso también se compara currentSrc (la foto que realmente se ve).
+    function lbIsReady(imgEl, src) {
+      if (!imgEl.complete || !imgEl.naturalWidth) return false;
+      return imgEl.currentSrc === undefined || imgEl.currentSrc === lbAbsUrl(src);
+    }
+
+    // Spinner — REGLA: si el slot que se está MOSTRANDO está "cargando" (oculto),
+    // se ve el ícono de carga; la pantalla nunca queda en negro pelado ni con la
+    // foto anterior. Si la imagen ya está lista, no se muestra nada. Se re-evalúa
+    // cada vez que cambia el slot mostrado o un slot termina de cargar.
+    // Es puramente visual (pointer-events: none).
+    let lbShownImg = null;
+    function lbSyncLoader() {
       const loader = lbLoader();
-      if (!loader || !imgEl) return;
-      const token = ++lbLoadToken;
+      if (!loader) return;
+      const el = lbShownImg;
+      const loading = !!(el && el.getAttribute('src') && el.classList.contains('lb-img-loading'));
+      loader.classList.toggle('show', loading);
+    }
+    function lbWatchLoading(imgEl) {
+      lbShownImg = imgEl || null;
+      lbSyncLoader();
+    }
 
-      // El spinner sigue el estado real del slot: solo si está marcado cargando.
-      if (!imgEl.classList.contains('lb-img-loading')) { loader.classList.remove('show'); return; }
-      loader.classList.add('show');
-
-      const finish = () => { if (token === lbLoadToken) loader.classList.remove('show'); };
-      if (imgEl.decode) imgEl.decode().then(finish).catch(finish);
-      else { imgEl.addEventListener('load', finish, { once: true }); imgEl.addEventListener('error', finish, { once: true }); }
+    // Deja el slot oculto ("cargando") y lo revela cuando ESTE <img> terminó de
+    // cargar `src` (evento load) y la decodificó. Cancela la espera anterior del
+    // mismo slot, así navegar rápido no mezcla fotos.
+    //  ⚠ No se usa img.decode() apenas se cambia el src: en Firefox esa promesa
+    //    se resuelve AL INSTANTE contra la foto VIEJA (la nueva sigue pendiente),
+    //    y por eso en Firefox se veía la foto anterior y el spinner no aparecía.
+    //    Después del load sí es confiable (ya decodifica la foto nueva).
+    function lbWaitFor(imgEl, src) {
+      if (imgEl._lbStop) imgEl._lbStop();
+      imgEl.classList.add('lb-img-loading');
+      let done = false, safety = 0;
+      const stop = () => {
+        done = true;
+        clearTimeout(safety);
+        imgEl.removeEventListener('load', onLoad);
+        imgEl.removeEventListener('error', onError);
+        if (imgEl._lbStop === stop) imgEl._lbStop = null;
+      };
+      const reveal = (ok) => {
+        if (done) return;
+        stop();
+        if (imgEl.getAttribute('src') !== src) return;
+        if (ok) lbDecoded.add(src);
+        imgEl.classList.remove('lb-img-loading');
+        lbSyncLoader();
+      };
+      const onLoad = () => {
+        // Un 'load' atrasado de la foto anterior no cuenta (.complete sigue en false).
+        if (done || imgEl.getAttribute('src') !== src || !imgEl.complete || !imgEl.naturalWidth) return;
+        imgEl.removeEventListener('load', onLoad);
+        if (!imgEl.decode) return reveal(true);
+        safety = setTimeout(() => reveal(true), 1500);   // por si decode() nunca responde
+        imgEl.decode().then(() => reveal(true), () => reveal(false));
+      };
+      const onError = () => { if (!done && imgEl.getAttribute('src') === src) reveal(false); };
+      imgEl._lbStop = stop;
+      imgEl.addEventListener('load', onLoad);
+      imgEl.addEventListener('error', onError);
+      if (lbIsReady(imgEl, src)) onLoad();   // ya estaba en caché (p. ej. la portada de la grilla)
     }
 
     // Asigna el src de un slot y decide cómo mostrarlo:
     //  • Mismo src (slot ya precargado al que navegamos): no se reasigna → no
     //    re-decodifica ni parpadea.
-    //  • Imagen ya vista (en lbDecoded): está en caché y pinta al instante, así
-    //    que se muestra SIN ocultar → volver a una foto anterior no parpadea.
+    //  • Imagen ya vista (en lbDecoded): se muestra SIN ocultar, porque vuelve de
+    //    la caché al instante → volver a una foto anterior no parpadea. Antes de
+    //    pintar se confirma que de verdad esté; si no (la caché la descartó), se
+    //    trata como nueva.
     //  • Primera vez: se oculta al instante (nunca se ve la foto anterior) y se
-    //    revela recién cuando el bitmap está DECODIFICADO. Mientras tanto el slot
+    //    revela recién cuando está cargada y DECODIFICADA. Mientras tanto el slot
     //    queda "cargando" y lo cubre el spinner — nunca negro pelado.
     function lbLoad(imgEl, src) {
       if (!imgEl) return;
       src = src || '';
 
       if (imgEl.getAttribute('src') === src) {
-        if (src && imgEl.complete && imgEl.naturalWidth) imgEl.classList.remove('lb-img-loading');
+        if (src && lbIsReady(imgEl, src)) imgEl.classList.remove('lb-img-loading');
         return;
       }
+
+      if (imgEl._lbStop) imgEl._lbStop();   // la foto que esperaba este slot ya no importa
 
       if (!src) { imgEl.src = ''; imgEl.classList.remove('lb-img-loading'); return; }
 
       if (lbDecoded.has(src)) {
-        imgEl.src = src;
         imgEl.classList.remove('lb-img-loading');
+        imgEl.src = src;
+        if (lbIsReady(imgEl, src)) return;   // en caché: ya se ve la nueva
+        // Todavía no la tiene: se revisa justo antes de pintar (requestAnimationFrame
+        // corre antes del próximo cuadro, así que la foto vieja nunca llega a verse).
+        requestAnimationFrame(() => {
+          if (imgEl.getAttribute('src') !== src || lbIsReady(imgEl, src)) return;
+          lbDecoded.delete(src);
+          lbWaitFor(imgEl, src);
+          lbSyncLoader();
+        });
         return;
       }
 
       imgEl.classList.add('lb-img-loading'); // ocultar al instante (sin fundido)
       imgEl.src = src;
-      const reveal = (ok) => {
-        if (ok) lbDecoded.add(src);
-        if (imgEl.getAttribute('src') === src) imgEl.classList.remove('lb-img-loading');
-      };
-      if (imgEl.decode) {
-        imgEl.decode().then(() => reveal(true)).catch(() => reveal(false));
-      } else {
-        imgEl.addEventListener('load',  () => reveal(true),  { once: true });
-        imgEl.addEventListener('error', () => reveal(false), { once: true });
-      }
+      lbWaitFor(imgEl, src);
     }
 
     function lbUpdateSlides() {
@@ -1708,6 +1846,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     /* ─── Filmstrip de miniaturas ─── */
     function lbBuildFilmstrip() {
       const strip = document.getElementById('lb-filmstrip');
+      lbStopFilmstripMotion();
       strip.innerHTML = '';
       strip.classList.remove('visible');
       if (lbImages.length <= 1) { strip.classList.add('hidden'); return; }
@@ -1718,6 +1857,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         t.src = driveThumbUrl(src, 200);
         t.alt = '';
         t.loading = 'lazy';
+        t.draggable = false;   // que el arrastre con mouse deslice la tira, no "agarre" la foto
         t.addEventListener('click', e => {
           e.stopPropagation();
           lbJumpTo(i);
@@ -1737,8 +1877,133 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
 
     function lbScrollFilmstripToActive() {
       const active = document.querySelector('#lb-filmstrip .lb-thumb.active');
-      if (active) active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      if (!active) return;
+      lbStopFilmstripMotion();   // corta la inercia/rueda para que no pelee con el centrado
+      active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
+
+    /* ─── Filmstrip con MOUSE (PC): se arrastra igual que con el dedo ───────
+       En el celu el deslizado táctil es nativo. En la PC no había forma de
+       moverlo (la barra está oculta a propósito), así que:
+         • Mantener apretado y arrastrar → desliza; al soltar sigue con inercia.
+         • Ruedita del mouse → desliza de costado.
+       Un click corto (sin arrastrar) sigue eligiendo la miniatura, y soltar
+       después de arrastrar NO elige foto ni cierra el lightbox.
+       Solo actúa con mouse (pointerType 'mouse'): el touch sigue nativo. ─── */
+    let lbStopFilmstripMotion = () => {};
+    (function setupFilmstripMouse() {
+      const strip = document.getElementById('lb-filmstrip');
+      if (!strip) return;
+      const DRAG_THRESHOLD = 6;   // px que hay que mover para que cuente como arrastre
+      const FRICTION = 0.95;      // inercia al soltar (más cerca de 1 = desliza más lejos)
+      const WHEEL_LINE_PX = 40;   // px por "línea" de rueda (Firefox a veces manda líneas)
+
+      let pid = null, startX = 0, startLeft = 0, dragging = false, blockClick = false, blockTimer = 0;
+      let lastX = 0, lastT = 0, vel = 0;                  // velocidad del arrastre (px/ms)
+      let raf = 0, lastFrame = 0, pos = 0, glide = 0, wheelTarget = null, applied = 0;
+
+      const maxScroll = () => Math.max(0, strip.scrollWidth - strip.clientWidth);
+      const clamp = (v) => Math.max(0, Math.min(maxScroll(), v));
+
+      function stopMotion() {
+        if (raf) cancelAnimationFrame(raf);
+        raf = 0; glide = 0; wheelTarget = null;
+      }
+      lbStopFilmstripMotion = stopMotion;
+
+      // Un solo loop para la inercia del arrastre y el deslizado suave de la rueda.
+      function frame(now) {
+        // Si algo más movió la tira (touchpad, centrado automático), le cedemos el control.
+        if (lastFrame && Math.abs(strip.scrollLeft - applied) > 1.5) { raf = 0; glide = 0; wheelTarget = null; return; }
+        const dt = lastFrame ? Math.min(50, now - lastFrame) : 16.7;
+        lastFrame = now;
+        if (wheelTarget !== null) {
+          pos += (wheelTarget - pos) * Math.min(1, 0.22 * dt / 16.7);
+          if (Math.abs(wheelTarget - pos) < 0.5) { pos = wheelTarget; wheelTarget = null; }
+        } else if (glide) {
+          pos += glide * dt;
+          glide *= Math.pow(FRICTION, dt / 16.7);
+          if (Math.abs(glide) < 0.02) glide = 0;
+        }
+        const c = clamp(pos);
+        if (c !== pos) { pos = c; glide = 0; if (wheelTarget !== null) wheelTarget = clamp(wheelTarget); }
+        strip.scrollLeft = pos;
+        applied = strip.scrollLeft;   // lo que quedó de verdad (el navegador redondea)
+        raf = (glide || wheelTarget !== null) ? requestAnimationFrame(frame) : 0;
+      }
+      function startLoop() {
+        if (!raf) { lastFrame = 0; raf = requestAnimationFrame(frame); }
+      }
+
+      // Cualquier click nuevo arranca "limpio" (nunca se bloquea un click legítimo).
+      window.addEventListener('pointerdown', () => { blockClick = false; }, true);
+
+      strip.addEventListener('pointerdown', e => {
+        if (e.pointerType !== 'mouse' || e.button !== 0 || maxScroll() <= 0) return;
+        stopMotion();
+        pid = e.pointerId;
+        startX = lastX = e.clientX;
+        lastT = performance.now();
+        vel = 0;
+        startLeft = strip.scrollLeft;
+        dragging = false;
+      });
+
+      window.addEventListener('pointermove', e => {
+        if (e.pointerId !== pid) return;
+        const dx = e.clientX - startX;
+        if (!dragging) {
+          if (Math.abs(dx) < DRAG_THRESHOLD) return;       // todavía puede ser un click
+          dragging = true;
+          strip.classList.add('dragging');
+          try { strip.setPointerCapture(pid); } catch (err) {}
+        }
+        strip.scrollLeft = startLeft - dx;
+        const now = performance.now(), dt = now - lastT;
+        if (dt > 0) vel = 0.8 * ((lastX - e.clientX) / dt) + 0.2 * vel;
+        lastX = e.clientX;
+        lastT = now;
+      });
+
+      function endDrag(e) {
+        if (e.pointerId !== pid) return;
+        pid = null;
+        if (!dragging) return;                               // fue un click: lo maneja la miniatura
+        dragging = false;
+        strip.classList.remove('dragging');
+        // El click que dispara el navegador al soltar no debe elegir foto ni cerrar.
+        blockClick = true;
+        clearTimeout(blockTimer);
+        blockTimer = setTimeout(() => { blockClick = false; }, 400);
+        // Inercia: si soltaste en movimiento sigue deslizando y frena sola.
+        if (e.type === 'pointercancel' || performance.now() - lastT > 90) vel = 0;
+        if (Math.abs(vel) > 0.05) { pos = strip.scrollLeft; glide = vel; startLoop(); }
+      }
+      window.addEventListener('pointerup', endDrag);
+      window.addEventListener('pointercancel', endDrag);
+
+      window.addEventListener('click', e => {
+        if (!blockClick) return;
+        blockClick = false;
+        e.stopPropagation();
+        e.preventDefault();
+      }, true);
+
+      // Ruedita vertical → desliza la tira de costado. Los gestos horizontales
+      // del touchpad (y Shift+rueda) quedan nativos; Ctrl+rueda sigue siendo zoom.
+      strip.addEventListener('wheel', e => {
+        if (e.ctrlKey || maxScroll() <= 0) return;
+        if (Math.abs(e.deltaX) >= Math.abs(e.deltaY)) return;
+        let d = e.deltaY;
+        if (e.deltaMode === 1) d *= WHEEL_LINE_PX;
+        else if (e.deltaMode === 2) d *= strip.clientWidth;
+        e.preventDefault();
+        glide = 0;
+        if (wheelTarget === null) pos = strip.scrollLeft;
+        wheelTarget = clamp((wheelTarget === null ? pos : wheelTarget) + d);
+        startLoop();
+      }, { passive: false });
+    })();
 
     function lbJumpTo(i) {
       if (i === lbIndex || lbNavTimeout) return;
