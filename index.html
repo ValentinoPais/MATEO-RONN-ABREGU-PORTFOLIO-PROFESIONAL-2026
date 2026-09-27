@@ -11,7 +11,11 @@
   <style>
     /* ─── Reset ─── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
+    html {
+      scroll-behavior: smooth;
+      scrollbar-gutter: stable;   /* la barra de scroll de Windows ya tiene su lugar: nada "salta" al
+                                     terminar la carga ni al abrir/cerrar una foto */
+    }
 
     /* ─── Variables ─── */
     :root {
@@ -288,7 +292,27 @@
       height: 100%;
       overflow: hidden;
       transform-origin: 50% 50%;
+      background: rgba(255, 255, 255, 0.045);   /* recuadro de muestra (un poco más claro que el fondo) */
     }
+    /* Mientras la portada no llegó: el recuadro ya tiene el tamaño JUSTO (la
+       proporción de cada foto viene de Drive, así nada se mueve) y un brillito
+       que pasa. Cuando la foto bajó entera y está lista, aparece de una encima. */
+    .card-inner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.07) 50%, transparent 65%);
+      background-size: 250% 100%;
+      animation: card-shimmer 1.4s ease-in-out infinite;
+      pointer-events: none;
+    }
+    @keyframes card-shimmer {
+      from { background-position: 130% 0; }
+      to   { background-position: -30% 0; }
+    }
+    .artist-card.is-loaded .card-inner::before,
+    .artist-card.is-error .card-inner::before { animation: none; opacity: 0; }
     .artist-card.is-lifted .card-inner { will-change: transform; }
 
     .card-shadow {
@@ -307,7 +331,7 @@
 
     .card-glare {                                  /* brillo que sigue al mouse */
       position: absolute;
-      z-index: 1;
+      z-index: 2;
       left: 0; top: 0;
       width: 200%; height: 200%;
       /* "overlay": ilumina las partes con luz de la foto como un reflejo, y los
@@ -322,6 +346,8 @@
     .artist-card.is-tilting .card-glare { opacity: var(--card-glare); }
 
     .artist-card img {
+      position: relative;
+      z-index: 1;
       width: 100%;
       height: 100%;
       object-fit: cover;
@@ -330,7 +356,10 @@
       pointer-events: none;
       -webkit-touch-callout: none;
       -webkit-user-drag: none;
+      opacity: 0;                        /* no se ve "dibujándose" de a pedazos: */
+      transition: opacity 0.4s ease;     /* aparece recién cuando está entera */
     }
+    .artist-card.is-loaded img { opacity: 1; }
 
     /* Al cerrar la foto ampliada, su portada brilla levemente un momento (sin zoom). */
     @keyframes lb-flash {
@@ -344,7 +373,7 @@
 
     .artist-name {
       position: absolute;
-      z-index: 2;
+      z-index: 3;
       left: 0; right: 0; bottom: 0;
       padding: 18px 20px;
       background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
@@ -490,7 +519,11 @@
       color: #333;
     }
 
-    /* ─── Loader ─── */
+    /* ─── Pantalla de carga ("persiana") ───
+       El nombre se llena de blanco con el progreso (lo mueve el JS → PageLoader):
+       rápido al principio y cada vez más lento; cuando la primera pantalla ya está
+       lista, completa de una y la pantalla SUBE como una persiana, con una sombra
+       en su borde de abajo, dejando ver la página ya cargada. */
     body.loading { overflow: hidden; }
     #loader {
       position: fixed;
@@ -500,11 +533,23 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: opacity 0.6s ease;
+      transform: translateY(0);
+      box-shadow: 0 26px 60px rgba(0, 0, 0, 0.55);   /* se ve recién cuando empieza a subir */
     }
-    #loader.hidden {
-      opacity: 0;
+    #loader::after {                                 /* borde de abajo de la persiana */
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 1px;
+      background: #1f1f1f;
+    }
+    #loader.lift {
+      transform: translateY(-100%);
+      transition: transform 0.95s cubic-bezier(0.76, 0, 0.24, 1);
       pointer-events: none;
+    }
+    @media (prefers-reduced-motion: reduce) {        /* si el sistema pide menos movimiento: se desvanece */
+      #loader.lift { transform: none; opacity: 0; transition: opacity 0.4s ease; }
     }
     #loader-name {
       font-family: var(--font-display);
@@ -515,7 +560,6 @@
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
-      transition: --p 0.2s ease;
     }
 
     /* ─── Lightbox ─── */
@@ -539,7 +583,16 @@
       align-items: center;
       transform: translateX(-100vw);
       will-change: transform;
+      touch-action: none;          /* los gestos (swipe, pinch, doble toque) los maneja el JS */
     }
+    /* Zoom de la foto ampliada (lo maneja el JS → LbZoom): ruedita en la PC,
+       pinch o doble toque en el celu. Con zoom: se arrastra para mirar, y las
+       flechas y las miniaturas se esconden para no tapar la foto. */
+    #lightboxImg { transform-origin: 0 0; }
+    .lightbox.lb-zoomed { cursor: grab; }
+    .lightbox.lb-zoomed.lb-panning { cursor: grabbing; }
+    .lightbox.lb-zoomed .lightbox-zone,
+    .lightbox.lb-zoomed #lb-filmstrip { opacity: 0; pointer-events: none; }
 
     .lb-slide {
       width: 100vw;
@@ -585,40 +638,30 @@
       pointer-events: none;
     }
 
-    /* ─── Loader minimalista (carga de imagen del lightbox) ─── */
+    /* ─── Carga de la foto ampliada: barrita que se frena y completa de una ───
+       (es el ÚNICO indicador de carga del lightbox; lo mueve el JS → LbBar). */
     .lb-loader {
       position: absolute;
       top: 50%;
       left: 50%;
-      width: 56px;
-      height: 56px;
-      margin: -28px 0 0 -28px;
-      border-radius: 14px;
-      background: rgba(0,0,0,0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 140px;
+      height: 2px;
+      margin: -1px 0 0 -70px;
+      border-radius: 2px;
+      background: rgba(255, 255, 255, 0.14);
+      overflow: hidden;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s ease;
       z-index: 199;
     }
-    .lb-loader::after {
-      content: '';
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.2);
-      border-top-color: rgba(255,255,255,0.75);
-    }
-    .lb-loader.show {
-      opacity: 1;
-    }
-    .lb-loader.show::after {
-      animation: lb-spin 0.85s linear infinite;
-    }
-    @keyframes lb-spin {
-      to { transform: rotate(360deg); }
+    .lb-loader.show { opacity: 1; }
+    .lb-loader-fill {
+      position: absolute;
+      inset: 0;
+      background: #e8e8e8;
+      transform-origin: 0 50%;
+      transform: scaleX(0);
     }
 
     /* ─── Filmstrip (lightbox thumbnail strip) ─── */
@@ -638,7 +681,7 @@
       backdrop-filter: blur(6px);
       z-index: 203;
       scrollbar-width: none;
-      transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
       -webkit-user-select: none;
       user-select: none;          /* arrastrar con el mouse no selecciona las miniaturas */
     }
@@ -698,7 +741,7 @@
       cursor: pointer;
       padding: 120px 24px;
       border-radius: 12px;
-      transition: background 0.2s;
+      transition: background 0.2s, opacity 0.25s ease;
     }
     .lightbox-zone.prev { left: 0; padding-left: max(24px, calc(5vw - 40px)); }
     .lightbox-zone.next { right: 0; padding-right: max(24px, calc(5vw - 40px)); }
@@ -856,7 +899,7 @@
   <div class="lightbox" id="lightbox">
     <button class="lightbox-close" onclick="closeLightbox()">×</button>
     <p class="lightbox-title" id="lbTitle"></p>
-    <div class="lb-loader" id="lbLoader"></div>
+    <div class="lb-loader" id="lbLoader"><span class="lb-loader-fill"></span></div>
     <div class="lightbox-zone prev" id="lbPrev" onclick="lbNavBtn(-1)"><span class="lightbox-caret">&#8249;</span></div>
     <div id="lb-track">
       <div class="lb-slide"><img id="lb-img-left" src="" alt="" /></div>
@@ -1195,7 +1238,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       contactLinkSize: 22,         // links del pie (contacto y navegación)
       footerNameSize: 15,
       // Sonido de la moneda (el loguito)
-      spinSound: 'blip',           // blip | moneda | pop | gota | campanita | boing | laser | fiu | miau
+      spinSound: 'blip',           // cuál suena (la lista completa: COIN_SOUND_LIST; se prueban en el panel #ajustes)
       spinVolume: 100,             // % (100 = como fue diseñado cada sonido)
     };
 
@@ -1215,10 +1258,29 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
        prende antes (al apoyar el mouse o al pasar por encima de la
        moneda) y SOLO el primer sonido espera un instante (WAKE_MS).
        ════════════════════════════════════════════════════════════ */
+    // Los que empiezan con '#' son títulos de grupo en el panel (no son sonidos).
     const COIN_SOUND_LIST = [
+      ['#antes', 'Los de antes'],
       ['blip', 'Blip'], ['moneda', 'Moneda'], ['pop', 'Pop'],
       ['gota', 'Gota'], ['campanita', 'Campanita'], ['boing', 'Boing'],
       ['laser', 'Láser'], ['fiu', 'Fiu'], ['miau', 'Miau'],
+      ['#metal', 'Metal / moneda real'],
+      ['tintin', 'Tintín'], ['mesa', 'Cae en la mesa'], ['girando', 'Girando'],
+      ['alcancia', 'Alcancía'], ['caja', 'Caja registradora'], ['punado', 'Puñado'],
+      ['#arcade', 'Arcade / retro'],
+      ['arcade', 'Arcade'], ['bonus', 'Bonus'], ['ochobits', '8 bits'],
+      ['powerup', 'Power-up'], ['ficha', 'Ficha'], ['puntos', 'Puntos'],
+      ['#magia', 'Mágicos / brillantes'],
+      ['destello', 'Destello'], ['hada', 'Arpa'], ['cristal', 'Cristal'],
+      ['celesta', 'Celesta'], ['estrella', 'Estrella fugaz'],
+      ['#suaves', 'Suaves / minimalistas'],
+      ['tic', 'Tic'], ['toque', 'Toque'], ['marimba', 'Marimba'],
+      ['kalimba', 'Kalimba'], ['piano', 'Piano eléctrico'],
+      ['#foto', 'Foto y música'],
+      ['obturador', 'Obturador'], ['flash', 'Flash'], ['scratch', 'Scratch'],
+      ['bombo', 'Bombo 808'], ['palmas', 'Palmas'], ['cuerda', 'Cuerda'],
+      ['#sorpresa', 'Sorpresa'],
+      ['azar', 'Uno distinto cada vez'],
     ];
 
     const CoinAudio = (() => {
@@ -1271,6 +1333,72 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         o.start(t);
         o.stop(stopAt);
         return o;
+      }
+
+      // ── Ayudantes de los sonidos nuevos ──
+      const jitter = (semis) => Math.pow(2, (Math.random() * 2 - 1) * semis / 12); // afinación que varía un poco, como algo real
+      let noiseB = null;
+      function noiseBuf(c) {                    // 1 s de ruido blanco (se arma una vez)
+        if (!noiseB || noiseB.sampleRate !== c.sampleRate) {
+          noiseB = c.createBuffer(1, Math.ceil(c.sampleRate), c.sampleRate);
+          const d = noiseB.getChannelData(0);
+          for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        }
+        return noiseB;
+      }
+      function burst(c, t, dur, dest) {         // ruido desde t, durante dur segundos
+        const s = c.createBufferSource();
+        s.buffer = noiseBuf(c);
+        s.connect(dest);
+        s.start(t, Math.random() * 0.5);
+        s.stop(t + dur);
+      }
+      function filt(c, type, freq, q, dest) {
+        const f = c.createBiquadFilter();
+        f.type = type;
+        f.frequency.value = freq;
+        if (q !== undefined) f.Q.value = q;
+        f.connect(dest);
+        return f;
+      }
+      // Senos que se apagan solos (campanas, metal, vidrio): [multiplicador, pico, duración].
+      function partials(c, t, f, list, dest) {
+        list.forEach(([m, peak, rel]) => {
+          const g = env(c, t, peak, 0.002, rel, dest);
+          tone(c, 'sine', t, t + rel + 0.05, g).frequency.setValueAtTime(f * m, t);
+        });
+      }
+      // Golpecito de moneda: "tic" agudo + el anillo del metal (parciales de un disco).
+      function clink(c, t, f, amp, rel, dest) {
+        burst(c, t, 0.02, env(c, t, 0.3 * amp, 0.001, 0.015, filt(c, 'highpass', 6000, 0.7, dest)));
+        partials(c, t, f, [[1, 0.05 * amp, rel], [1.004, 0.04 * amp, rel * 0.95], [1.52, 0.03 * amp, rel * 0.65],
+                           [2.11, 0.022 * amp, rel * 0.5], [2.93, 0.014 * amp, rel * 0.35]], dest);
+      }
+      // Onda de "pulso" (sonido de consola vieja); duty 0.5 = cuadrada, 0.125 = más finita.
+      const pulseWaves = new WeakMap();
+      function pulseWave(c, duty) {
+        let m = pulseWaves.get(c);
+        if (!m) { m = {}; pulseWaves.set(c, m); }
+        if (!m[duty]) {
+          const n = 48, re = new Float32Array(n), im = new Float32Array(n);
+          for (let k = 1; k < n; k++) re[k] = (2 / (k * Math.PI)) * Math.sin(k * Math.PI * duty);
+          m[duty] = c.createPeriodicWave(re, im);
+        }
+        return m[duty];
+      }
+      function chip(c, t, f, dur, peak, duty, dest) {   // una nota "8 bits"
+        const g = c.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(peak, t + 0.003);
+        g.gain.setValueAtTime(peak, t + Math.max(0.004, dur - 0.02));
+        g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+        g.connect(dest);
+        const o = c.createOscillator();
+        o.setPeriodicWave(pulseWave(c, duty));
+        o.frequency.setValueAtTime(f, t);
+        o.connect(g);
+        o.start(t);
+        o.stop(t + dur + 0.02);
       }
 
       const SOUNDS = {
@@ -1396,7 +1524,228 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           lfo.start(t);
           lfo.stop(t + 0.52);
         },
+
+        // ── Metal / moneda real ──
+        tintin(c, t, out) {                    // un golpe y el anillo del metal
+          clink(c, t, 2350 * jitter(2), 1, 0.9, out);
+        },
+        mesa(c, t, out) {                      // cae sobre la mesa: rebotes cada vez más cortos
+          const f = 2600 * jitter(1.5);
+          [[0, 1, 0.55], [0.13, 0.6, 0.35], [0.22, 0.4, 0.25], [0.28, 0.26, 0.18], [0.32, 0.17, 0.14], [0.35, 0.11, 0.12], [0.37, 0.07, 0.4]]
+            .forEach(([dt, a, rel], k) => clink(c, t + dt, f * (k % 2 ? 1.012 : 1), a, rel, out));
+        },
+        girando(c, t, out) {                   // gira sobre la mesa cada vez más rápido y se asienta
+          const f = 2450 * jitter(1);
+          let tt = t, dt = 0.075;
+          for (let k = 0; k < 14; k++) {
+            clink(c, tt, f * (k % 2 ? 1.01 : 0.995), 0.3 + 0.35 * k / 13, 0.07, out);
+            tt += dt;
+            dt *= 0.83;
+          }
+          clink(c, tt + 0.012, f, 0.9, 0.75, out);
+        },
+        alcancia(c, t, out) {                  // entra por la ranura y hace "tonc" adentro
+          const bp = c.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.Q.value = 2.5;
+          bp.connect(out);
+          bp.frequency.setValueAtTime(4200, t);
+          bp.frequency.exponentialRampToValueAtTime(1600, t + 0.09);
+          burst(c, t, 0.1, env(c, t, 0.5, 0.012, 0.085, bp));
+          const t2 = t + 0.11;
+          partials(c, t2, 360 * jitter(1.5), [[1, 0.3, 0.2], [1.72, 0.14, 0.12], [2.93, 0.06, 0.07]], out);
+          clink(c, t2 + 0.004, 2800 * jitter(1), 0.45, 0.35, out);
+        },
+        caja(c, t, out) {                      // caja registradora: "ka" mecánico + "ching"
+          burst(c, t, 0.05, env(c, t, 0.45, 0.002, 0.045, filt(c, 'bandpass', 1800, 0.8, out)));
+          partials(c, t, 140, [[1, 0.25, 0.05]], out);
+          const t2 = t + 0.075, f = 1975 * jitter(1);
+          partials(c, t2, f, [[1, 0.085, 1.1], [2.0, 0.035, 0.8], [2.76, 0.03, 0.55], [5.4, 0.012, 0.3]], out);
+          partials(c, t2 + 0.05, f * 1.26, [[1, 0.05, 0.9], [2.76, 0.018, 0.45]], out);
+        },
+        punado(c, t, out) {                    // un puñado de monedas que chocan entre sí
+          for (let k = 0; k < 9; k++) {
+            clink(c, t + Math.random() * 0.32, 2200 + Math.random() * 1300, 0.25 + Math.random() * 0.45, 0.12 + Math.random() * 0.25, out);
+          }
+        },
+
+        // ── Arcade / retro (melodías propias) ──
+        arcade(c, t, out) {                    // arpegio rápido para arriba
+          const f = hz(784, rndSemis(1));
+          const lp = filt(c, 'lowpass', 6000, 0.5, out);
+          [0, 7, 12].forEach((st, k) => chip(c, t + k * 0.045, hz(f, st), k === 2 ? 0.2 : 0.05, 0.05, 0.5, lp));
+        },
+        bonus(c, t, out) {                     // cinco notas para arriba, la última larga
+          const f = hz(659.25, rndSemis(1));
+          const lp = filt(c, 'lowpass', 5500, 0.5, out);
+          [0, 4, 7, 12, 16].forEach((st, k) => chip(c, t + k * 0.05, hz(f, st), k === 4 ? 0.26 : 0.055, 0.045, 0.25, lp));
+        },
+        ochobits(c, t, out) {                  // "pi-piu" finito, con eco
+          const f = hz(880, rndSemis(1));
+          [[0, 1], [0.11, 0.35], [0.22, 0.12]].forEach(([dt, a]) => {
+            chip(c, t + dt, f, 0.05, 0.05 * a, 0.125, out);
+            chip(c, t + dt + 0.05, f * 2, 0.08, 0.05 * a, 0.125, out);
+          });
+        },
+        powerup(c, t, out) {                   // escalera para arriba (como que se "carga")
+          const f = hz(392, rndSemis(1)), steps = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24];
+          const lp = filt(c, 'lowpass', 5000, 0.5, out);
+          steps.forEach((st, k) => chip(c, t + k * 0.028, hz(f, st), k === steps.length - 1 ? 0.14 : 0.03, 0.04, 0.5, lp));
+        },
+        ficha(c, t, out) {                     // ficha en una máquina: "chk" + dos pitidos
+          const f = hz(523.25, rndSemis(1) - 5);
+          burst(c, t, 0.025, env(c, t, 0.35, 0.001, 0.022, filt(c, 'bandpass', 2400, 1.2, out)));
+          chip(c, t + 0.05, f, 0.06, 0.04, 0.5, out);
+          chip(c, t + 0.11, f * 2, 0.12, 0.04, 0.5, out);
+        },
+        puntos(c, t, out) {                    // contador de puntos
+          const f = hz(1046.5, rndSemis(1) - 12);
+          [0, 4, 7, 12, 7, 12].forEach((st, k) => chip(c, t + k * 0.032, hz(f, st), 0.03, 0.04, 0.5, out));
+        },
+
+        // ── Mágicos / brillantes ──
+        destello(c, t, out) {                  // brillitos con eco
+          for (let k = 0; k < 7; k++) {
+            const tt = t + Math.random() * 0.28;
+            const f = hz(1046.5, PENTA[(Math.random() * 5) | 0] + (Math.random() < 0.4 ? 24 : 12));
+            [[0, 1], [0.1, 0.35], [0.2, 0.12]].forEach(([dt, a]) => partials(c, tt + dt, f, [[1, 0.035 * a, 0.18], [2.01, 0.01 * a, 0.08]], out));
+          }
+        },
+        hada(c, t, out) {                      // arpa: siete notas para arriba
+          const f = hz(523.25, rndSemis(1));
+          [0, 4, 7, 12, 16, 19, 24].forEach((st, k) => partials(c, t + k * 0.038, hz(f, st), [[1, 0.06, 0.55], [2, 0.012, 0.25]], out));
+        },
+        cristal(c, t, out) {                   // copa de vidrio
+          partials(c, t, 1760 * jitter(2), [[1, 0.07, 1.5], [1.0025, 0.05, 1.4], [2.32, 0.03, 0.9], [4.25, 0.015, 0.5], [6.63, 0.008, 0.25]], out);
+        },
+        celesta(c, t, out) {                   // dos notas de campanita (la segunda una quinta arriba)
+          const f = hz(1046.5, rndSemis(1) - 12);
+          [[0, 0], [0.09, 7]].forEach(([dt, st]) => partials(c, t + dt, hz(f, st), [[1, 0.07, 0.8], [4, 0.012, 0.25], [8.2, 0.004, 0.1]], out));
+        },
+        estrella(c, t, out) {                  // estrella fugaz: silbido que cae, con brillitos
+          const g = env(c, t, 0.05, 0.01, 0.42, out);
+          const o = tone(c, 'sine', t, t + 0.45, g);
+          o.frequency.setValueAtTime(3200 * jitter(1), t);
+          o.frequency.exponentialRampToValueAtTime(900, t + 0.4);
+          for (let k = 0; k < 5; k++) partials(c, t + 0.05 + k * 0.07, hz(1568, PENTA[(Math.random() * 5) | 0]), [[1, 0.03, 0.12]], out);
+        },
+
+        // ── Suaves / minimalistas ──
+        tic(c, t, out) {                       // click cortito con un poco de tono
+          burst(c, t, 0.012, env(c, t, 0.4, 0.0008, 0.01, filt(c, 'bandpass', 3200, 1.5, out)));
+          partials(c, t, 1300 * jitter(1), [[1, 0.09, 0.035]], out);
+        },
+        toque(c, t, out) {                     // "bup" redondito
+          const f = hz(659.25, rndSemis(1));
+          const g = env(c, t, 0.22, 0.004, 0.09, out);
+          const o = tone(c, 'sine', t, t + 0.11, g);
+          o.frequency.setValueAtTime(f, t);
+          o.frequency.exponentialRampToValueAtTime(f * 0.92, t + 0.09);
+        },
+        marimba(c, t, out) {                   // nota de madera
+          partials(c, t, hz(523.25, rndSemis(1) - 12), [[1, 0.25, 0.4], [3.93, 0.06, 0.07], [9.2, 0.02, 0.025]], out);
+        },
+        kalimba(c, t, out) {                   // piano de dedos africano
+          partials(c, t, hz(698.46, rndSemis(1) - 12), [[1, 0.2, 0.7], [5.4, 0.03, 0.08], [2.01, 0.02, 0.3]], out);
+        },
+        piano(c, t, out) {                     // piano eléctrico (síntesis FM)
+          const f = hz(523.25, rndSemis(1) - 12);
+          const g = env(c, t, 0.2, 0.004, 0.9, out);
+          const car = tone(c, 'sine', t, t + 0.95, g);
+          car.frequency.setValueAtTime(f, t);
+          const mod = c.createOscillator(), idx = c.createGain();
+          mod.frequency.setValueAtTime(f, t);
+          idx.gain.setValueAtTime(f * 2.2, t);
+          idx.gain.exponentialRampToValueAtTime(f * 0.15, t + 0.5);
+          mod.connect(idx).connect(car.frequency);
+          mod.start(t);
+          mod.stop(t + 0.95);
+        },
+
+        // ── Foto y música ──
+        obturador(c, t, out) {                 // obturador de cámara: "clic-clac"
+          const clack = (tt, fc, a) => {
+            burst(c, tt, 0.018, env(c, tt, 0.5 * a, 0.0008, 0.016, filt(c, 'bandpass', fc, 1.1, out)));
+            partials(c, tt, 160, [[1, 0.22 * a, 0.03]], out);
+            partials(c, tt, 2300, [[1, 0.015 * a, 0.03]], out);
+          };
+          clack(t, 3800, 1);
+          clack(t + 0.068 * jitter(1), 2900, 0.8);
+        },
+        flash(c, t, out) {                     // flash: se carga (silbidito) y "pop"
+          const g = env(c, t, 0.018, 0.02, 0.2, out);
+          const o = tone(c, 'sine', t, t + 0.23, g);
+          o.frequency.setValueAtTime(1800, t);
+          o.frequency.exponentialRampToValueAtTime(6500, t + 0.2);
+          const t2 = t + 0.22;
+          burst(c, t2, 0.06, env(c, t2, 0.4, 0.001, 0.05, filt(c, 'bandpass', 2600, 0.9, out)));
+          partials(c, t2, 110, [[1, 0.25, 0.08]], out);
+        },
+        scratch(c, t, out) {                   // scratch de DJ: ida y vuelta
+          const bp = c.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.Q.value = 3;
+          bp.connect(out);
+          const f0 = 900 * jitter(2), curve = [[0, 0.5], [0.08, 2.2], [0.17, 0.4], [0.24, 1.8], [0.3, 0.5]];
+          curve.forEach(([dt, m], k) => k ? bp.frequency.exponentialRampToValueAtTime(f0 * m, t + dt) : bp.frequency.setValueAtTime(f0 * m, t));
+          const g = c.createGain();
+          g.connect(bp);
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(0.7, t + 0.02);
+          g.gain.setValueAtTime(0.7, t + 0.15);
+          g.gain.exponentialRampToValueAtTime(0.05, t + 0.17);
+          g.gain.exponentialRampToValueAtTime(0.6, t + 0.19);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.31);
+          burst(c, t, 0.32, g);
+          const sg = c.createGain();
+          sg.gain.value = 0.25;
+          sg.connect(g);
+          const o = tone(c, 'sawtooth', t, t + 0.32, sg);
+          curve.forEach(([dt, m], k) => k ? o.frequency.exponentialRampToValueAtTime(f0 * m * 0.5, t + dt) : o.frequency.setValueAtTime(f0 * m * 0.5, t));
+        },
+        bombo(c, t, out) {                     // bombo tipo 808 (con armónico para parlantes chicos)
+          const g = env(c, t, 0.62, 0.003, 0.45, out);
+          const o = tone(c, 'sine', t, t + 0.5, g);
+          o.frequency.setValueAtTime(170, t);
+          o.frequency.exponentialRampToValueAtTime(48, t + 0.3);
+          const g2 = env(c, t, 0.22, 0.003, 0.25, out);
+          const o2 = tone(c, 'triangle', t, t + 0.3, g2);
+          o2.frequency.setValueAtTime(340, t);
+          o2.frequency.exponentialRampToValueAtTime(96, t + 0.3);
+          burst(c, t, 0.008, env(c, t, 0.25, 0.0005, 0.007, filt(c, 'highpass', 2500, 0.7, out)));
+        },
+        palmas(c, t, out) {                    // aplauso tipo caja de ritmos
+          const bp = filt(c, 'bandpass', 1300, 1.1, out);
+          [0, 0.011, 0.022].forEach(dt => burst(c, t + dt, 0.012, env(c, t + dt, 0.55, 0.0008, 0.01, bp)));
+          burst(c, t + 0.033, 0.14, env(c, t + 0.033, 0.4, 0.001, 0.12, bp));
+        },
+        cuerda(c, t, out) {                    // cuerda pulsada (algoritmo de Karplus-Strong)
+          const f = hz(329.63, rndSemis(1));
+          const sr = c.sampleRate, n = Math.max(2, Math.round(sr / f)), len = Math.ceil(sr * 0.9);
+          const b = c.createBuffer(1, len, sr), d = b.getChannelData(0);
+          for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+          for (let i = n; i < len; i++) d[i] = 0.4985 * (d[i - n] + d[i - n + 1]);
+          const src = c.createBufferSource();
+          src.buffer = b;
+          src.connect(env(c, t, 0.35, 0.001, 0.85, filt(c, 'lowpass', 4000, 0.5, out)));
+          src.start(t);
+          src.stop(t + 0.9);
+        },
+
+        // ── Sorpresa ── (lo resuelve play(): elige uno al azar con su volumen)
+        azar(c, t, out) { SOUNDS.blip(c, t, out); },
       };
+
+      // Volumen relativo de cada sonido, MEDIDO (sonoridad tipo oído humano) para que
+      // todos suenen parecido de fuerte al cambiar de uno a otro. 1 = como está.
+      const LEVEL = {
+        tintin: 1.35, mesa: 1.45, girando: 1.45, alcancia: 0.8, caja: 1.1, punado: 1.75,
+        arcade: 1.5, bonus: 2.6, ochobits: 4, powerup: 1.9, ficha: 1.8, puntos: 2.9,
+        destello: 2.7, hada: 1.3, cristal: 0.9, celesta: 1.3, estrella: 2.4,
+        tic: 2.4, kalimba: 0.65, piano: 0.7,
+        obturador: 2.2, flash: 2.2, scratch: 0.78, palmas: 2.2,
+      };
+      const soundNames = () => COIN_SOUND_LIST.map(x => x[0]).filter(k => k !== 'azar' && k[0] !== '#' && SOUNDS[k]);
 
       // Hace sonar `name` (o el elegido en TWEAKS). Llamar desde un click/toque.
       function play(name) {
@@ -1411,11 +1760,14 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           // Recién prendido: esperar a que la salida de audio termine de arrancar.
           const on = startedAt ? performance.now() - startedAt : 0;
           const t = c.currentTime + Math.max(0, WAKE_MS - on) / 1000 + 0.01;
-          (SOUNDS[name] || SOUNDS[TWEAKS.spinSound] || SOUNDS.blip)(c, t, out);
+          let n = SOUNDS[name] ? name : (SOUNDS[TWEAKS.spinSound] ? TWEAKS.spinSound : 'blip');
+          if (n === 'azar') { const all = soundNames(); n = all[(Math.random() * all.length) | 0]; }
+          out.gain.value = vol * (LEVEL[n] || 1);
+          SOUNDS[n](c, t, out);
         } catch (e) {}
       }
 
-      return { wake, play, SOUNDS };
+      return { wake, play, SOUNDS, LEVEL };
     })();
 
     function justifyParams() {
@@ -1619,6 +1971,10 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           name.className = 'artist-name';
           name.textContent = artist.name;
 
+          // Aparece de una recién cuando la foto bajó entera y está decodificada.
+          img.addEventListener('error', () => card.classList.add('is-error'), { once: true });
+          whenImageShown(img).then(() => { if (img.naturalWidth) card.classList.add('is-loaded'); });
+
           inner.appendChild(img);
           inner.appendChild(glare);
           inner.appendChild(name);
@@ -1655,48 +2011,123 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       buildNav(sections);
     }
 
-    /* ─── Loader: espera solo las primeras portadas visibles ─── */
+    /* ─── Pantalla de carga: progreso que se frena + persiana ───
+       · Arranca apenas abre la página. El nombre se llena rápido al principio y
+         cada vez más lento (nunca llega solo al final): a 1 s va por un 33 %, a
+         3 s por un 67 %, y de ahí casi no avanza mientras siga cargando.
+       · Cuando está lista la PRIMERA PANTALLA (datos + las fotos que se ven de
+         entrada, ya decodificadas + la tipografía), completa de una hasta el 100%
+         y la pantalla sube como una persiana: abajo ya está todo cargado.
+       · Después, las demás portadas se precargan en orden, de a dos, así cuando
+         bajás ya están (si el celu está en "ahorro de datos", no).
+       · Red de seguridad: nunca más de 8 s esperando fotos (las que falten
+         siguen cargando detrás). */
+    const PageLoader = (() => {
+      const el = document.getElementById('loader');
+      const nameEl = document.getElementById('loader-name');
+      const t0 = performance.now();
+      let last = t0, shown = 0, done = false, lifted = false, raf = 0;
+      const paint = () => { if (nameEl) nameEl.style.setProperty('--p', (shown * 100).toFixed(2) + '%'); };
+      function frame(now) {
+        const dt = Math.min(100, now - last);
+        last = now;
+        if (!done) {
+          const t = (now - t0) / 1000;
+          shown = Math.max(shown, 0.9 * (1 - Math.exp(-t / 2.2)));  // cada vez más lento, sin llegar nunca
+        } else {
+          shown += (1 - shown) * (1 - Math.exp(-dt / 55));         // listo: avanza de una
+          if (1 - shown < 0.003) {
+            shown = 1;
+            paint();
+            raf = 0;
+            setTimeout(lift, 140);                                 // un instante con el nombre completo
+            return;
+          }
+        }
+        paint();
+        raf = requestAnimationFrame(frame);
+      }
+      function lift() {
+        if (lifted) return;
+        lifted = true;
+        document.body.classList.remove('loading');
+        if (!el) { document.dispatchEvent(new Event('pageloader:lifted')); return; }
+        el.classList.add('lift');
+        let gone = false;
+        const remove = () => {
+          if (gone) return;
+          gone = true;
+          el.remove();
+          document.dispatchEvent(new Event('pageloader:lifted'));
+        };
+        el.addEventListener('transitionend', e => { if (e.target === el) remove(); });
+        setTimeout(remove, 1500);                                  // por si no llega el transitionend
+      }
+      if (el) raf = requestAnimationFrame(frame);
+      return {
+        finish() { done = true; if (!raf && !lifted) raf = requestAnimationFrame(frame); },
+        get lifted() { return lifted; },
+      };
+    })();
+
+    // Promesa que se cumple cuando la foto ya se puede ver entera (cargada Y
+    // decodificada), o si falla. En Firefox decode() recién es confiable después
+    // del 'load' (ver lbWaitFor), por eso se espera el load primero.
+    function whenImageShown(img) {
+      return new Promise(resolve => {
+        const ok = () => { if (img.decode) img.decode().then(resolve, resolve); else resolve(); };
+        if (img.complete && img.naturalWidth) return ok();
+        img.addEventListener('load', ok, { once: true });
+        img.addEventListener('error', resolve, { once: true });
+      });
+    }
+
+    // Después de la persiana: las demás portadas, en orden y de a dos.
+    function preloadRestOfCovers(list) {
+      const cn = navigator.connection;
+      if (cn && (cn.saveData || /(^|-)2g$/.test(cn.effectiveType || ''))) return;   // datos limitados: cargan al bajar
+      let i = 0, active = 0;
+      const next = () => {
+        while (active < 2 && i < list.length) {
+          const img = list[i++];
+          if (!img.isConnected || (img.complete && img.naturalWidth)) continue;
+          active++;
+          let finished = false;
+          const done = () => { if (finished) return; finished = true; clearTimeout(tm); active--; next(); };
+          const tm = setTimeout(done, 15000);
+          img.addEventListener('load', done, { once: true });
+          img.addEventListener('error', done, { once: true });
+          img.loading = 'eager';                                   // arranca a bajar ya
+        }
+      };
+      next();
+    }
+
     function runLoader() {
-      const loaderName = document.getElementById('loader-name');
-      const allImgs = Array.from(document.querySelectorAll('.artist-card img'));
-      // Solo esperamos las portadas "eager". Las que tienen loading="lazy"
-      // (idx >= 4) pueden no dispararse nunca si quedan fuera de pantalla, y
-      // como el loader bloquea el scroll, antes esto podía dejar la pantalla
-      // de carga colgada esperando una imagen que el navegador nunca pedía.
-      const eagerImgs = allImgs.filter(img => img.loading !== 'lazy').slice(0, 6);
-      let loaded = 0, finished = false;
-
-      function setProgress(p) { loaderName.style.setProperty('--p', p + '%'); }
-
-      function finish() {
+      const all = Array.from(document.querySelectorAll('.artist-card img'));
+      // La PRIMERA PANTALLA: las portadas que se ven de entrada (con la página arriba de todo).
+      const vh = window.innerHeight;
+      const first = all.filter(img => {
+        const r = img.getBoundingClientRect();
+        return r.width > 0 && r.bottom > 0 && r.top < vh + 40;
+      });
+      first.forEach(img => {
+        img.loading = 'eager';
+        try { img.fetchPriority = 'high'; } catch (e) {}
+      });
+      const waits = first.map(whenImageShown);
+      if (document.fonts && document.fonts.ready) waits.push(document.fonts.ready.catch(() => {}));
+      let finished = false;
+      const finish = () => {
         if (finished) return;
         finished = true;
         clearTimeout(safety);
-        setProgress(100);
-        setTimeout(() => {
-          document.body.classList.remove('loading');
-          const loader = document.getElementById('loader');
-          loader.classList.add('hidden');
-          setTimeout(() => loader.remove(), 700);
-        }, 300);
-      }
-
-      function onLoad() {
-        loaded++;
-        if (eagerImgs.length) setProgress(Math.round((loaded / eagerImgs.length) * 100));
-        if (loaded >= eagerImgs.length) finish();
-      }
-
-      // Red de seguridad: pase lo que pase (red lenta, imagen que no carga),
-      // nunca dejamos el loader más de 4s — las fotos siguen cargando detrás.
-      const safety = setTimeout(finish, 4000);
-
-      if (eagerImgs.length === 0) { finish(); return; }
-
-      eagerImgs.forEach(img => {
-        if (img.complete && img.naturalWidth > 0) { onLoad(); }
-        else { img.addEventListener('load', onLoad); img.addEventListener('error', onLoad); }
-      });
+        PageLoader.finish();
+      };
+      const safety = setTimeout(finish, 8000);
+      Promise.all(waits).then(finish);
+      if (!waits.length) finish();
+      document.addEventListener('pageloader:lifted', () => preloadRestOfCovers(all.filter(img => !first.includes(img))), { once: true });
     }
 
     /* ─── About: muestra u oculta la sección según el texto de about.txt ───
@@ -1950,7 +2381,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         if (!m || TWEAK_KEYS.indexOf(m[1]) === -1) return;
         const k = m[1], raw = m[2];
         if (ALIGN_KEYS.indexOf(k) !== -1) { const v = raw.toLowerCase(); if (['left','center','right','justify'].indexOf(v) !== -1) out[k] = v; }
-        else if (k === 'spinSound') { const v = raw.toLowerCase(); if (COIN_SOUND_LIST.some(s => s[0] === v)) out[k] = v; }
+        else if (k === 'spinSound') { const v = raw.toLowerCase(); if (v[0] !== '#' && COIN_SOUND_LIST.some(s => s[0] === v)) out[k] = v; }
         else { const n = parseFloat(raw); if (!isNaN(n)) out[k] = n; }
       });
       return out;
@@ -2010,6 +2441,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         '#tweakPanel .tp-align{display:flex;gap:4px;}',
         '#tweakPanel .tp-wrap{flex-wrap:wrap;}',
         '#tweakPanel .tp-wrap button{flex:1 0 30%;}',
+        '#tweakPanel .tp-sub{flex:0 0 100%;margin:8px 0 1px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#888;}',
         '#tweakPanel .tp-align button{flex:1;background:#1f1f1f;border:1px solid #333;color:#bbb;padding:5px 0;border-radius:5px;cursor:pointer;font-size:11px;}',
         '#tweakPanel .tp-align button.on{background:#ff5a5f;border-color:#ff5a5f;color:#111;font-weight:600;}',
         '#tweakPanel textarea{width:100%;height:150px;margin-top:6px;background:#0e0e0e;color:#cfcfcf;border:1px solid #333;border-radius:6px;padding:8px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.5;resize:vertical;white-space:pre;}',
@@ -2068,6 +2500,11 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
             ? [['left','Izq'],['center','Centro'],['right','Der'],['justify','Justif.']]
             : [['left','Izq'],['center','Centro'],['right','Der']]);
           alignOpts.forEach(([opt, txt]) => {
+            if (opt[0] === '#') {                   // título de grupo (en la lista de sonidos)
+              const h = document.createElement('div'); h.className = 'tp-sub'; h.textContent = txt;
+              wrap.appendChild(h);
+              return;
+            }
             const b = document.createElement('button'); b.textContent = txt; b.dataset.opt = opt;
             b.onclick = () => {
               TWEAKS[ctrl.key] = opt; applyTweaks(); markAlign(ctrl.key); refreshText();
@@ -2369,12 +2806,72 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     // cada vez que cambia el slot mostrado o un slot termina de cargar.
     // Es puramente visual (pointer-events: none).
     let lbShownImg = null;
+    // Barrita de carga: arranca cuando la foto que se MUESTRA empieza a cargar,
+    // avanza rápido y cada vez más lento (nunca llega sola al final), y cuando la
+    // foto ya está lista completa "de una" y desaparece mientras aparece la foto.
+    // Si la foto llega enseguida (caché), ni se muestra.
+    const LbBar = (() => {
+      let active = false, completing = false, p = 0, t0 = 0, last = 0, raf = 0, showTimer = 0;
+      const bar = () => lbLoader();
+      const paint = () => { const f = bar() && bar().firstElementChild; if (f) f.style.transform = `scaleX(${p.toFixed(4)})`; };
+      function frame(now) {
+        const dt = Math.min(100, now - last);
+        last = now;
+        if (completing) {
+          p += (1 - p) * (1 - Math.exp(-dt / 45));
+          if (1 - p < 0.005) {
+            p = 1; paint();
+            if (bar()) bar().classList.remove('show');
+            active = completing = false;
+            raf = 0;
+            return;
+          }
+        } else {
+          p = Math.max(p, 0.9 * (1 - Math.exp(-(now - t0) / 1100)));
+        }
+        paint();
+        raf = requestAnimationFrame(frame);
+      }
+      return {
+        start() {
+          if (!bar()) return;
+          active = true; completing = false; p = 0;
+          t0 = last = performance.now();
+          paint();
+          clearTimeout(showTimer);
+          showTimer = setTimeout(() => { if (active && !completing && bar()) bar().classList.add('show'); }, 120);
+          if (!raf) raf = requestAnimationFrame(frame);
+        },
+        done() {
+          if (!active || !bar()) return;
+          clearTimeout(showTimer);
+          if (!bar().classList.contains('show')) {        // fue tan rápido que ni llegó a verse
+            active = false; cancelAnimationFrame(raf); raf = 0;
+            return;
+          }
+          completing = true;
+          if (!raf) { last = performance.now(); raf = requestAnimationFrame(frame); }
+        },
+        hide() {
+          active = completing = false;
+          clearTimeout(showTimer);
+          cancelAnimationFrame(raf); raf = 0;
+          if (bar()) bar().classList.remove('show');
+        },
+      };
+    })();
+    let lbBarFor = null;   // la foto (src) cuyo progreso está mostrando la barrita
     function lbSyncLoader() {
-      const loader = lbLoader();
-      if (!loader) return;
+      if (!lbLoader()) return;
       const el = lbShownImg;
       const loading = !!(el && el.getAttribute('src') && el.classList.contains('lb-img-loading'));
-      loader.classList.toggle('show', loading);
+      if (loading) {
+        const key = el.getAttribute('src');
+        if (lbBarFor !== key) { lbBarFor = key; LbBar.start(); }   // otra foto: arranca de cero
+      } else if (lbBarFor) {
+        lbBarFor = null;
+        LbBar.done();
+      }
     }
     function lbWatchLoading(imgEl) {
       lbShownImg = imgEl || null;
@@ -2485,6 +2982,9 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     const isMobile = () => window.matchMedia('(pointer: coarse)').matches;
 
     function openArtistLightbox(artist) {
+      LbZoom.reset(false);
+      LbBar.hide();
+      lbBarFor = null;
       lbImages = artist.images;
       lbIndex = 0;
       lbCurrentArtist = artist;
@@ -2503,9 +3003,253 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       }
     }
 
+    /* ─── Zoom de la foto ampliada ───
+       · PC: ruedita del mouse (o pellizco del touchpad) → acerca/aleja hacia donde
+         está el cursor, suave. Con zoom: arrastrar mueve la foto (con inercia) y
+         un click vuelve al tamaño normal. Teclas: + / − / 0.
+       · Celu: pinch (dos dedos) → zoom hacia el medio de los dedos, y se puede
+         mover a la vez. Doble toque → acerca ahí / vuelve. Con zoom, un dedo mueve
+         la foto. Si te pasás (muy chico o muy grande) rebota suave al soltar.
+       · La foto nunca se "escapa": los bordes no pueden entrar en la pantalla
+         (si es más chica que la pantalla, queda centrada).
+       · Al acercar se pide la misma foto en más resolución, así se ve nítida.
+       · Cambiar de foto, abrir otra o cambiar el tamaño de la ventana: vuelve a 1×. */
+    const LbZoom = (() => {
+      const MAX = 4, DOUBLE_TAP = 2.5;
+      let s = 1, x = 0, y = 0;                 // zoom y corrimiento actuals (px)
+      let base = null;                          // lugar de la foto sin zoom (px de pantalla)
+      let anim = 0, wheelTarget = 1, wheelAnchor = null, ideal = null;
+      let pan = null, pinch = null;
+      const lbEl = () => document.getElementById('lightbox');
+      const img = () => imgC();
+      const view = () => { const l = lbEl(); return { w: l.clientWidth || innerWidth, h: l.clientHeight || innerHeight }; };
+      const clampNum = (v, a, b) => Math.min(b, Math.max(a, v));
+
+      function ready() {                        // hay foto lista y no está pasando de una a otra
+        const im = img();
+        return !!(im && im.naturalWidth && !im.classList.contains('lb-img-loading') && !lbNavTimeout);
+      }
+      function measure() {
+        const im = img();
+        const prev = im.style.transform;
+        im.style.transform = '';
+        const r = im.getBoundingClientRect();
+        im.style.transform = prev;
+        base = { left: r.left, top: r.top, width: r.width, height: r.height };
+        return base.width > 0 && base.height > 0;
+      }
+      // Hasta dónde se puede correr la foto en un eje, con zoom sc:
+      //  · más grande que la pantalla → sus bordes no pueden entrar en la pantalla;
+      //  · más chica → puede ir hacia donde apunta el zoom, sin salirse de la pantalla,
+      //    pero cuanto más cerca de 1×, menos (en 1× queda exactamente centrada).
+      function axisRange(start, size0, sc, vsize) {
+        const size = size0 * sc, center = size0 * (1 - sc) / 2;
+        if (size > vsize) return [vsize - start - size, -start];
+        const lo = -start, hi = vsize - start - size, fit = vsize / size0;
+        const k = fit > 1 ? Math.min(1, Math.max(0, (sc - 1) / (fit - 1))) : 1;
+        return [center + (Math.min(lo, center) - center) * k, center + (Math.max(hi, center) - center) * k];
+      }
+      function limits(sc) {
+        const v = view();
+        return { x: axisRange(base.left, base.width, sc, v.w), y: axisRange(base.top, base.height, sc, v.h) };
+      }
+      function rubber(v, lo, hi) {              // pasarse del borde cuesta (efecto elástico)
+        if (v < lo) return lo - (lo - v) * 0.35;
+        if (v > hi) return hi + (v - hi) * 0.35;
+        return v;
+      }
+      function apply() {
+        const im = img();
+        if (!im) return;
+        const zoomed = s > 1.001;
+        im.style.transform = zoomed || Math.abs(x) > 0.5 || Math.abs(y) > 0.5
+          ? `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, 0) scale(${s.toFixed(4)})` : '';
+        lbEl().classList.toggle('lb-zoomed', zoomed);
+        if (s > 1.35) hiRes();
+      }
+      function stop() { cancelAnimationFrame(anim); anim = 0; wheelAnchor = null; ideal = null; }
+      // Acerca/aleja manteniendo quieto el punto de la foto que está en (px, py).
+      function scaleAround(s2, px, py) {
+        const ux = (px - base.left - x) / s, uy = (py - base.top - y) / s;
+        s = s2;
+        x = px - base.left - ux * s;
+        y = py - base.top - uy * s;
+      }
+      // Animación suave hasta (s2, x2, y2).
+      function tweenTo(s2, x2, y2, ms) {
+        stop();
+        const s0 = s, x0 = x, y0 = y, t0 = performance.now();
+        const step = (now) => {
+          const k = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - k, 3);
+          s = s0 + (s2 - s0) * e; x = x0 + (x2 - x0) * e; y = y0 + (y2 - y0) * e;
+          apply();
+          anim = k < 1 ? requestAnimationFrame(step) : 0;
+        };
+        anim = requestAnimationFrame(step);
+      }
+      // Estado válido más cercano (zoom entre 1 y MAX, bordes adentro), mirando a (px, py).
+      function settle(px, py, ms) {
+        const v = view();
+        const cs = s, cx = x, cy = y;
+        const s2 = clampNum(s, 1, MAX);
+        scaleAround(s2, px === undefined ? v.w / 2 : px, py === undefined ? v.h / 2 : py);
+        const L = limits(s2);
+        const x2 = clampNum(x, L.x[0], L.x[1]), y2 = clampNum(y, L.y[0], L.y[1]);
+        s = cs; x = cx; y = cy;
+        tweenTo(s2, x2, y2, ms || 260);
+      }
+      let hiFor = null;
+      function hiRes() {                        // la misma foto en más resolución (una vez por foto)
+        const im = img(), src = im && im.getAttribute('src');
+        if (!src || hiFor === src || !/sz=w\d+/.test(src)) return;
+        const hi = driveThumbUrl(src, 3200);
+        if (hi === src) return;
+        hiFor = src;
+        const pre = new Image();
+        pre.src = hi;
+        const swap = () => { const cur = img(); if (cur && cur.getAttribute('src') === src && s > 1.001) { cur.src = hi; lbDecoded.add(hi); } };
+        (pre.decode ? pre.decode() : Promise.resolve()).then(swap, () => {});
+      }
+
+      return {
+        isZoomed: () => s > 1.01,
+        reset(animate) {
+          stop(); pan = pinch = null; wheelTarget = 1;
+          if (animate && base && s > 1.001) { tweenTo(1, 0, 0, 280); return; }
+          s = 1; x = 0; y = 0;
+          apply();
+          base = null;
+        },
+        // ── ruedita (PC) ──
+        wheel(e) {
+          if (!ready()) return;
+          const wheeling = !!wheelAnchor;            // ya hay un zoom de ruedita andando
+          if (!wheeling) {
+            stop();
+            if (s <= 1.001 && !measure()) return;
+            wheelTarget = s;
+            ideal = { x, y };                        // posición "ideal" (sin recortar por los bordes)
+          }
+          const dy = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? view().h : 1);
+          const k = e.ctrlKey ? 0.01 : 0.0022;       // pellizco del touchpad: más fino
+          wheelTarget = clampNum(wheelTarget * Math.exp(-dy * k), 1, MAX);
+          wheelAnchor = { x: e.clientX, y: e.clientY };
+          if (wheeling) return;                      // el que ya anda toma el objetivo nuevo
+          let last = performance.now();
+          const step = (now) => {
+            const dt = Math.min(64, now - last); last = now;
+            let s2 = s + (wheelTarget - s) * (1 - Math.exp(-dt / 70));
+            if (Math.abs(wheelTarget - s2) < 0.002) s2 = wheelTarget;
+            // el punto bajo el cursor queda quieto (sobre la posición ideal, sin recortes acumulados)
+            const ux = (wheelAnchor.x - base.left - ideal.x) / s, uy = (wheelAnchor.y - base.top - ideal.y) / s;
+            s = s2;
+            ideal.x = wheelAnchor.x - base.left - ux * s;
+            ideal.y = wheelAnchor.y - base.top - uy * s;
+            const L = limits(s);
+            x = clampNum(ideal.x, L.x[0], L.x[1]);
+            y = clampNum(ideal.y, L.y[0], L.y[1]);
+            apply();
+            if (Math.abs(wheelTarget - s) > 0.0005) anim = requestAnimationFrame(step);
+            else { anim = 0; wheelAnchor = null; ideal = null; if (s <= 1.001) { s = 1; x = y = 0; apply(); } }
+          };
+          anim = requestAnimationFrame(step);
+        },
+        // ── arrastrar con zoom (mouse o un dedo) ──
+        panStart(px, py) {
+          if (!base) return;
+          stop();
+          pan = { px, py, x0: x, y0: y, pts: [{ t: performance.now(), px, py }] };
+        },
+        panMove(px, py) {
+          if (!pan) return;
+          const L = limits(s);
+          x = rubber(pan.x0 + px - pan.px, L.x[0], L.x[1]);
+          y = rubber(pan.y0 + py - pan.py, L.y[0], L.y[1]);
+          const now = performance.now();
+          pan.pts.push({ t: now, px, py });
+          while (pan.pts.length > 2 && now - pan.pts[0].t > 90) pan.pts.shift();
+          apply();
+        },
+        panEnd() {
+          if (!pan) return;
+          const a = pan.pts[0], b = pan.pts[pan.pts.length - 1], dt = Math.max(16, b.t - a.t);
+          const vx = (b.px - a.px) / dt, vy = (b.py - a.py) / dt;     // px por ms
+          pan = null;
+          const fresh = performance.now() - b.t < 60;                  // si ya se había frenado, sin inercia
+          // Adónde llega con la inercia; y si el zoom quedó pasado (pinch → un dedo), vuelve al tope.
+          const cs = s, cx = x, cy = y, s2 = clampNum(s, 1, MAX);
+          x += fresh ? vx * 220 : 0;
+          y += fresh ? vy * 220 : 0;
+          scaleAround(s2, b.px, b.py);
+          const L = limits(s2);
+          const x2 = clampNum(x, L.x[0], L.x[1]), y2 = clampNum(y, L.y[0], L.y[1]);
+          s = cs; x = cx; y = cy;
+          tweenTo(s2, x2, y2, fresh ? 420 : 260);
+        },
+        // ── pinch (celu) ──
+        pinchStart(t1, t2) {
+          if (!ready()) { pinch = null; return false; }
+          stop(); pan = null;
+          if (s <= 1.001 && !measure()) return false;
+          pinch = { d0: Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY) || 1,
+                    mx: (t1.clientX + t2.clientX) / 2, my: (t1.clientY + t2.clientY) / 2, s0: s, x0: x, y0: y };
+          return true;
+        },
+        pinchMove(t1, t2) {
+          if (!pinch) return;
+          const d = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY) || 1;
+          const mx = (t1.clientX + t2.clientX) / 2, my = (t1.clientY + t2.clientY) / 2;
+          let s2 = pinch.s0 * d / pinch.d0;
+          if (s2 < 1) s2 = Math.max(0.6, 1 - (1 - s2) * 0.45);           // de más chico: cuesta
+          if (s2 > MAX) s2 = MAX + (s2 - MAX) * 0.25;                     // de más grande: cuesta
+          const ux = (pinch.mx - base.left - pinch.x0) / pinch.s0, uy = (pinch.my - base.top - pinch.y0) / pinch.s0;
+          s = s2;
+          x = mx - base.left - ux * s;                                    // lo que estaba entre los dedos sigue ahí
+          y = my - base.top - uy * s;
+          pinch.lx = mx; pinch.ly = my;
+          apply();
+        },
+        pinchEnd(settleNow) {                                            // settleNow=false: queda un dedo apoyado
+          if (!pinch) return;
+          const px = pinch.lx !== undefined ? pinch.lx : pinch.mx, py = pinch.ly !== undefined ? pinch.ly : pinch.my;
+          pinch = null;
+          if (settleNow !== false) settle(px, py, 300);
+        },
+        settleNow() { if (base) settle(undefined, undefined, 280); },
+        // ── doble toque / teclas ──
+        toggleAt(px, py) {
+          if (!ready()) return;
+          if (s > 1.01) { tweenTo(1, 0, 0, 300); return; }
+          if (!measure()) return;
+          const cs = s, cx = x, cy = y;
+          scaleAround(DOUBLE_TAP, px, py);
+          const L = limits(DOUBLE_TAP);
+          const x2 = clampNum(x, L.x[0], L.x[1]), y2 = clampNum(y, L.y[0], L.y[1]);
+          s = cs; x = cx; y = cy;
+          tweenTo(DOUBLE_TAP, x2, y2, 320);
+        },
+        stepAt(factor) {                                                  // teclas + / −
+          if (!ready()) return;
+          if (s <= 1.001 && !measure()) return;
+          const v = view();
+          const cs = s, cx = x, cy = y;
+          const s2 = clampNum(s * factor, 1, MAX);
+          scaleAround(s2, v.w / 2, v.h / 2);
+          const L = limits(s2);
+          const x2 = clampNum(x, L.x[0], L.x[1]), y2 = clampNum(y, L.y[0], L.y[1]);
+          s = cs; x = cx; y = cy;
+          tweenTo(s2, s2 <= 1.001 ? 0 : x2, s2 <= 1.001 ? 0 : y2, 240);
+        },
+        get panning() { return !!pan; },
+      };
+    })();
+
+    window.addEventListener('resize', () => LbZoom.reset(false));
+
     let lbNavTimeout = null;
 
     function lbNavBtn(dir) {
+      LbZoom.reset(false);                           // otra foto: sin zoom
       const next = Math.max(0, Math.min(lbImages.length - 1, lbIndex + dir));
       if (next === lbIndex) { lbResetTrack(true); return; }
 
@@ -2702,6 +3446,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
 
     function lbJumpTo(i) {
       if (i === lbIndex || lbNavTimeout) return;
+      LbZoom.reset(false);
       lbIndex = i;
       lbUpdateSlides();
       lbResetTrack(false);
@@ -2732,14 +3477,18 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     }
 
     document.getElementById('lightbox').addEventListener('click', e => {
+      if (LbZoom.isZoomed()) return;
       if (e.target === document.getElementById('lightbox') && !document.getElementById('lightbox').style.cursor) closeLightbox();
     });
 
     document.addEventListener('keydown', e => {
       if (!document.getElementById('lightbox').classList.contains('open')) return;
-      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'Escape') { if (LbZoom.isZoomed()) LbZoom.reset(true); else closeLightbox(); }   // con zoom: primero vuelve
       if (e.key === 'ArrowLeft') lbNavBtn(-1);
       if (e.key === 'ArrowRight') lbNavBtn(1);
+      if (e.key === '+' || e.key === '=') LbZoom.stepAt(1.5);
+      if (e.key === '-' || e.key === '_') LbZoom.stepAt(1 / 1.5);
+      if (e.key === '0') LbZoom.reset(true);
     });
 
     // ─── Protección de imágenes ───
@@ -2752,25 +3501,38 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       if (e.target.tagName === 'IMG') e.preventDefault();
     });
 
-    // Mouse drag (desktop)
+    // ─── Mouse (PC): arrastrar = cambiar de foto / cerrar; con zoom, mover la foto ───
     (function() {
       const lb = document.getElementById('lightbox');
       let startX = 0, startY = 0, axis = null, dragging = false, moved = false;
+      let zoomPan = false, zMoved = false;
 
       lb.addEventListener('mousedown', e => {
+        if (e.button !== 0) return;
         if (e.target.closest('.lightbox-zone') || e.target.closest('.lightbox-close') || e.target.closest('#lb-filmstrip')) return;
         startX = e.clientX;
         startY = e.clientY;
+        e.preventDefault();
+        if (LbZoom.isZoomed()) {                       // con zoom: arrastrar mueve la foto
+          zoomPan = true; zMoved = false;
+          LbZoom.panStart(e.clientX, e.clientY);
+          lb.classList.add('lb-panning');
+          return;
+        }
         dragging = true;
         moved = false;
         axis = null;
         track().style.transition = 'none';
         lb.style.transition = 'none';
         lb.style.cursor = 'grabbing';
-        e.preventDefault();
       });
 
       window.addEventListener('mousemove', e => {
+        if (zoomPan) {
+          if (Math.abs(e.clientX - startX) + Math.abs(e.clientY - startY) > 4) zMoved = true;
+          LbZoom.panMove(e.clientX, e.clientY);
+          return;
+        }
         if (!dragging) return;
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
@@ -2788,6 +3550,13 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       });
 
       window.addEventListener('mouseup', e => {
+        if (zoomPan) {
+          zoomPan = false;
+          lb.classList.remove('lb-panning');
+          if (zMoved) LbZoom.panEnd();
+          else LbZoom.reset(true);                     // click con zoom: vuelve al tamaño normal
+          return;
+        }
         if (!dragging) return;
         dragging = false;
         lb.style.cursor = '';
@@ -2817,28 +3586,86 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         moved = false;
         axis = null;
       });
+
+      // Ruedita: zoom hacia el cursor (el filmstrip tiene su propia ruedita).
+      lb.addEventListener('wheel', e => {
+        if (!lb.classList.contains('open') || e.target.closest('#lb-filmstrip')) return;
+        e.preventDefault();
+        LbZoom.wheel(e);
+      }, { passive: false });
     })();
 
-    // Touch: horizontal = carousel, vertical = close
+    // ─── Touch (celu): swipe horizontal = cambiar de foto, vertical = cerrar;
+    //     dos dedos = zoom; con zoom, un dedo mueve la foto; doble toque = zoom / volver;
+    //     un toque (sin zoom) = cerrar, como antes (espera un instante por si es doble).
     (function() {
       const lb = document.getElementById('lightbox');
-      let startX = 0, startY = 0, axis = null, ignore = false;
+      let mode = null;                 // 'swipe' | 'pan' | 'pinch' | 'none'
+      let ignore = false, startX = 0, startY = 0, axis = null, moved = false, tapZone = null;
+      let lastTap = { t: 0, x: 0, y: 0 }, tapTimer = 0;
+
+      const undoSwipe = () => {        // si un swipe venía empezado, vuelve todo a su lugar
+        lb.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+        lb.style.transform = '';
+        lb.style.opacity = '';
+        lbResetTrack(true);
+        axis = null;
+      };
+      const onTap = (t) => {
+        const now = performance.now();
+        if (now - lastTap.t < 300 && Math.hypot(t.clientX - lastTap.x, t.clientY - lastTap.y) < 40) {
+          clearTimeout(tapTimer);
+          lastTap.t = 0;
+          LbZoom.toggleAt(t.clientX, t.clientY);       // doble toque
+          return;
+        }
+        lastTap = { t: now, x: t.clientX, y: t.clientY };
+        clearTimeout(tapTimer);
+        if (!LbZoom.isZoomed()) {
+          tapTimer = setTimeout(() => {
+            if (lb.classList.contains('open') && !LbZoom.isZoomed() && !lbNavTimeout) closeLightbox();
+          }, 300);
+        }
+      };
 
       lb.addEventListener('touchstart', e => {
-        ignore = !!e.target.closest('#lb-filmstrip');
+        if (e.touches.length === 1) {
+          ignore = !!(e.target.closest('#lb-filmstrip') || e.target.closest('.lightbox-close'));
+          tapZone = e.target.closest('.lightbox-zone');   // flechas ‹ ›: un toque las usa; un swipe desde ahí igual swipea
+        }
         if (ignore) return;
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
+        if (e.touches.length >= 2) {                   // entra el segundo dedo: pellizco
+          if (mode === 'swipe' && axis) undoSwipe();
+          clearTimeout(tapTimer);
+          moved = true;
+          mode = LbZoom.pinchStart(e.touches[0], e.touches[1]) ? 'pinch' : 'none';
+          return;
+        }
+        const t = e.touches[0];
+        startX = t.clientX;
+        startY = t.clientY;
         axis = null;
-        track().style.transition = 'none';
-        lb.style.transition = 'none';
+        moved = false;
+        if (LbZoom.isZoomed()) {
+          mode = 'pan';
+          LbZoom.panStart(t.clientX, t.clientY);
+        } else {
+          mode = 'swipe';
+          track().style.transition = 'none';
+          lb.style.transition = 'none';
+        }
       }, { passive: true });
 
       lb.addEventListener('touchmove', e => {
         if (ignore) return;
-        e.preventDefault(); // bloquea el scroll del fondo mientras el lightbox está abierto
-        const dx = e.touches[0].clientX - startX;
-        const dy = e.touches[0].clientY - startY;
+        e.preventDefault();            // bloquea el scroll del fondo y el zoom propio del navegador
+        if (mode === 'pinch') { if (e.touches.length >= 2) LbZoom.pinchMove(e.touches[0], e.touches[1]); return; }
+        const t = e.touches[0];
+        const dx = t.clientX - startX;
+        const dy = t.clientY - startY;
+        if (Math.abs(dx) > 8 || Math.abs(dy) > 8) moved = true;
+        if (mode === 'pan') { LbZoom.panMove(t.clientX, t.clientY); return; }
+        if (mode !== 'swipe') return;
         if (!axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
           axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
         }
@@ -2851,17 +3678,47 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         }
       }, { passive: false });
 
-      lb.addEventListener('touchend', e => {
-        if (ignore) { ignore = false; return; }
-        const dx = e.changedTouches[0].clientX - startX;
-        const dy = e.changedTouches[0].clientY - startY;
-        if (axis === 'x') {
+      const onEnd = (e, cancelled) => {
+        if (ignore) { if (!e.touches.length) ignore = false; return; }
+        if (mode === 'pinch' || mode === 'none') {
+          if (e.touches.length === 1) {                // queda un dedo
+            const t = e.touches[0];
+            if (mode === 'pinch') LbZoom.pinchEnd(false);
+            startX = t.clientX; startY = t.clientY;
+            if (LbZoom.isZoomed()) { mode = 'pan'; LbZoom.panStart(t.clientX, t.clientY); }   // sigue moviendo; al soltar se acomoda
+            else { mode = 'none'; LbZoom.settleNow(); }   // quedó chica: vuelve a 1× (y no arranca un swipe a mitad de gesto)
+          } else if (!e.touches.length) {
+            if (mode === 'pinch') LbZoom.pinchEnd();
+            mode = null;
+          }
+          return;
+        }
+        if (e.touches.length) return;
+        const t = e.changedTouches[0];
+        if (mode === 'pan') {
+          mode = null;
+          LbZoom.panEnd();
+          if (!moved && !cancelled) { e.preventDefault(); onTap(t); }
+          return;
+        }
+        if (mode !== 'swipe') { mode = null; return; }
+        mode = null;
+        if (!moved) {
+          undoSwipe();
+          if (tapZone || cancelled) return;                    // toque en una flecha: la maneja su propio click
+          e.preventDefault();                                  // evita el click "fantasma" del navegador
+          onTap(t);
+          return;
+        }
+        const dx = t.clientX - startX;
+        const dy = t.clientY - startY;
+        if (axis === 'x' && !cancelled) {
           if (Math.abs(dx) > window.innerWidth * 0.25) {
             lbNavBtn(dx < 0 ? 1 : -1);
           } else {
             lbResetTrack(true);
           }
-        } else if (axis === 'y' && Math.abs(dy) > 100) {
+        } else if (axis === 'y' && Math.abs(dy) > 100 && !cancelled) {
           document.body.style.overflow = '';
           lb.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
           lb.style.transform = `translateY(${dy > 0 ? '100vh' : '-100vh'})`;
@@ -2873,12 +3730,13 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
             flashLastCard();
           }, 180);
         } else {
-          lb.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
-          lb.style.transform = '';
-          lb.style.opacity = '';
-          lbResetTrack(true);
+          undoSwipe();
         }
-      });
+      };
+      lb.addEventListener('touchend', e => onEnd(e, false), { passive: false });
+      lb.addEventListener('touchcancel', e => onEnd(e, true), { passive: false });
+      // iPhone viejo: su propio gesto de zoom de página, desactivado dentro del lightbox.
+      lb.addEventListener('gesturestart', e => e.preventDefault());
     })();
   </script>
 
