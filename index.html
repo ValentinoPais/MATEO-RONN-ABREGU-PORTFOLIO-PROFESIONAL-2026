@@ -638,30 +638,42 @@
       pointer-events: none;
     }
 
-    /* ─── Carga de la foto ampliada: barrita que se frena y completa de una ───
-       (es el ÚNICO indicador de carga del lightbox; lo mueve el JS → LbBar). */
+    /* ─── Carga de la foto ampliada: el circulito de siempre (mismo recuadro,
+       anillo y colores), pero el arco claro muestra el PROGRESO: se llena
+       desde arriba, como las agujas del reloj, rápido y cada vez más lento, y
+       cuando la foto llegó completa la vuelta de una y desaparece.
+       Es el ÚNICO indicador de carga del lightbox (lo mueve el JS → LbBar). */
     .lb-loader {
       position: absolute;
       top: 50%;
       left: 50%;
-      width: 140px;
-      height: 2px;
-      margin: -1px 0 0 -70px;
-      border-radius: 2px;
-      background: rgba(255, 255, 255, 0.14);
-      overflow: hidden;
+      width: 56px;
+      height: 56px;
+      margin: -28px 0 0 -28px;
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s ease;
       z-index: 199;
     }
     .lb-loader.show { opacity: 1; }
-    .lb-loader-fill {
-      position: absolute;
-      inset: 0;
-      background: #e8e8e8;
-      transform-origin: 0 50%;
-      transform: scaleX(0);
+    .lb-loader svg {
+      width: 22px;
+      height: 22px;
+      transform: rotate(-90deg);               /* el arco arranca arriba */
+      overflow: visible;
+    }
+    .lb-loader circle { fill: none; stroke-width: 2; }
+    .lb-ring-track { stroke: rgba(255, 255, 255, 0.2); }
+    .lb-ring-fill {
+      stroke: rgba(255, 255, 255, 0.75);
+      stroke-linecap: round;
+      stroke-dasharray: 62.832;                /* largo de la vuelta: 2·π·10 */
+      stroke-dashoffset: 62.832;               /* vacío; el JS lo va llenando */
     }
 
     /* ─── Filmstrip (lightbox thumbnail strip) ─── */
@@ -899,7 +911,7 @@
   <div class="lightbox" id="lightbox">
     <button class="lightbox-close" onclick="closeLightbox()">×</button>
     <p class="lightbox-title" id="lbTitle"></p>
-    <div class="lb-loader" id="lbLoader"><span class="lb-loader-fill"></span></div>
+    <div class="lb-loader" id="lbLoader"><svg viewBox="0 0 22 22" aria-hidden="true"><circle class="lb-ring-track" cx="11" cy="11" r="10"/><circle class="lb-ring-fill" cx="11" cy="11" r="10"/></svg></div>
     <div class="lightbox-zone prev" id="lbPrev" onclick="lbNavBtn(-1)"><span class="lightbox-caret">&#8249;</span></div>
     <div id="lb-track">
       <div class="lb-slide"><img id="lb-img-left" src="" alt="" /></div>
@@ -2806,14 +2818,15 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     // cada vez que cambia el slot mostrado o un slot termina de cargar.
     // Es puramente visual (pointer-events: none).
     let lbShownImg = null;
-    // Barrita de carga: arranca cuando la foto que se MUESTRA empieza a cargar,
-    // avanza rápido y cada vez más lento (nunca llega sola al final), y cuando la
-    // foto ya está lista completa "de una" y desaparece mientras aparece la foto.
-    // Si la foto llega enseguida (caché), ni se muestra.
+    // Circulito de carga: arranca cuando la foto que se MUESTRA empieza a cargar,
+    // el arco avanza rápido y cada vez más lento (nunca llega solo al final), y
+    // cuando la foto ya está lista completa la vuelta "de una" y desaparece
+    // mientras aparece la foto. Si la foto llega enseguida (caché), ni se muestra.
     const LbBar = (() => {
       let active = false, completing = false, p = 0, t0 = 0, last = 0, raf = 0, showTimer = 0;
       const bar = () => lbLoader();
-      const paint = () => { const f = bar() && bar().firstElementChild; if (f) f.style.transform = `scaleX(${p.toFixed(4)})`; };
+      const RING = 62.832;                                           // largo de la vuelta (2·π·10)
+      const paint = () => { const f = bar() && bar().querySelector('.lb-ring-fill'); if (f) f.style.strokeDashoffset = (RING * (1 - p)).toFixed(3); };
       function frame(now) {
         const dt = Math.min(100, now - last);
         last = now;
