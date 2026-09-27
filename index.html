@@ -95,7 +95,7 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       white-space: nowrap;
-      transition: transform 0.2s ease;
+      transition: color 0.25s ease, text-shadow 0.35s ease;
     }
 
     /* ─── Loguito: moneda de DOS CARAS (frente = gato, dorso = negro) ───
@@ -138,11 +138,17 @@
        porque el EJE del giro depende de DÓNDE clickeás: abajo → gira vertical,
        al costado → lateral, en una esquina → diagonal, como una moneda impulsada. */
 
-    /* Hover del nombre: apenas se agranda cuando estás por clickearlo. */
-    .nav-name:hover {
-      transform: scale(1.05);
+    /* Hover (solo con mouse; en el celu no queda "pegado" al tocar):
+       · el nombre no cambia de forma: se "enciende", pasa a blanco puro
+         (en reposo es #e8e8e8) y gana un brillo suave alrededor;
+       · los botones del menú pasan de gris a blanco, igual que el activo. */
+    @media (hover: hover) {
+      .nav-name:hover {
+        color: #fff;
+        text-shadow: 0 0 8px rgba(255, 255, 255, 0.35), 0 0 20px rgba(255, 255, 255, 0.15);
+      }
+      .nav-links a:hover { color: #fff; }
     }
-    .nav-links a:hover { color: var(--text); }
 
     .nav-links {
       grid-column: 3;            /* columna derecha */
@@ -160,6 +166,9 @@
       color: var(--muted);
       transition: color 0.2s;
     }
+    /* Sección que estás viendo: su botón queda en blanco (lo marca el JS según
+       el scroll → updateActiveNav). */
+    .nav-links a.active { color: #fff; }
 
 
     /* hamburger */
@@ -317,6 +326,7 @@
     #about {
       margin-top: 80px;
       padding: 0 40px;
+      scroll-margin-top: var(--nav-space);  /* al tocar "About" en el menú, no queda tapado por el menú */
     }
 
     .about-text {
@@ -931,7 +941,56 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         a2.addEventListener('click', toggleMenu);
         mobileMenu.appendChild(a2);
       });
+      lastActiveNavId = null;
+      scheduleNavSpy();   // marcar de entrada la sección que se está viendo
     }
+
+    /* ─── Menú: se ilumina la sección que estás viendo ──────────────────────
+       Mientras scrolleás, el botón del menú de la sección que está en pantalla
+       queda "activo" (en blanco). La sección activa es la última cuyo
+       título ya pasó un renglón imaginario en la parte de arriba de la
+       pantalla (un 20% por debajo del menú). Arriba de todo siempre queda la
+       primera; abajo de todo, la última (About), aunque sea corta y su título
+       no llegue a ese renglón. */
+    let lastActiveNavId = null, navSpyRaf = 0;
+    function updateActiveNav() {
+      navSpyRaf = 0;
+      const links = Array.from(document.querySelectorAll('#navLinks a'));
+      const targets = links
+        .map(a => document.getElementById(a.getAttribute('href').slice(1)))
+        .filter(t => t && !t.hidden);
+      if (!targets.length) return;
+      const navEl = document.querySelector('nav');
+      const navH = navEl ? navEl.offsetHeight : 0;
+      const line = navH + (window.innerHeight - navH) * 0.2;
+      let current = targets[0];
+      targets.forEach(t => { if (t.getBoundingClientRect().top <= line) current = t; });
+      const doc = document.documentElement;
+      if (window.scrollY <= 2) {
+        current = targets[0];                       // arriba de todo → la primera sección
+      } else if (window.scrollY + window.innerHeight >= doc.scrollHeight - 4) {
+        current = targets[targets.length - 1];      // llegaste al final → la última sección
+      }
+      if (current.id === lastActiveNavId) return;
+      lastActiveNavId = current.id;
+      const href = '#' + current.id;
+      document.querySelectorAll('#navLinks a, #mobileMenu a').forEach(a => {
+        const on = a.getAttribute('href') === href;
+        a.classList.toggle('active', on);
+        if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+      });
+      // En el celu el menú se desliza de costado si no entra: que el activo quede a la vista.
+      const ul = document.getElementById('navLinks');
+      const act = ul && ul.querySelector('a.active');
+      if (act && ul.scrollWidth > ul.clientWidth + 1) {
+        const ur = ul.getBoundingClientRect(), ar = act.getBoundingClientRect();
+        if (ar.left < ur.left) ul.scrollBy({ left: ar.left - ur.left - 16, behavior: 'smooth' });
+        else if (ar.right > ur.right) ul.scrollBy({ left: ar.right - ur.right + 16, behavior: 'smooth' });
+      }
+    }
+    function scheduleNavSpy() { if (!navSpyRaf) navSpyRaf = requestAnimationFrame(updateActiveNav); }
+    window.addEventListener('scroll', scheduleNavSpy, { passive: true });
+    window.addEventListener('resize', () => { lastActiveNavId = null; scheduleNavSpy(); });
 
     /* ─── Galería justificada (estilo Flickr / Google Photos) ──────────────
        Agrupa las portadas en filas de igual altura; el ancho de cada portada
