@@ -15,8 +15,11 @@
 
     /* ─── Variables ─── */
     :root {
-      --bg: #0d0d0d;
+      --bg: #0d0d0d;                /* barra de arriba y pie (About + ©) */
+      --page-bg: #161616;           /* fondo de la galería: un poco más claro (panel: "Fondo de la galería") */
       --bg2: #111111;
+      --card-shadow: 1;             /* fuerza de la sombra de las fotos (1 = 100%) */
+      --card-glare: 1;              /* fuerza del brillo que sigue al mouse (1 = 100%) */
       --text: #e8e8e8;
       --muted: #999;
       --accent: #e8e8e8;
@@ -213,6 +216,13 @@
     main {
       padding-top: var(--nav-space);
     }
+    /* La galería tiene su propio fondo (un poco más claro); la barra de arriba y el
+       pie quedan con el color de siempre (--bg). El espacio antes del pie va acá
+       adentro para que ese tramo también tenga el fondo de la galería. */
+    #dynamicSections {
+      background: var(--page-bg);
+      padding-bottom: 80px;
+    }
 
     /* ─── Section titles ─── */
     .section-label {
@@ -253,38 +263,80 @@
       /* la altura de cada fila la fija el JS */
     }
 
+    /* Cada portada:  .artist-card  (no se mueve: es la zona del mouse)
+                        ├─ .card-shadow   sombra (difuminada, detrás)
+                        └─ .card-inner    lo que se inclina: foto + brillo + nombre
+       Efecto tipo "cartas de Steam" (lo mueve el JS → attachTilt): con el mouse
+       encima, la foto se inclina en 3D siguiendo el cursor (el lado donde está el
+       mouse se "hunde"), un brillo suave sigue al cursor y la sombra se corre para
+       el lado contrario. Sin zoom. En celu/tablet (sin mouse) no hay inclinación. */
     .artist-card {
       position: relative;
-      overflow: hidden;
+      isolation: isolate;   /* su sombra queda debajo de SU foto */
       cursor: pointer;
       min-width: 0;         /* deja que el flex controle el ancho (no el contenido) */
       user-select: none;
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
     }
+    .artist-card.is-lifted { z-index: 2; }        /* la que se mueve, arriba de las vecinas (su sombra las pisa) */
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      transform-origin: 50% 50%;
+    }
+    .artist-card.is-lifted .card-inner { will-change: transform; }
+
+    .card-shadow {
+      position: absolute;
+      z-index: 0;
+      left: 4%; right: 4%; top: 8%; bottom: 0;
+      background: #000;
+      filter: blur(12px);
+      opacity: calc(0.4 * var(--card-shadow));    /* sombra leve, siempre */
+      transform: translate3d(0, 8px, 0);
+      transition: opacity 0.5s ease;
+      pointer-events: none;
+    }
+    .artist-card.is-tilting .card-shadow { opacity: calc(0.8 * var(--card-shadow)); transition-duration: 0.3s; }
+    .artist-card.is-lifted .card-shadow { will-change: transform; }
+
+    .card-glare {                                  /* brillo que sigue al mouse */
+      position: absolute;
+      z-index: 1;
+      left: 0; top: 0;
+      width: 200%; height: 200%;
+      /* "overlay": ilumina las partes con luz de la foto como un reflejo, y los
+         negros quedan negros (un blanco común se vería como niebla gris). */
+      mix-blend-mode: overlay;
+      background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.45), rgba(255,255,255,0.15) 22%, rgba(255,255,255,0) 48%);
+      transform: translate3d(-25%, -25%, 0);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+      pointer-events: none;
+    }
+    .artist-card.is-tilting .card-glare { opacity: var(--card-glare); }
 
     .artist-card img {
       width: 100%;
       height: 100%;
       object-fit: cover;
       display: block;
-      transition: transform 0.6s ease;
       filter: brightness(0.88) saturate(0.9);
       pointer-events: none;
       -webkit-touch-callout: none;
       -webkit-user-drag: none;
     }
 
-    @media (hover: hover) {
-      .artist-card:hover img {
-        transform: scale(1.05);
-      }
-    }
-
+    /* Al cerrar la foto ampliada, su portada brilla levemente un momento (sin zoom). */
     @keyframes lb-flash {
-      0%   { filter: brightness(0.88) saturate(0.9); transform: scale(1); }
-      25%  { filter: brightness(1.3) saturate(0.9); transform: scale(1.05); }
-      100% { filter: brightness(0.88) saturate(0.9); transform: scale(1); }
+      0%   { filter: brightness(0.88) saturate(0.9); }
+      25%  { filter: brightness(1.12) saturate(0.9); }
+      100% { filter: brightness(0.88) saturate(0.9); }
     }
     .artist-card.lb-flash img {
       animation: lb-flash 0.9s ease forwards;
@@ -292,6 +344,7 @@
 
     .artist-name {
       position: absolute;
+      z-index: 2;
       left: 0; right: 0; bottom: 0;
       padding: 18px 20px;
       background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
@@ -326,7 +379,6 @@
        Mismos colores y tipografías de siempre; solo cambia la disposición.
        En pantallas angostas se apila todo y Contacto/Navegación van centrados. */
     .site-footer {
-      margin-top: 80px;
       border-top: 1px solid #1a1a1a;
     }
     .footer-main {
@@ -724,7 +776,7 @@
       #lb-filmstrip { bottom: 14px; gap: 6px; padding: 8px 10px; }
       .lb-thumb { width: 38px; height: 38px; }
       .section-label { font-size: calc(var(--section-label-size) * 0.8); padding: 34px 10px 10px; }
-      .site-footer { margin-top: 60px; }
+      #dynamicSections { padding-bottom: 60px; }
       .footer-main { gap: 44px; padding: 52px 20px 40px; }
       #about p { font-size: calc(var(--about-p-size) * 0.85); }   /* un poco más chico en el celu → el About queda menos alto */
       .footer-cols { gap: 48px; }
@@ -1123,6 +1175,11 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       portraitBoost: 1.9,    // qué tan más grandes se ven las verticales
       stretchCap: 1.6,       // tope para estirar la última fila
       rowAlign: 'center',    // left | center | right  (fila incompleta)
+      // Fondo y efecto de las fotos
+      pageBg: 22,            // gris del fondo de la galería (0 = negro; arriba y el pie son 13)
+      tiltMax: 9,            // inclinación máxima de las fotos con el mouse (grados; 0 = sin efecto)
+      tiltShadow: 100,       // fuerza de la sombra de las fotos (%)
+      tiltGlare: 100,        // fuerza del brillo que sigue al mouse (%)
       // Tipografía (px) y alineación
       navLogoSize: 36,
       navLinkSize: 18,
@@ -1432,6 +1489,83 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     }
     window.addEventListener('resize', scheduleJustify);
 
+    /* ─── Portadas: efecto 3D tipo "cartas de Steam" ───
+       Con el mouse encima, la foto se inclina siguiendo al cursor: el lado donde
+       está el mouse se "hunde" y el opuesto se levanta. Un brillo suave sigue al
+       cursor y la sombra se corre para el lado contrario (como si la luz estuviera
+       en el mouse). El movimiento se suaviza cuadro a cuadro, así se siente con
+       "peso", y al sacar el mouse vuelve sola a su lugar. Solo con mouse (en
+       celu/tablet no hay) y nunca si el sistema pide "reducir movimiento".
+       Fuerza de la inclinación, sombra y brillo: panel #ajustes. */
+    const TILT_EASE = 0.14;          // suavidad: más chico = más lento/pesado
+    const TILT_SHADOW_MOVE = 16;     // px que se corre la sombra en la inclinación máxima
+    const TILT_SHADOW_REST = 8;      // px hacia abajo en reposo (igual que en el CSS)
+    const tiltHoverMQ = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const tiltReduceMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    function attachTilt(card) {
+      const inner = card.querySelector('.card-inner');
+      const glare = card.querySelector('.card-glare');
+      const shadow = card.querySelector('.card-shadow');
+      let hovering = false, raf = 0;
+      let rx = 0, ry = 0, trx = 0, try_ = 0;     // inclinación actual / objetivo (grados)
+      let gx = 0.5, gy = 0.5, tgx = 0.5, tgy = 0.5; // brillo: posición actual / objetivo (0 a 1)
+      let persp = 1000;
+
+      const frame = () => {
+        rx += (trx - rx) * TILT_EASE;
+        ry += (try_ - ry) * TILT_EASE;
+        gx += (tgx - gx) * TILT_EASE * 1.6;
+        gy += (tgy - gy) * TILT_EASE * 1.6;
+        const settled = !hovering && Math.abs(rx) < 0.02 && Math.abs(ry) < 0.02;
+        if (settled) {                       // quieta otra vez: se limpia todo
+          rx = ry = 0;
+          inner.style.transform = shadow.style.transform = glare.style.transform = '';
+          card.classList.remove('is-lifted');
+          raf = 0;
+          return;
+        }
+        inner.style.transform = `perspective(${persp.toFixed(0)}px) rotateX(${rx.toFixed(3)}deg) rotateY(${ry.toFixed(3)}deg)`;
+        const max = Math.max(TWEAKS.tiltMax, 0.001);
+        const sx = -(ry / max) * TILT_SHADOW_MOVE;               // mouse a la derecha → sombra a la izquierda
+        const sy = TILT_SHADOW_REST + (rx / max) * TILT_SHADOW_MOVE; // mouse arriba → sombra más abajo
+        shadow.style.transform = `translate3d(${sx.toFixed(2)}px, ${sy.toFixed(2)}px, 0)`;
+        glare.style.transform = `translate3d(${((gx - 1) * 50).toFixed(2)}%, ${((gy - 1) * 50).toFixed(2)}%, 0)`;
+        raf = requestAnimationFrame(frame);
+      };
+      const kick = () => { if (!raf) raf = requestAnimationFrame(frame); };
+
+      const aim = (e) => {
+        const r = card.getBoundingClientRect();       // la card no se transforma → medida estable
+        if (!r.width || !r.height) return;
+        const px = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+        const py = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+        const max = TWEAKS.tiltMax;
+        trx = (0.5 - py) * 2 * max;    // mouse arriba → se hunde arriba
+        try_ = (px - 0.5) * 2 * max;   // mouse a la derecha → se hunde a la derecha
+        tgx = px; tgy = py;
+        persp = Math.max(700, Math.max(r.width, r.height) * 2.4);  // fotos grandes: perspectiva más suave
+        kick();
+      };
+
+      card.addEventListener('pointerenter', e => {
+        if (e.pointerType !== 'mouse' || !tiltHoverMQ.matches || tiltReduceMQ.matches || !(TWEAKS.tiltMax > 0)) return;
+        const atRest = !raf;
+        hovering = true;
+        card.classList.add('is-lifted', 'is-tilting');
+        aim(e);
+        if (atRest) { gx = tgx; gy = tgy; }   // el brillo arranca donde entró el mouse (no viaja desde el centro)
+      });
+      card.addEventListener('pointermove', e => { if (hovering) aim(e); });
+      card.addEventListener('pointerleave', () => {
+        if (!hovering) return;
+        hovering = false;
+        trx = try_ = 0;
+        card.classList.remove('is-tilting');
+        kick();
+      });
+    }
+
     function renderSections(sections) {
       const container = document.getElementById('dynamicSections');
       container.innerHTML = '';
@@ -1465,17 +1599,32 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           const card = document.createElement('div');
           card.className = 'artist-card';
 
+          const shadow = document.createElement('span');   // sombra (detrás de la foto)
+          shadow.className = 'card-shadow';
+          shadow.setAttribute('aria-hidden', 'true');
+
+          const inner = document.createElement('div');     // lo que se inclina con el mouse
+          inner.className = 'card-inner';
+
           const img = document.createElement('img');
           img.src = artist.images[0];
           img.alt = artist.name;
           if (idx >= 4) img.loading = 'lazy';
 
+          const glare = document.createElement('span');    // brillo que sigue al mouse
+          glare.className = 'card-glare';
+          glare.setAttribute('aria-hidden', 'true');
+
           const name = document.createElement('span');
           name.className = 'artist-name';
           name.textContent = artist.name;
 
-          card.appendChild(img);
-          card.appendChild(name);
+          inner.appendChild(img);
+          inner.appendChild(glare);
+          inner.appendChild(name);
+          card.appendChild(shadow);
+          card.appendChild(inner);
+          attachTilt(card);
           card.addEventListener('click', () => openArtistLightbox(artist));
 
           artist.cardEl = card;
@@ -1782,11 +1931,15 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       // Justificado = bloque cuadradito: también el último renglón de cada bloque.
       s.setProperty('--about-align-last', TWEAKS.aboutAlign === 'justify' ? 'justify' : 'auto');
       s.setProperty('--row-align', alignToFlex(TWEAKS.rowAlign));
+      const g = Math.round(Math.min(255, Math.max(0, TWEAKS.pageBg)));
+      s.setProperty('--page-bg', `rgb(${g}, ${g}, ${g})`);
+      s.setProperty('--card-shadow', Math.max(0, TWEAKS.tiltShadow) / 100);
+      s.setProperty('--card-glare', Math.max(0, TWEAKS.tiltGlare) / 100);
       justifyAll(); // re-acomoda la galería con rowHeight/gap/boost/cap nuevos
       scheduleAboutFit(); // tamaño/ancho/alineación del About pueden haber cambiado
     }
 
-    const TWEAK_KEYS = ['rowHeight','gap','portraitBoost','stretchCap','rowAlign','navLogoSize','navLinkSize','sectionLabelSize','sectionLabelAlign','artistNameSize','lightboxTitleSize','aboutH2Size','aboutPSize','aboutMaxWidth','aboutBlockGap','aboutAlign','contactLinkSize','footerNameSize','spinSound','spinVolume'];
+    const TWEAK_KEYS = ['rowHeight','gap','portraitBoost','stretchCap','rowAlign','pageBg','tiltMax','tiltShadow','tiltGlare','navLogoSize','navLinkSize','sectionLabelSize','sectionLabelAlign','artistNameSize','lightboxTitleSize','aboutH2Size','aboutPSize','aboutMaxWidth','aboutBlockGap','aboutAlign','contactLinkSize','footerNameSize','spinSound','spinVolume'];
     const ALIGN_KEYS = ['rowAlign','sectionLabelAlign','aboutAlign'];
 
     function serializeTweaks() { return TWEAK_KEYS.map(k => k + ' = ' + TWEAKS[k]).join('\n'); }
@@ -1810,6 +1963,11 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       { key: 'portraitBoost', label: 'Tamaño de verticales', min: 1, max: 2.6, step: 0.05, unit: '×' },
       { key: 'stretchCap', label: 'Tope última fila', min: 1, max: 3, step: 0.1, unit: '×' },
       { key: 'rowAlign', label: 'Última fila incompleta', align: true },
+      { group: 'Fondo y efecto de las fotos' },
+      { key: 'pageBg', label: 'Fondo de la galería (arriba y pie = 13)', min: 0, max: 60, step: 1, unit: '' },
+      { key: 'tiltMax', label: 'Inclinación con el mouse', min: 0, max: 20, step: 0.5, unit: '°' },
+      { key: 'tiltShadow', label: 'Sombra de las fotos', min: 0, max: 200, step: 5, unit: '%' },
+      { key: 'tiltGlare', label: 'Brillo que sigue al mouse', min: 0, max: 200, step: 5, unit: '%' },
       { group: 'Tamaño de textos' },
       { key: 'navLogoSize', label: 'Nombre (arriba)', min: 16, max: 64, step: 1, unit: 'px' },
       { key: 'navLinkSize', label: 'Menú', min: 10, max: 32, step: 1, unit: 'px' },
