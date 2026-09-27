@@ -519,11 +519,10 @@
       color: #333;
     }
 
-    /* ─── Pantalla de carga ("persiana") ───
+    /* ─── Pantalla de carga ───
        El nombre se llena de blanco con el progreso (lo mueve el JS → PageLoader):
        rápido al principio y cada vez más lento; cuando la primera pantalla ya está
-       lista, completa de una y la pantalla SUBE como una persiana, con una sombra
-       en su borde de abajo, dejando ver la página ya cargada. */
+       lista, completa de una y la pantalla se desvanece, como siempre. */
     body.loading { overflow: hidden; }
     #loader {
       position: fixed;
@@ -533,23 +532,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      transform: translateY(0);
-      box-shadow: 0 26px 60px rgba(0, 0, 0, 0.55);   /* se ve recién cuando empieza a subir */
+      transition: opacity 0.6s ease;
     }
-    #loader::after {                                 /* borde de abajo de la persiana */
-      content: '';
-      position: absolute;
-      left: 0; right: 0; bottom: 0;
-      height: 1px;
-      background: #1f1f1f;
-    }
-    #loader.lift {
-      transform: translateY(-100%);
-      transition: transform 0.95s cubic-bezier(0.76, 0, 0.24, 1);
+    #loader.hidden {
+      opacity: 0;
       pointer-events: none;
-    }
-    @media (prefers-reduced-motion: reduce) {        /* si el sistema pide menos movimiento: se desvanece */
-      #loader.lift { transform: none; opacity: 0; transition: opacity 0.4s ease; }
     }
     #loader-name {
       font-family: var(--font-display);
@@ -2023,13 +2010,13 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       buildNav(sections);
     }
 
-    /* ─── Pantalla de carga: progreso que se frena + persiana ───
+    /* ─── Pantalla de carga: progreso que se frena y completa de una ───
        · Arranca apenas abre la página. El nombre se llena rápido al principio y
          cada vez más lento (nunca llega solo al final): a 1 s va por un 33 %, a
          3 s por un 67 %, y de ahí casi no avanza mientras siga cargando.
        · Cuando está lista la PRIMERA PANTALLA (datos + las fotos que se ven de
          entrada, ya decodificadas + la tipografía), completa de una hasta el 100%
-         y la pantalla sube como una persiana: abajo ya está todo cargado.
+         y la pantalla se desvanece (como siempre): abajo ya está todo cargado.
        · Después, las demás portadas se precargan en orden, de a dos, así cuando
          bajás ya están (si el celu está en "ahorro de datos", no).
        · Red de seguridad: nunca más de 8 s esperando fotos (las que falten
@@ -2038,7 +2025,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       const el = document.getElementById('loader');
       const nameEl = document.getElementById('loader-name');
       const t0 = performance.now();
-      let last = t0, shown = 0, done = false, lifted = false, raf = 0;
+      let last = t0, shown = 0, done = false, gone = false, raf = 0;
       const paint = () => { if (nameEl) nameEl.style.setProperty('--p', (shown * 100).toFixed(2) + '%'); };
       function frame(now) {
         const dt = Math.min(100, now - last);
@@ -2052,33 +2039,26 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
             shown = 1;
             paint();
             raf = 0;
-            setTimeout(lift, 140);                                 // un instante con el nombre completo
+            setTimeout(hide, 200);                                 // un instante con el nombre completo
             return;
           }
         }
         paint();
         raf = requestAnimationFrame(frame);
       }
-      function lift() {
-        if (lifted) return;
-        lifted = true;
+      function hide() {                                            // se desvanece (0.6 s) y se saca
+        if (gone) return;
+        gone = true;
         document.body.classList.remove('loading');
-        if (!el) { document.dispatchEvent(new Event('pageloader:lifted')); return; }
-        el.classList.add('lift');
-        let gone = false;
-        const remove = () => {
-          if (gone) return;
-          gone = true;
-          el.remove();
-          document.dispatchEvent(new Event('pageloader:lifted'));
-        };
-        el.addEventListener('transitionend', e => { if (e.target === el) remove(); });
-        setTimeout(remove, 1500);                                  // por si no llega el transitionend
+        if (el) el.classList.add('hidden');
+        setTimeout(() => {
+          if (el) el.remove();
+          document.dispatchEvent(new Event('pageloader:done'));
+        }, el ? 700 : 0);
       }
       if (el) raf = requestAnimationFrame(frame);
       return {
-        finish() { done = true; if (!raf && !lifted) raf = requestAnimationFrame(frame); },
-        get lifted() { return lifted; },
+        finish() { done = true; if (!raf && !gone) raf = requestAnimationFrame(frame); },
       };
     })();
 
@@ -2094,7 +2074,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       });
     }
 
-    // Después de la persiana: las demás portadas, en orden y de a dos.
+    // Cuando se fue la pantalla de carga: las demás portadas, en orden y de a dos.
     function preloadRestOfCovers(list) {
       const cn = navigator.connection;
       if (cn && (cn.saveData || /(^|-)2g$/.test(cn.effectiveType || ''))) return;   // datos limitados: cargan al bajar
@@ -2139,7 +2119,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       const safety = setTimeout(finish, 8000);
       Promise.all(waits).then(finish);
       if (!waits.length) finish();
-      document.addEventListener('pageloader:lifted', () => preloadRestOfCovers(all.filter(img => !first.includes(img))), { once: true });
+      document.addEventListener('pageloader:done', () => preloadRestOfCovers(all.filter(img => !first.includes(img))), { once: true });
     }
 
     /* ─── About: muestra u oculta la sección según el texto de about.txt ───
