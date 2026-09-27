@@ -131,7 +131,11 @@ La regla es simple:
 
 Para cambiar el About, abrís el documento "about" como cualquier Google
 Docs, escribís (o borrás) lo que quieras, y listo — se guarda solo. Los
-saltos de línea / párrafos que pongas se respetan en la página.
+saltos de línea / párrafos que pongas se respetan en la página: cada párrafo
+(cada Enter) se ve como un bloque de texto "cuadradito", parejo a los dos
+lados. La página elige sola dónde cortar cada renglón para que quede prolijo
+en cualquier pantalla (compu o celu). Si un párrafo es muy cortito (2 o 3
+palabras), se muestra normal, alineado a la izquierda.
 
 IMPORTANTE — si lo borrás:
   Si en algún momento borrás el documento "about" por completo, la página

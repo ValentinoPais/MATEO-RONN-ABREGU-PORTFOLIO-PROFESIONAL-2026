@@ -30,19 +30,19 @@
       --nav-logo-size: 36px;
       --nav-logo-mark-size: 60px;   /* tamaño del loguito (en celular se achica más abajo) */
       --nav-link-size: 18px;
-      --section-label-size: 24px;
+      --section-label-size: 42px;   /* títulos de sección (Shows, Moda…); en celu: 80% */
       --section-label-align: center;
       --artist-name-size: 20px;
       --lightbox-title-size: 26px;  /* nombre del artista arriba a la izq. en la foto abierta (celu: 75%) */
       --about-h2-size: 18px;
       --about-p-size: 22px;
-      --about-max-width: 900px;
+      --about-max-width: 800px;     /* ancho máx. de la columna About en el pie */
       --about-align: justify;       /* justificado = el texto arma un bloque parejo */
+      --about-align-last: justify;  /* también el último renglón → bloque cuadradito */
       --about-hyphens: auto;        /* guiones al cortar palabras (solo cuando está justificado) */
       --about-block-gap: 16px;      /* separación entre bloques del About (uno por cada salto de línea) */
-      --contact-link-size: 16px;
+      --contact-link-size: 22px;    /* links del pie (contacto y navegación) */
       --footer-name-size: 15px;
-      --contact-align: center;   /* justify-content: flex-start | center | flex-end */
       --row-align: center;       /* alineación de la última fila incompleta de la galería */
     }
 
@@ -95,7 +95,7 @@
       letter-spacing: 0.08em;
       text-transform: uppercase;
       white-space: nowrap;
-      transition: color 0.25s ease, text-shadow 0.35s ease;
+      transition: color 0.25s ease;
     }
 
     /* ─── Loguito: moneda de DOS CARAS (frente = gato, dorso = negro) ───
@@ -139,14 +139,10 @@
        al costado → lateral, en una esquina → diagonal, como una moneda impulsada. */
 
     /* Hover (solo con mouse; en el celu no queda "pegado" al tocar):
-       · el nombre no cambia de forma: se "enciende", pasa a blanco puro
-         (en reposo es #e8e8e8) y gana un brillo suave alrededor;
+       · el nombre no cambia de forma: pasa a blanco puro (en reposo es #e8e8e8);
        · los botones del menú pasan de gris a blanco, igual que el activo. */
     @media (hover: hover) {
-      .nav-name:hover {
-        color: #fff;
-        text-shadow: 0 0 8px rgba(255, 255, 255, 0.35), 0 0 20px rgba(255, 255, 255, 0.15);
-      }
+      .nav-name:hover { color: #fff; }
       .nav-links a:hover { color: #fff; }
     }
 
@@ -322,34 +318,57 @@
     }
 
 
-    /* ─── About section ─── */
-    #about {
+    /* ─── Pie de página: About + Contacto + Navegación ───────────────────
+         [ ABOUT + texto en bloque ]                      [ CONTACTO   ]
+                                                          [ NAVEGACIÓN ]
+         ─────────────────────────────── línea ─────────────────────────────
+                               © 2026 Mateo Ronn Abregu
+       Mismos colores y tipografías de siempre; solo cambia la disposición.
+       En pantallas angostas se apila todo y Contacto/Navegación van centrados. */
+    .site-footer {
       margin-top: 80px;
-      padding: 0 40px;
+      border-top: 1px solid #1a1a1a;
+    }
+    .footer-main {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 56px 96px;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 72px 40px 64px;
+    }
+    .site-footer.no-about .footer-main { justify-content: center; }  /* sin About: columna al centro */
+
+    #about {
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: var(--about-max-width);
+      text-align: var(--about-align);
       scroll-margin-top: var(--nav-space);  /* al tocar "About" en el menú, no queda tapado por el menú */
     }
 
-    .about-text {
-      max-width: var(--about-max-width);
-      margin: 0 auto;
-      text-align: var(--about-align);
-    }
-
-    #about h2 {
+    /* Títulos del pie (ABOUT, NAVEGACIÓN, CONTACTO): el estilo de siempre del "About". */
+    #about h2,
+    .footer-col h3 {
       font-family: var(--font-display);
       font-size: var(--about-h2-size);
+      font-weight: 700;
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--muted);
-      text-align: center;          /* título "ABOUT" centrado (el cuerpo del texto va justificado) */
+      text-align: left;
       margin-bottom: 24px;
     }
 
-    /* Texto del About en BLOQUES parejos (bordes rectos a los dos lados):
-       cada salto de línea del documento "about" es un bloque aparte (lo arma
-       renderAbout), con una separación chica entre uno y otro. Justificado +
-       guiones al cortar palabras largas, así los espacios entre palabras no
-       quedan exagerados. */
+    /* Texto del About en BLOQUES cuadraditos: cada salto de línea del
+       documento "about" es un bloque aparte (lo arma renderAbout), con una
+       separación chica entre uno y otro. Justificado a los dos lados, incluido
+       el ÚLTIMO renglón (text-align-last). Para que ese último renglón no quede
+       con huecos enormes, el JS (fitAboutBlocks) le prueba a cada bloque un
+       espaciado entre palabras un poco distinto y se queda con el que reparte
+       mejor los espacios. Guiones al cortar palabras largas, así los espacios
+       entre palabras no quedan exagerados. */
     #about p {
       font-family: var(--font-display);
       font-size: var(--about-p-size);
@@ -357,39 +376,59 @@
       line-height: 1.7;
       color: #d0d0d0;
       margin-bottom: var(--about-block-gap);   /* separación entre bloques */
+      text-align-last: var(--about-align-last);
       -webkit-hyphens: var(--about-hyphens);
       hyphens: var(--about-hyphens);
       hyphenate-limit-chars: 6 3 3;   /* no cortar palabras cortas ni dejar sílabas sueltas */
-      text-wrap: pretty;              /* evita que el último renglón quede con 1-2 palabras */
+      text-wrap: pretty;              /* evita que el último renglón quede con 1 sola palabra */
     }
     #about p:last-child { margin-bottom: 0; }
+    /* Renglones ya elegidos por el JS: cada uno entra justo, nunca se parte. */
+    #about p .about-line { white-space: nowrap; }
 
-    /* ─── Footer / Contacto (siempre visible, línea a todo el ancho) ─── */
-    .contact-row {
+    /* Columna derecha: Contacto arriba y Navegación abajo, uno encima del otro. */
+    .footer-cols {
       display: flex;
-      justify-content: var(--contact-align);
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 24px;
-      margin-top: 80px;
-      padding: 28px 40px;
-      border-top: 1px solid #1a1a1a;
+      flex-direction: column;
+      gap: 52px;
+      flex: 0 0 auto;
+      min-width: 220px;
     }
-
-    .contact-info {
+    .footer-col ul {
+      list-style: none;
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
+      flex-direction: column;
+      gap: 12px;
     }
-
-    .contact-info a {
+    .footer-col a {
       font-family: var(--font-display);
       font-size: var(--contact-link-size);
+      font-weight: 400;              /* mismo peso que el texto del About */
+      letter-spacing: 0.04em;
       color: var(--text);
+      white-space: nowrap;
       transition: color 0.2s;
     }
-    .contact-info a[href^="https"]:hover { color: var(--muted); }
+    .footer-col a:hover { color: var(--muted); }
+
+    .footer-bottom {
+      border-top: 1px solid #1a1a1a;
+      padding: 24px 20px 28px;
+      text-align: center;
+    }
+
+    /* Tablet / celu: todo apilado; Contacto y Navegación (y sus títulos) centrados. */
+    @media (max-width: 860px) {
+      .footer-main { flex-direction: column; align-items: center; gap: 56px; }
+      #about { max-width: none; width: 100%; }
+      #about h2 { text-align: center; }
+      .footer-cols { align-items: center; text-align: center; gap: 44px; min-width: 0; }
+      .footer-col h3 { text-align: center; }
+      .footer-col ul { align-items: center; }
+    }
+    .site-footer.no-about .footer-cols { align-items: center; text-align: center; }
+    .site-footer.no-about .footer-col h3 { text-align: center; }
+    .site-footer.no-about .footer-col ul { align-items: center; }
 
     .footer-name {
       font-family: var(--font-display);
@@ -684,9 +723,12 @@
       }
       #lb-filmstrip { bottom: 14px; gap: 6px; padding: 8px 10px; }
       .lb-thumb { width: 38px; height: 38px; }
-      .section-label { font-size: 21px; padding: 34px 10px 10px; }
-      #about { padding: 0 20px; margin-top: 60px; }
-      .contact-row { margin-top: 60px; padding: 24px 20px; }
+      .section-label { font-size: calc(var(--section-label-size) * 0.8); padding: 34px 10px 10px; }
+      .site-footer { margin-top: 60px; }
+      .footer-main { gap: 44px; padding: 52px 20px 40px; }
+      #about p { font-size: calc(var(--about-p-size) * 0.85); }   /* un poco más chico en el celu → el About queda menos alto */
+      .footer-cols { gap: 48px; }
+      .footer-bottom { padding: 20px 20px 24px; }
     }
   </style>
 </head>
@@ -720,26 +762,40 @@
     <!-- Secciones generadas dinámicamente desde Drive (o datos de respaldo) -->
     <div id="dynamicSections"></div>
 
-    <!-- ── About ──────────────────────────────────────────────────────
-         El texto sale del archivo "about.txt" en la carpeta PRINCIPAL de
-         Drive (mismo sistema que las carpetas de fotos, pero para texto).
-         · Con texto  → se muestra esta sección con ese texto.
-         · Vacío / no existe → la sección queda oculta y se saca del menú.
-         Lo llena el JS (loadAboutText/renderAbout). ───────────────────── -->
-    <section id="about" hidden>
-      <div class="about-text">
-        <h2>About</h2>
-        <div id="aboutText"></div>
+    <!-- ── Pie de página: About + Contacto + Navegación ─────────────────
+           [ ABOUT + texto en bloque ]                    [ CONTACTO   ]
+                                                          [ NAVEGACIÓN ]
+           ─────────────────────────────── línea ─────────────────────────────
+                                 © 2026 Mateo Ronn Abregu
+         · About: el texto sale del documento "about" (o about.txt) de la
+           carpeta PRINCIPAL de Drive. Con texto → se muestra; vacío / no
+           existe → la columna queda oculta y se saca del menú. Lo llena el
+           JS (loadAboutText/renderAbout).
+         · Contacto (mail e Instagram), Navegación (los mismos botones del
+           menú de arriba, los arma buildNav) y el © se ven SIEMPRE. ── -->
+    <footer class="site-footer" id="siteFooter">
+      <div class="footer-main">
+        <section id="about" class="footer-about" hidden>
+          <h2>About</h2>
+          <div id="aboutText"></div>
+        </section>
+        <div class="footer-cols">
+          <div class="footer-col">
+            <h3>Contacto</h3>
+            <ul>
+              <li><a href="mailto:mateoron33@gmail.com">mateoron33@gmail.com</a></li>
+              <li><a href="https://instagram.com/ronnfotografia_" target="_blank" rel="noopener">@ronnfotografia_</a></li>
+            </ul>
+          </div>
+          <div class="footer-col" role="navigation" aria-label="Navegación">
+            <h3>Navegación</h3>
+            <ul id="footerNav"></ul>
+          </div>
+        </div>
       </div>
-    </section>
-
-    <!-- ── Footer / Contacto (SIEMPRE visible, no depende de about.txt) ── -->
-    <footer class="contact-row">
-      <div class="contact-info">
-        <a href="mailto:mateoron33@gmail.com">mateoron33@gmail.com</a>
-        <a href="https://instagram.com/ronnfotografia_" target="_blank" rel="noopener">@ronnfotografia_</a>
+      <div class="footer-bottom">
+        <span class="footer-name">© 2026 Mateo Ronn Abregu</span>
       </div>
-      <span class="footer-name">© 2026 Mateo Ronn Abregu</span>
     </footer>
 
   </main>
@@ -921,8 +977,10 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     function buildNav(sections) {
       const navLinks = document.getElementById('navLinks');
       const mobileMenu = document.getElementById('mobileMenu');
+      const footerNav = document.getElementById('footerNav');
       navLinks.innerHTML = '';
       mobileMenu.innerHTML = '';
+      footerNav.innerHTML = '';
       // "About" solo aparece en el menú si about.txt tiene texto (igual que las
       // secciones: si no hay contenido, no se muestra el botón).
       const entries = sections.map(s => ({ id: s.id, label: s.label }));
@@ -940,7 +998,16 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         a2.textContent = entry.label;
         a2.addEventListener('click', toggleMenu);
         mobileMenu.appendChild(a2);
+
+        // "Navegación" del pie: los mismos botones que el menú de arriba.
+        const li3 = document.createElement('li');
+        const a3 = document.createElement('a');
+        a3.href = '#' + entry.id;
+        a3.textContent = entry.label;
+        li3.appendChild(a3);
+        footerNav.appendChild(li3);
       });
+      footerNav.closest('.footer-col').hidden = !entries.length;   // sin secciones: no mostrar "Navegación" vacía
       lastActiveNavId = null;
       scheduleNavSpy();   // marcar de entrada la sección que se está viendo
     }
@@ -953,12 +1020,15 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
        primera; abajo de todo, la última (About), aunque sea corta y su título
        no llegue a ese renglón. */
     let lastActiveNavId = null, navSpyRaf = 0;
-    function updateActiveNav() {
-      navSpyRaf = 0;
-      const links = Array.from(document.querySelectorAll('#navLinks a'));
-      const targets = links
+    function navTargets() {
+      return Array.from(document.querySelectorAll('#navLinks a'))
         .map(a => document.getElementById(a.getAttribute('href').slice(1)))
         .filter(t => t && !t.hidden);
+    }
+    function updateActiveNav() {
+      navSpyRaf = 0;
+      if (navJumping) return;   // en pleno salto: queda marcado el destino (ver startNavJump)
+      const targets = navTargets();
       if (!targets.length) return;
       const navEl = document.querySelector('nav');
       const navH = navEl ? navEl.offsetHeight : 0;
@@ -971,9 +1041,12 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       } else if (window.scrollY + window.innerHeight >= doc.scrollHeight - 4) {
         current = targets[targets.length - 1];      // llegaste al final → la última sección
       }
-      if (current.id === lastActiveNavId) return;
-      lastActiveNavId = current.id;
-      const href = '#' + current.id;
+      setActiveNav(current.id);
+    }
+    function setActiveNav(id) {
+      if (id === lastActiveNavId) return;
+      lastActiveNavId = id;
+      const href = '#' + id;
       document.querySelectorAll('#navLinks a, #mobileMenu a').forEach(a => {
         const on = a.getAttribute('href') === href;
         a.classList.toggle('active', on);
@@ -989,7 +1062,45 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       }
     }
     function scheduleNavSpy() { if (!navSpyRaf) navSpyRaf = requestAnimationFrame(updateActiveNav); }
-    window.addEventListener('scroll', scheduleNavSpy, { passive: true });
+
+    /* Saltos: al tocar un botón del menú o el nombre, el scroll suave pasa por
+       todas las secciones y el menú las iba "barriendo" una por una. Durante el
+       salto se marca DIRECTO el destino y la detección queda en pausa hasta que
+       el scroll termina (evento scrollend, o si no hay scroll por un momento).
+       Si en el medio se scrollea a mano (ruedita, dedo, teclado), se reactiva al
+       toque: el scroll manual se sigue viendo como siempre. */
+    let navJumping = false, navJumpTimer = 0, navJumpMax = 0;
+    function startNavJump(targetId) {
+      navJumping = true;
+      if (targetId) setActiveNav(targetId);
+      clearTimeout(navJumpTimer); clearTimeout(navJumpMax);
+      navJumpTimer = setTimeout(endNavJump, 400);    // por si no llega a scrollear (ya estabas ahí)
+      navJumpMax = setTimeout(endNavJump, 3000);     // tope de seguridad
+    }
+    function endNavJump() {
+      if (!navJumping) return;
+      navJumping = false;
+      clearTimeout(navJumpTimer); clearTimeout(navJumpMax);
+      updateActiveNav();                             // al final: la sección donde quedaste
+    }
+    window.addEventListener('scroll', () => {
+      if (navJumping) {                              // sigue el salto: "terminó" si no hay scroll por 160ms
+        clearTimeout(navJumpTimer);
+        navJumpTimer = setTimeout(endNavJump, 160);
+        return;
+      }
+      scheduleNavSpy();
+    }, { passive: true });
+    window.addEventListener('scrollend', () => { if (navJumping) endNavJump(); });
+    const SCROLL_KEYS = ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '];
+    ['wheel', 'touchstart', 'keydown'].forEach(ev => window.addEventListener(ev, e => {
+      if (!navJumping || (ev === 'keydown' && SCROLL_KEYS.indexOf(e.key) === -1)) return;
+      endNavJump();
+    }, { passive: true }));
+    ['navLinks', 'mobileMenu', 'footerNav'].forEach(id => document.getElementById(id).addEventListener('click', e => {
+      const a = e.target.closest('a[href^="#"]');
+      if (a) startNavJump(a.getAttribute('href').slice(1));
+    }));
     window.addEventListener('resize', () => { lastActiveNavId = null; scheduleNavSpy(); });
 
     /* ─── Galería justificada (estilo Flickr / Google Photos) ──────────────
@@ -1015,19 +1126,240 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       // Tipografía (px) y alineación
       navLogoSize: 36,
       navLinkSize: 18,
-      sectionLabelSize: 24,
+      sectionLabelSize: 42,        // títulos de sección (en celu: 80%)
       sectionLabelAlign: 'center', // left | center | right
       artistNameSize: 20,
       lightboxTitleSize: 26,       // nombre del artista en la foto abierta (en celu: 75%)
       aboutH2Size: 18,
       aboutPSize: 22,
-      aboutMaxWidth: 900,
+      aboutMaxWidth: 800,          // ancho máx. de la columna About en el pie
       aboutBlockGap: 16,           // separación entre bloques del About (px)
       aboutAlign: 'justify',       // left | center | right | justify (justify = bloque parejo)
-      contactLinkSize: 16,
+      contactLinkSize: 22,         // links del pie (contacto y navegación)
       footerNameSize: 15,
-      contactAlign: 'center',      // left | center | right
+      // Sonido de la moneda (el loguito)
+      spinSound: 'blip',           // blip | moneda | pop | gota | campanita | boing | laser | fiu | miau
+      spinVolume: 100,             // % (100 = como fue diseñado cada sonido)
     };
+
+    /* ════════════════════════════════════════════════════════════
+       SONIDOS DE LA MONEDA (el loguito del gato)
+       Todos se generan en el momento con Web Audio: no hay archivos.
+       Cuál suena se elige en el panel #ajustes (TWEAKS.spinSound, con
+       vista previa) y el volumen con TWEAKS.spinVolume. Los que tienen
+       nota cambian de nota al azar en cada giro (escala pentatónica),
+       como el "blip" original.
+
+       ¿Por qué el primer toque no sonaba? El audio del navegador recién
+       se puede prender con un click/toque, así que arrancaba en el MISMO
+       click y el blip salía justo mientras la salida de sonido de la
+       PC/celu se "despertaba": muchos parlantes, auriculares Bluetooth o
+       salidas HDMI se comen esos primeros milisegundos. Ahora el audio se
+       prende antes (al apoyar el mouse o al pasar por encima de la
+       moneda) y SOLO el primer sonido espera un instante (WAKE_MS).
+       ════════════════════════════════════════════════════════════ */
+    const COIN_SOUND_LIST = [
+      ['blip', 'Blip'], ['moneda', 'Moneda'], ['pop', 'Pop'],
+      ['gota', 'Gota'], ['campanita', 'Campanita'], ['boing', 'Boing'],
+      ['laser', 'Láser'], ['fiu', 'Fiu'], ['miau', 'Miau'],
+    ];
+
+    const CoinAudio = (() => {
+      const WAKE_MS = 280;   // el primer sonido espera a que el audio lleve este tiempo prendido
+      let ctx = null, startedAt = 0, noise = null;
+      const PENTA = [0, 2, 4, 7, 9];
+      const rndSemis = (octaves) => PENTA[(Math.random() * PENTA.length) | 0] + 12 * ((Math.random() * octaves) | 0);
+      const hz = (base, semis) => base * Math.pow(2, semis / 12);
+
+      // Prende (o reanuda) el audio. Solo funciona dentro de un click/toque/tecla:
+      // antes de eso los navegadores no dejan sonar nada (política de autoplay).
+      function wake() {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        try {
+          if (!ctx) {
+            ctx = new AC({ latencyHint: 'interactive' });
+            // Cuándo quedó sonando de verdad (si se corta, p. ej. en el celu al volver de
+            // otra app, se vuelve a contar: el próximo sonido espera de nuevo).
+            const markStart = () => {
+              if (ctx.state !== 'running') startedAt = 0;
+              else if (!startedAt) startedAt = performance.now();
+            };
+            ctx.addEventListener('statechange', markStart);
+            markStart();
+            // iPhone: un sonido "vacío" dentro del gesto termina de desbloquear el audio.
+            const s = ctx.createBufferSource();
+            s.buffer = ctx.createBuffer(1, 1, 22050);
+            s.connect(ctx.destination);
+            s.start(0);
+          }
+          if (ctx.state !== 'running') ctx.resume().catch(() => {});
+        } catch (e) { return null; }
+        return ctx;
+      }
+
+      // Envolvente típica: sube rápido hasta `peak` y cae exponencial hasta casi 0.
+      function env(c, t, peak, attack, release, dest) {
+        const g = c.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(peak, t + attack);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + attack + release);
+        g.connect(dest);
+        return g;
+      }
+      function tone(c, type, t, stopAt, dest) {
+        const o = c.createOscillator();
+        o.type = type;
+        o.connect(dest);
+        o.start(t);
+        o.stop(stopAt);
+        return o;
+      }
+
+      const SOUNDS = {
+        // El de siempre: triangular con un "chirp" hacia arriba.
+        blip(c, t, out) {
+          const f = hz(523.25, rndSemis(2));                 // base Do5
+          const g = env(c, t, 0.2, 0.008, 0.232, out);
+          const o = tone(c, 'triangle', t, t + 0.26, g);
+          o.frequency.setValueAtTime(f, t);
+          o.frequency.exponentialRampToValueAtTime(f * 1.6, t + 0.07);
+        },
+        // Moneda de videojuego: dos notas cuadradas, la segunda una cuarta arriba.
+        moneda(c, t, out) {
+          const f = hz(987.77, rndSemis(1) - 7);             // alrededor de Si5
+          const g = c.createGain();
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(0.06, t + 0.004);
+          g.gain.setValueAtTime(0.06, t + 0.08);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.42);
+          g.connect(out);
+          const o = tone(c, 'square', t, t + 0.44, g);
+          o.frequency.setValueAtTime(f, t);
+          o.frequency.setValueAtTime(f * 4 / 3, t + 0.08);
+        },
+        // Burbuja que revienta: seno que cae de golpe.
+        pop(c, t, out) {
+          const f = hz(392, rndSemis(1));
+          const g = env(c, t, 0.27, 0.002, 0.1, out);
+          const o = tone(c, 'sine', t, t + 0.12, g);
+          o.frequency.setValueAtTime(f * 2.2, t);
+          o.frequency.exponentialRampToValueAtTime(f * 0.55, t + 0.07);
+        },
+        // Gotita: seno que sube rápido ("plip").
+        gota(c, t, out) {
+          const f = hz(587.33, rndSemis(1));
+          const g = env(c, t, 0.24, 0.003, 0.12, out);
+          const o = tone(c, 'sine', t, t + 0.14, g);
+          o.frequency.setValueAtTime(f, t);
+          o.frequency.exponentialRampToValueAtTime(f * 2.6, t + 0.05);
+        },
+        // Campanita: fundamental + parciales inarmónicos que se apagan solos.
+        campanita(c, t, out) {
+          const f = hz(880, rndSemis(1));
+          [[1, 0.105, 1.2], [2.76, 0.04, 0.7], [5.4, 0.02, 0.35]].forEach(([mul, peak, rel]) => {
+            const g = env(c, t, peak, 0.004, rel, out);
+            tone(c, 'sine', t, t + rel + 0.05, g).frequency.setValueAtTime(f * mul, t);
+          });
+        },
+        // Resorte: sube, baja y vibra ("boiing").
+        boing(c, t, out) {
+          const f = hz(196, rndSemis(1));
+          const g = env(c, t, 0.55, 0.01, 0.5, out);
+          const o = tone(c, 'triangle', t, t + 0.55, g);
+          o.frequency.setValueAtTime(f * 0.7, t);
+          o.frequency.exponentialRampToValueAtTime(f * 1.5, t + 0.07);
+          o.frequency.exponentialRampToValueAtTime(f, t + 0.5);
+          const lfo = c.createOscillator(), depth = c.createGain();
+          lfo.frequency.value = 16;
+          depth.gain.setValueAtTime(f * 0.14, t);
+          depth.gain.exponentialRampToValueAtTime(f * 0.01, t + 0.5);
+          lfo.connect(depth).connect(o.frequency);
+          lfo.start(t);
+          lfo.stop(t + 0.55);
+        },
+        // Láser: diente de sierra que cae ("piu").
+        laser(c, t, out) {
+          const f = hz(698.46, rndSemis(1));
+          const lp = c.createBiquadFilter();
+          lp.type = 'lowpass';
+          lp.frequency.value = 3500;
+          lp.connect(out);
+          const g = env(c, t, 0.25, 0.003, 0.18, lp);
+          const o = tone(c, 'sawtooth', t, t + 0.2, g);
+          o.frequency.setValueAtTime(f * 2.5, t);
+          o.frequency.exponentialRampToValueAtTime(f * 0.35, t + 0.17);
+        },
+        // Fiu: soplido de aire (ruido filtrado que sube y baja), la moneda cortando el aire.
+        fiu(c, t, out) {
+          if (!noise || noise.sampleRate !== c.sampleRate) {
+            noise = c.createBuffer(1, Math.ceil(c.sampleRate * 0.45), c.sampleRate);
+            const d = noise.getChannelData(0);
+            for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+          }
+          const src = c.createBufferSource();
+          src.buffer = noise;
+          const bp = c.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.Q.value = 1.4;
+          bp.frequency.setValueAtTime(450, t);
+          bp.frequency.exponentialRampToValueAtTime(2800, t + 0.14);
+          bp.frequency.exponentialRampToValueAtTime(700, t + 0.36);
+          const g = c.createGain();
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(0.6, t + 0.12);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.38);
+          src.connect(bp).connect(g).connect(out);
+          src.start(t);
+          src.stop(t + 0.4);
+        },
+        // Miau: diente de sierra por un filtro que va haciendo "i-a-u" (por el gato del logo).
+        miau(c, t, out) {
+          const f = hz(523.25, rndSemis(1) - 4);
+          const bp = c.createBiquadFilter();
+          bp.type = 'bandpass';
+          bp.Q.value = 2.2;
+          bp.frequency.setValueAtTime(900, t);
+          bp.frequency.exponentialRampToValueAtTime(2200, t + 0.12);
+          bp.frequency.exponentialRampToValueAtTime(650, t + 0.46);
+          const g = c.createGain();
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(0.34, t + 0.05);
+          g.gain.setValueAtTime(0.34, t + 0.28);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+          bp.connect(g).connect(out);
+          const o = tone(c, 'sawtooth', t, t + 0.52, bp);
+          o.frequency.setValueAtTime(f, t);
+          o.frequency.linearRampToValueAtTime(f * 1.3, t + 0.12);
+          o.frequency.exponentialRampToValueAtTime(f * 0.72, t + 0.48);
+          const lfo = c.createOscillator(), depth = c.createGain();
+          lfo.frequency.value = 7;
+          depth.gain.value = f * 0.02;
+          lfo.connect(depth).connect(o.frequency);
+          lfo.start(t);
+          lfo.stop(t + 0.52);
+        },
+      };
+
+      // Hace sonar `name` (o el elegido en TWEAKS). Llamar desde un click/toque.
+      function play(name) {
+        const c = wake();
+        if (!c) return;
+        try {
+          const vol = Math.max(0, Number(TWEAKS.spinVolume) || 0) / 100;
+          if (!vol) return;
+          const out = c.createGain();
+          out.gain.value = vol;
+          out.connect(c.destination);
+          // Recién prendido: esperar a que la salida de audio termine de arrancar.
+          const on = startedAt ? performance.now() - startedAt : 0;
+          const t = c.currentTime + Math.max(0, WAKE_MS - on) / 1000 + 0.01;
+          (SOUNDS[name] || SOUNDS[TWEAKS.spinSound] || SOUNDS.blip)(c, t, out);
+        } catch (e) {}
+      }
+
+      return { wake, play, SOUNDS };
+    })();
 
     function justifyParams() {
       const w = window.innerWidth, H = TWEAKS.rowHeight, g = TWEAKS.gap;
@@ -1234,46 +1566,192 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           .map(block => block.replace(/\s+(\S+)$/, '\u00A0$1'))  // las 2 últimas palabras juntas: nunca 1 sola palabra en el último renglón
           .forEach(block => {
             const p = document.createElement('p');
+            block = block.replace(/[^\S\u00A0]+/g, ' ');   // espacios/tabs repetidos → uno solo
             p.textContent = block;   // textContent (no innerHTML) → seguro ante HTML
+            aboutSource.set(p, block);
             box.appendChild(p);
           });
         section.hidden = false;
-        squareAboutBlocks();
       } else {
         section.hidden = true;       // vacío o borrado → About oculto
       }
+      // Sin About, las columnas Navegación/Contacto quedan centradas en el pie.
+      document.getElementById('siteFooter').classList.toggle('no-about', !aboutHasText);
+      scheduleAboutFit();
     }
 
-    // Último renglón de cada bloque: si ya llega casi al borde (≥ 85% del ancho)
-    // se justifica también → el bloque queda como un rectángulo perfecto. Si es
-    // corto queda a la izquierda, porque estirarlo dejaría huecos enormes.
-    // Se recalcula al cambiar el tamaño de pantalla y cuando termina de cargar
-    // la tipografía (con otra fuente los renglones miden distinto).
-    function squareAboutBlocks() {
-      document.querySelectorAll('#aboutText p').forEach(p => {
-        p.style.textAlignLast = '';
-        if (TWEAKS.aboutAlign !== 'justify' || !p.firstChild) return;
-        const range = document.createRange();
-        range.selectNodeContents(p);
-        // Renglón de más abajo = el último. (No se usa "el último rectángulo de la
-        // lista": con guiones, Firefox agrega el del "-" y daría un falso "lleno".)
-        const rects = Array.from(range.getClientRects()).filter(r => r.width > 0);
-        if (!rects.length) return;
-        const lastTop = Math.max(...rects.map(r => r.top));
-        const lastRight = Math.max(...rects.filter(r => r.top > lastTop - 2).map(r => r.right));
-        const box = p.getBoundingClientRect();
-        if (box.width && (lastRight - box.left) / box.width >= 0.85) p.style.textAlignLast = 'justify';
+    /* Bloques cuadraditos SIN huecos enormes. Cada bloque va justificado a los
+       dos lados, incluido el último renglón. Si dejáramos que el navegador corte
+       los renglones solo, el último suele quedar corto y, al estirarlo, quedan
+       espacios gigantes entre palabras. Por eso acá se elige EN QUÉ PALABRA CORTA
+       CADA RENGLÓN (como hacen los programas de diseño: algoritmo de Knuth-Plass):
+       de todas las formas posibles de repartir el texto, se queda con la que deja
+       los espacios entre palabras más parejos y cercanos a lo normal, en TODOS
+       los renglones. Si hace falta, a un renglón se le da un poquito más (o menos)
+       de espacio entre letras: casi nada en los bloques largos; en un bloque muy
+       corto (ej. la primera frase) puede abrirse más, hasta lo de los títulos del pie.
+       Se recalcula solo si cambia el ancho de la pantalla o la tipografía. */
+    const ABOUT_LS = [0, 0.005, -0.005, 0.01, -0.01, 0.015, -0.015, 0.02, -0.02, 0.03, 0.04, 0.05,
+      0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2];   // em; 0.2 = lo de los títulos del pie
+    const ABOUT_LS_MIN = -0.02;      // em
+    const ABOUT_LINE_PENALTY = 2;    // cada renglón extra "cuesta": así el About no queda más alto de lo necesario
+    const ABOUT_MAX_GAP = 2.5;       // em: si un bloque es tan corto que habría que dejar espacios más grandes, va a la izquierda
+    const aboutSource = new WeakMap();        // <p> → texto original del bloque
+    const aboutMeasures = new WeakMap();      // <p> → medidas de sus palabras (se reusan al cambiar el ancho)
+    let aboutFontsGen = 0;                    // sube cuando termina de cargar una tipografía → volver a medir
+
+    function aboutMeasure(p, text, fs) {
+      const key = fs + '|' + aboutFontsGen + '|' + (window.devicePixelRatio || 1);
+      const cached = aboutMeasures.get(p);
+      if (cached && cached.key === key) return cached;
+      // Medir cada palabra con el texto en UN solo renglón (sin cortes ni guiones).
+      p.textContent = text;
+      p.style.whiteSpace = 'nowrap';
+      p.style.textAlign = 'left';
+      p.style.textAlignLast = 'left';
+      const tn = p.firstChild, range = document.createRange(), words = [];
+      const re = /([^ \u00A0]+)([ \u00A0]*)/g;
+      let m, spacePx = 0;
+      while ((m = re.exec(text))) {
+        range.setStart(tn, m.index);
+        range.setEnd(tn, m.index + m[1].length);
+        words.push({
+          t: m[1], sep: m[2], n: m[1].length,
+          w: range.getBoundingClientRect().width,
+          nb: m[2].indexOf('\u00A0') !== -1       // espacio duro: ahí no se corta el renglón
+        });
+        if (!spacePx && m[2] === ' ') {
+          range.setStart(tn, m.index + m[1].length);
+          range.setEnd(tn, m.index + m[1].length + 1);
+          spacePx = range.getBoundingClientRect().width;
+        }
+      }
+      p.style.whiteSpace = p.style.textAlign = p.style.textAlignLast = '';
+      const out = { key, words, spacePx: spacePx || fs * 0.16 };
+      aboutMeasures.set(p, out);
+      return out;
+    }
+
+    // Cuánto "cuesta" un renglón de palabras [i, j): lo que se estiran sus espacios
+    // al justificarlo (en espacios normales), más el ajuste de letras si se usa.
+    function aboutLineCost(M, i, j, W, fs) {
+      let ink0 = 0, chars = 0;
+      for (let k = i; k < j; k++) { ink0 += M.words[k].w; chars += M.words[k].n; }
+      const gaps = j - i - 1;
+      let best = Infinity, bestLs = 0, bestGap = 0;
+      for (const ls of ABOUT_LS) {
+        const lsPx = ls * fs, ink = ink0 + chars * lsPx, space = M.spacePx + lsPx;
+        let c, gap = 0;
+        if (gaps === 0) {
+          c = (W - ink < 2 && W - ink > -0.5) ? 0 : 1e6;      // una palabra sola: solo si llena el renglón
+        } else {
+          gap = (W - ink) / gaps;
+          if (gap < space + 0.3) continue;                     // con este espaciado no entra
+          const r = (gap - space) / M.spacePx;                 // 0 = espacios normales; 1 = el doble
+          c = r * r + 0.25 * r * r * r;
+        }
+        c += (ls / 0.02) * (ls / 0.02);
+        if (c < best) { best = c; bestLs = ls; bestGap = gap / fs; }
+      }
+      return { c: best, ls: bestLs, gap: bestGap };
+    }
+
+    // Mejor forma de cortar los renglones (programación dinámica).
+    function aboutBreakLines(M, W, fs) {
+      const N = M.words.length, lsMinPx = ABOUT_LS_MIN * fs;
+      const best = new Array(N + 1).fill(Infinity), from = new Array(N + 1).fill(-1);
+      const lsOf = new Array(N + 1).fill(0), gapOf = new Array(N + 1).fill(0);
+      best[0] = 0;
+      for (let j = 1; j <= N; j++) {
+        let natural = -(M.spacePx + lsMinPx);
+        for (let i = j - 1; i >= 0; i--) {
+          natural += M.words[i].w + M.words[i].n * lsMinPx + M.spacePx + lsMinPx;
+          if (natural > W + 0.5 && i < j - 1) break;           // ya no entra ni apretando: más palabras tampoco
+          if (i > 0 && M.words[i - 1].nb) continue;            // no cortar en un espacio duro
+          if (best[i] === Infinity) continue;
+          const lc = aboutLineCost(M, i, j, W, fs);
+          const total = best[i] + lc.c + ABOUT_LINE_PENALTY;
+          if (total < best[j]) { best[j] = total; from[j] = i; lsOf[j] = lc.ls; gapOf[j] = lc.gap; }
+        }
+      }
+      if (best[N] === Infinity || best[N] >= 1e6) return null;
+      const lines = [];
+      for (let j = N; j > 0; j = from[j]) lines.unshift({ i: from[j], j, ls: lsOf[j], gap: gapOf[j] });
+      return lines;
+    }
+
+    function aboutRenderLines(p, M, lines) {
+      p.textContent = '';
+      lines.forEach((ln, k) => {
+        const span = document.createElement('span');
+        span.className = 'about-line';
+        let t = '';
+        // El espacio del corte queda al final del renglón: no se ve ni cambia el justificado,
+        // pero así copiar el texto o buscarlo (Ctrl+F) sigue funcionando entre renglones.
+        for (let x = ln.i; x < ln.j; x++) t += M.words[x].t + (x < ln.j - 1 || k < lines.length - 1 ? M.words[x].sep : '');
+        span.textContent = t;                      // textContent (no innerHTML) → seguro ante HTML
+        if (ln.ls) {
+          span.style.letterSpacing = ln.ls + 'em';
+          span.style.marginRight = (-ln.ls) + 'em';  // que la última letra toque el borde igual que en los otros renglones
+        }
+        p.appendChild(span);
+        if (k < lines.length - 1) p.appendChild(document.createElement('br'));
       });
     }
-    // Recalcular cuando cambia el ancho del texto. Se usa ResizeObserver (y no
-    // solo 'resize') porque la barra de scroll de Windows aparece al terminar el
-    // loader y le saca ~17px al texto SIN disparar 'resize'. También al cargar
-    // la tipografía (con otra fuente los renglones miden distinto).
-    let squareRaf = 0;
-    function scheduleSquare() { cancelAnimationFrame(squareRaf); squareRaf = requestAnimationFrame(squareAboutBlocks); }
-    if (window.ResizeObserver) new ResizeObserver(scheduleSquare).observe(document.getElementById('aboutText'));
-    else window.addEventListener('resize', scheduleSquare);
-    if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', scheduleSquare);
+
+    let aboutFitWidth = 0;
+    function fitAboutBlocks() {
+      const box = document.getElementById('aboutText');
+      aboutFitWidth = box ? box.clientWidth : 0;
+      const justified = TWEAKS.aboutAlign === 'justify';
+      document.querySelectorAll('#aboutText p').forEach(p => {
+        const text = aboutSource.get(p);
+        if (text === undefined) return;
+        const plain = () => {                        // texto normal, sin renglones forzados
+          if (p.textContent !== text || p.childNodes.length !== 1) p.textContent = text;
+          p.classList.remove('about-fitted');
+        };
+        p.style.textAlignLast = '';
+        if (!justified || !p.offsetWidth) { plain(); return; }   // otra alineación (o no visible)
+        try {
+          const fs = parseFloat(getComputedStyle(p).fontSize) || 16;
+          const M = aboutMeasure(p, text, fs);
+          const W = p.getBoundingClientRect().width;
+          const lines = M.words.length ? aboutBreakLines(M, W, fs) : null;
+          if (!lines || Math.max(...lines.map(l => l.gap)) > ABOUT_MAX_GAP) {
+            plain();                                   // bloque muy cortito (ej. 2 o 3 palabras):
+            p.style.textAlignLast = 'auto';            // estirarlo quedaría feo → va a la izquierda
+            return;
+          }
+          aboutRenderLines(p, M, lines);
+          p.classList.add('about-fitted');
+          // Control: cada renglón quedó en UN renglón. Si algo no cerró → texto normal.
+          const bad = [...p.querySelectorAll('.about-line')].some(s => s.getClientRects().length !== 1);
+          if (bad) throw new Error('renglón partido');
+        } catch (e) {
+          plain();
+        }
+      });
+    }
+    let aboutFitRaf = 0;
+    function scheduleAboutFit() {
+      cancelAnimationFrame(aboutFitRaf);
+      aboutFitRaf = requestAnimationFrame(fitAboutBlocks);
+    }
+    // Recalcular si cambia el ANCHO del texto (pantalla, barra de scroll de Windows
+    // que aparece al terminar el loader) o cuando termina de cargar la tipografía.
+    if (window.ResizeObserver) {
+      new ResizeObserver(() => {
+        const box = document.getElementById('aboutText');
+        if (box && box.clientWidth !== aboutFitWidth) scheduleAboutFit();
+      }).observe(document.getElementById('aboutText'));
+    } else {
+      window.addEventListener('resize', scheduleAboutFit);
+    }
+    if (document.fonts) {
+      if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', () => { aboutFontsGen++; scheduleAboutFit(); });
+      if (document.fonts.ready) document.fonts.ready.then(() => { aboutFontsGen++; scheduleAboutFit(); });
+    }
 
     /* ════════════════════════════════════════════════════════════
        PANEL DE AJUSTES EN VIVO  (se abre agregando #ajustes a la URL)
@@ -1301,14 +1779,15 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       s.setProperty('--about-hyphens', TWEAKS.aboutAlign === 'justify' ? 'auto' : 'manual');
       s.setProperty('--contact-link-size', TWEAKS.contactLinkSize + 'px');
       s.setProperty('--footer-name-size', TWEAKS.footerNameSize + 'px');
-      s.setProperty('--contact-align', alignToFlex(TWEAKS.contactAlign));
+      // Justificado = bloque cuadradito: también el último renglón de cada bloque.
+      s.setProperty('--about-align-last', TWEAKS.aboutAlign === 'justify' ? 'justify' : 'auto');
       s.setProperty('--row-align', alignToFlex(TWEAKS.rowAlign));
       justifyAll(); // re-acomoda la galería con rowHeight/gap/boost/cap nuevos
-      squareAboutBlocks(); // el About cambia de ancho/tamaño → recalcular su último renglón
+      scheduleAboutFit(); // tamaño/ancho/alineación del About pueden haber cambiado
     }
 
-    const TWEAK_KEYS = ['rowHeight','gap','portraitBoost','stretchCap','rowAlign','navLogoSize','navLinkSize','sectionLabelSize','sectionLabelAlign','artistNameSize','lightboxTitleSize','aboutH2Size','aboutPSize','aboutMaxWidth','aboutBlockGap','aboutAlign','contactLinkSize','footerNameSize','contactAlign'];
-    const ALIGN_KEYS = ['rowAlign','sectionLabelAlign','aboutAlign','contactAlign'];
+    const TWEAK_KEYS = ['rowHeight','gap','portraitBoost','stretchCap','rowAlign','navLogoSize','navLinkSize','sectionLabelSize','sectionLabelAlign','artistNameSize','lightboxTitleSize','aboutH2Size','aboutPSize','aboutMaxWidth','aboutBlockGap','aboutAlign','contactLinkSize','footerNameSize','spinSound','spinVolume'];
+    const ALIGN_KEYS = ['rowAlign','sectionLabelAlign','aboutAlign'];
 
     function serializeTweaks() { return TWEAK_KEYS.map(k => k + ' = ' + TWEAKS[k]).join('\n'); }
     function parseTweaks(text) {
@@ -1318,6 +1797,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         if (!m || TWEAK_KEYS.indexOf(m[1]) === -1) return;
         const k = m[1], raw = m[2];
         if (ALIGN_KEYS.indexOf(k) !== -1) { const v = raw.toLowerCase(); if (['left','center','right','justify'].indexOf(v) !== -1) out[k] = v; }
+        else if (k === 'spinSound') { const v = raw.toLowerCase(); if (COIN_SOUND_LIST.some(s => s[0] === v)) out[k] = v; }
         else { const n = parseFloat(raw); if (!isNaN(n)) out[k] = n; }
       });
       return out;
@@ -1336,16 +1816,20 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       { key: 'sectionLabelSize', label: 'Título de sección', min: 12, max: 56, step: 1, unit: 'px' },
       { key: 'artistNameSize', label: 'Nombre sobre la foto', min: 10, max: 44, step: 1, unit: 'px' },
       { key: 'lightboxTitleSize', label: 'Nombre en la foto abierta', min: 12, max: 48, step: 1, unit: 'px' },
-      { key: 'aboutH2Size', label: 'About — título', min: 10, max: 44, step: 1, unit: 'px' },
+      { key: 'aboutH2Size', label: 'Pie — títulos (About, Contacto, Navegación)', min: 10, max: 44, step: 1, unit: 'px' },
       { key: 'aboutPSize', label: 'About — texto', min: 12, max: 44, step: 1, unit: 'px' },
-      { key: 'aboutMaxWidth', label: 'About — ancho', min: 300, max: 1000, step: 10, unit: 'px' },
+      { key: 'aboutMaxWidth', label: 'About — ancho de la columna', min: 300, max: 1000, step: 10, unit: 'px' },
       { key: 'aboutBlockGap', label: 'About — espacio entre bloques', min: 0, max: 60, step: 1, unit: 'px' },
-      { key: 'contactLinkSize', label: 'Contacto — links', min: 10, max: 32, step: 1, unit: 'px' },
+      { key: 'contactLinkSize', label: 'Pie — links (contacto y navegación)', min: 10, max: 32, step: 1, unit: 'px' },
       { key: 'footerNameSize', label: 'Contacto — ©', min: 10, max: 28, step: 1, unit: 'px' },
       { group: 'Alineación (izq / centro / der)' },
       { key: 'sectionLabelAlign', label: 'Título de sección', align: true },
       { key: 'aboutAlign', label: 'About (texto)', align: true, justify: true },
-      { key: 'contactAlign', label: 'Contacto', align: true },
+      { group: 'Sonido de la moneda (el loguito)' },
+      { key: 'spinSound', label: 'Sonido — tocá uno para escucharlo', align: true, wrap: true,
+        opts: COIN_SOUND_LIST, onPick: (name) => CoinAudio.play(name) },
+      { key: 'spinVolume', label: 'Volumen', min: 0, max: 150, step: 5, unit: '%',
+        onChange: () => CoinAudio.play() },
     ];
 
     let panelSyncing = false; // evita loops entre los sliders y el cuadro de texto
@@ -1366,6 +1850,8 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         '#tweakPanel .tp-row .tp-val{color:#fff;font-variant-numeric:tabular-nums;}',
         '#tweakPanel input[type=range]{width:100%;accent-color:#ff5a5f;cursor:pointer;margin:0;}',
         '#tweakPanel .tp-align{display:flex;gap:4px;}',
+        '#tweakPanel .tp-wrap{flex-wrap:wrap;}',
+        '#tweakPanel .tp-wrap button{flex:1 0 30%;}',
         '#tweakPanel .tp-align button{flex:1;background:#1f1f1f;border:1px solid #333;color:#bbb;padding:5px 0;border-radius:5px;cursor:pointer;font-size:11px;}',
         '#tweakPanel .tp-align button.on{background:#ff5a5f;border-color:#ff5a5f;color:#111;font-weight:600;}',
         '#tweakPanel textarea{width:100%;height:150px;margin-top:6px;background:#0e0e0e;color:#cfcfcf;border:1px solid #333;border-radius:6px;padding:8px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.5;resize:vertical;white-space:pre;}',
@@ -1419,13 +1905,16 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           const lab = document.createElement('label');
           const span = document.createElement('span'); span.textContent = ctrl.label; lab.appendChild(span);
           row.appendChild(lab);
-          const wrap = document.createElement('div'); wrap.className = 'tp-align';
-          const alignOpts = ctrl.justify
+          const wrap = document.createElement('div'); wrap.className = 'tp-align' + (ctrl.wrap ? ' tp-wrap' : '');
+          const alignOpts = ctrl.opts || (ctrl.justify
             ? [['left','Izq'],['center','Centro'],['right','Der'],['justify','Justif.']]
-            : [['left','Izq'],['center','Centro'],['right','Der']];
+            : [['left','Izq'],['center','Centro'],['right','Der']]);
           alignOpts.forEach(([opt, txt]) => {
             const b = document.createElement('button'); b.textContent = txt; b.dataset.opt = opt;
-            b.onclick = () => { TWEAKS[ctrl.key] = opt; applyTweaks(); markAlign(ctrl.key); refreshText(); };
+            b.onclick = () => {
+              TWEAKS[ctrl.key] = opt; applyTweaks(); markAlign(ctrl.key); refreshText();
+              if (ctrl.onPick) ctrl.onPick(opt);   // p. ej. escuchar el sonido elegido
+            };
             wrap.appendChild(b);
           });
           alignWraps[ctrl.key] = wrap;
@@ -1442,6 +1931,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
             val.textContent = range.value + (ctrl.unit || '');
             applyTweaks(); refreshText();
           };
+          if (ctrl.onChange) range.onchange = () => ctrl.onChange();   // al soltar el slider (p. ej. escuchar el volumen)
           valEls[ctrl.key] = { el: val, unit: ctrl.unit || '' };
           rangeEls[ctrl.key] = range;
           row.appendChild(lab); row.appendChild(range);
@@ -1528,6 +2018,10 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       const scrollY = window.scrollY || window.pageYOffset;
       const maxScroll = doc.scrollHeight - window.innerHeight;
       const atBottom = scrollY >= maxScroll - 4; // margen de 4px por redondeos
+      // Salto: en el menú se marca directo la sección de destino (la primera si
+      // subimos, la última si bajamos) sin "barrer" las del medio.
+      const targets = navTargets();
+      if (targets.length) startNavJump((atBottom ? targets[0] : targets[targets.length - 1]).id);
       window.scrollTo({ top: atBottom ? 0 : doc.scrollHeight, behavior: 'smooth' });
     }
 
@@ -1567,33 +2061,17 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       }
       function onMove(e) { setTilt(e.clientX, e.clientY); }
 
-      // Efectito de sonido: un "blip" corto con PITCH RANDOM en cada giro (Web Audio,
-      // sin archivos externos). El contexto se crea en el primer click (gesto del usuario).
-      let audioCtx = null;
-      function playSpinSound() {
-        try {
-          const AC = window.AudioContext || window.webkitAudioContext;
-          if (!AC) return;
-          if (!audioCtx) audioCtx = new AC();
-          if (audioCtx.state === 'suspended') audioCtx.resume();
-          const t = audioCtx.currentTime;
-          // Pitch random sobre una escala pentatónica (suena piola, medio retro por el logo pixelado).
-          const scale = [0, 2, 4, 7, 9];
-          const semis = scale[(Math.random() * scale.length) | 0] + 12 * ((Math.random() * 2) | 0);
-          const freq = 523.25 * Math.pow(2, semis / 12);            // base Do5
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, t);
-          osc.frequency.exponentialRampToValueAtTime(freq * 1.6, t + 0.07);  // "chirp" de giro
-          gain.gain.setValueAtTime(0.0001, t);
-          gain.gain.exponentialRampToValueAtTime(0.2, t + 0.008);            // ataque rápido
-          gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.24);          // decae
-          osc.connect(gain).connect(audioCtx.destination);
-          osc.start(t);
-          osc.stop(t + 0.26);
-        } catch (e) {}
-      }
+      // Efectito de sonido en cada giro: lo elegido en #ajustes (ver CoinAudio más
+      // arriba). Para que el PRIMER toque también suene, el audio se prende apenas
+      // se apoya el mouse en la moneda (antes del click) o al pasar por encima si
+      // ya hubo algún click en la página (antes de eso el navegador no deja).
+      function playSpinSound() { CoinAudio.play(); }
+      mark.addEventListener('pointerdown', function (e) {
+        if (e.pointerType === 'mouse') CoinAudio.wake();
+      });
+      mark.addEventListener('pointerenter', function (e) {
+        if (e.pointerType === 'mouse' && navigator.userActivation && navigator.userActivation.hasBeenActive) CoinAudio.wake();
+      });
 
       // Golpe fuerte al principio que decae (easeOutQuint): casi toda la vuelta
       // pasa en el primer instante y después afloja y se asienta.
