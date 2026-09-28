@@ -1237,7 +1237,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       contactLinkSize: 22,         // links del pie (contacto y navegación)
       footerNameSize: 15,
       // Sonido de la moneda (el loguito)
-      spinSound: 'blip',           // cuál suena (la lista completa: COIN_SOUND_LIST; se prueban en el panel #ajustes)
+      spinSound: 'visita',         // 'visita' = en cada visita se sortea: Boing (90%) o Miau (10%). Los demás: COIN_SOUND_LIST, se prueban en #ajustes
       spinVolume: 100,             // % (100 = como fue diseñado cada sonido)
     };
 
@@ -1279,6 +1279,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       ['obturador', 'Obturador'], ['flash', 'Flash'], ['scratch', 'Scratch'],
       ['bombo', 'Bombo 808'], ['palmas', 'Palmas'], ['cuerda', 'Cuerda'],
       ['#sorpresa', 'Sorpresa'],
+      ['visita', 'Boing 90% / Miau 10%'],
       ['azar', 'Uno distinto cada vez'],
     ];
 
@@ -1733,6 +1734,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
 
         // ── Sorpresa ── (lo resuelve play(): elige uno al azar con su volumen)
         azar(c, t, out) { SOUNDS.blip(c, t, out); },
+        visita(c, t, out) { SOUNDS[VISIT](c, t, out); },   // (lo resuelve play(): el sorteado para esta visita)
       };
 
       // Volumen relativo de cada sonido, MEDIDO (sonoridad tipo oído humano) para que
@@ -1744,7 +1746,10 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         tic: 2.4, kalimba: 0.65, piano: 0.7,
         obturador: 2.2, flash: 2.2, scratch: 0.78, palmas: 2.2,
       };
-      const soundNames = () => COIN_SOUND_LIST.map(x => x[0]).filter(k => k !== 'azar' && k[0] !== '#' && SOUNDS[k]);
+      const soundNames = () => COIN_SOUND_LIST.map(x => x[0]).filter(k => k !== 'azar' && k !== 'visita' && k[0] !== '#' && SOUNDS[k]);
+      // Sorteo de ESTA visita (una vez, al abrir la página): 9 de cada 10 veces el
+      // Boing, 1 de cada 10 el Miau. Toda la visita suena el mismo.
+      const VISIT = Math.random() < 0.9 ? 'boing' : 'miau';
 
       // Hace sonar `name` (o el elegido en TWEAKS). Llamar desde un click/toque.
       function play(name) {
@@ -1760,13 +1765,14 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           const on = startedAt ? performance.now() - startedAt : 0;
           const t = c.currentTime + Math.max(0, WAKE_MS - on) / 1000 + 0.01;
           let n = SOUNDS[name] ? name : (SOUNDS[TWEAKS.spinSound] ? TWEAKS.spinSound : 'blip');
+          if (n === 'visita') n = VISIT;
           if (n === 'azar') { const all = soundNames(); n = all[(Math.random() * all.length) | 0]; }
           out.gain.value = vol * (LEVEL[n] || 1);
           SOUNDS[n](c, t, out);
         } catch (e) {}
       }
 
-      return { wake, play, SOUNDS, LEVEL };
+      return { wake, play, SOUNDS, LEVEL, get visit() { return VISIT; } };
     })();
 
     function justifyParams() {
