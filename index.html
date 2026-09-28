@@ -19,8 +19,9 @@
 
     /* ─── Variables ─── */
     :root {
-      --bg: #0d0d0d;                /* barra de arriba y pie (About + ©) */
-      --page-bg: #161616;           /* fondo de la galería: un poco más claro (panel: "Fondo de la galería") */
+      --bg: #0d0d0d;                /* atrás de todo (y la pantalla de carga) */
+      --page-bg: #0d0d0d;           /* fondo de la galería: el oscuro (panel: "Fondo de la galería") */
+      --bar-bg: #161616;            /* barra de arriba y pie (About + ©): un poco más claros (panel: "Barra de arriba y pie") */
       --bg2: #111111;
       --card-shadow: 1;             /* fuerza de la sombra de las fotos (1 = 100%) */
       --card-glare: 1;              /* fuerza del brillo que sigue al mouse (1 = 100%) */
@@ -75,7 +76,7 @@
       grid-template-columns: 1fr auto 1fr;
       align-items: center;
       padding: 0 20px;
-      background: var(--bg);
+      background: var(--bar-bg);
       z-index: 100;
       border-bottom: 1px solid #1a1a1a;
     }
@@ -198,7 +199,7 @@
       position: fixed;
       top: var(--nav-h);
       left: 0; right: 0;
-      background: var(--bg);
+      background: var(--bar-bg);
       padding: 24px 40px 32px;
       border-bottom: 1px solid #1a1a1a;
       z-index: 99;
@@ -408,6 +409,7 @@
        Mismos colores y tipografías de siempre; solo cambia la disposición.
        En pantallas angostas se apila todo y Contacto/Navegación van centrados. */
     .site-footer {
+      background: var(--bar-bg);     /* mismo color que la barra de arriba */
       border-top: 1px solid #1a1a1a;
     }
     .footer-main {
@@ -1218,7 +1220,8 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       stretchCap: 1.6,       // tope para estirar la última fila
       rowAlign: 'center',    // left | center | right  (fila incompleta)
       // Fondo y efecto de las fotos
-      pageBg: 22,            // gris del fondo de la galería (0 = negro; arriba y el pie son 13)
+      pageBg: 13,            // gris del fondo de la galería (0 = negro): el oscuro
+      barBg: 22,             // gris de la barra de arriba y del pie (About + ©): un poco más claro
       tiltMax: 9,            // inclinación máxima de las fotos con el mouse (grados; 0 = sin efecto)
       tiltShadow: 100,       // fuerza de la sombra de las fotos (%)
       tiltGlare: 100,        // fuerza del brillo que sigue al mouse (%)
@@ -2362,13 +2365,15 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       s.setProperty('--row-align', alignToFlex(TWEAKS.rowAlign));
       const g = Math.round(Math.min(255, Math.max(0, TWEAKS.pageBg)));
       s.setProperty('--page-bg', `rgb(${g}, ${g}, ${g})`);
+      const gb = Math.round(Math.min(255, Math.max(0, TWEAKS.barBg)));
+      s.setProperty('--bar-bg', `rgb(${gb}, ${gb}, ${gb})`);
       s.setProperty('--card-shadow', Math.max(0, TWEAKS.tiltShadow) / 100);
       s.setProperty('--card-glare', Math.max(0, TWEAKS.tiltGlare) / 100);
       justifyAll(); // re-acomoda la galería con rowHeight/gap/boost/cap nuevos
       scheduleAboutFit(); // tamaño/ancho/alineación del About pueden haber cambiado
     }
 
-    const TWEAK_KEYS = ['rowHeight','gap','portraitBoost','stretchCap','rowAlign','pageBg','tiltMax','tiltShadow','tiltGlare','navLogoSize','navLinkSize','sectionLabelSize','sectionLabelAlign','artistNameSize','lightboxTitleSize','aboutH2Size','aboutPSize','aboutMaxWidth','aboutBlockGap','aboutAlign','contactLinkSize','footerNameSize','spinSound','spinVolume'];
+    const TWEAK_KEYS = ['rowHeight','gap','portraitBoost','stretchCap','rowAlign','pageBg','barBg','tiltMax','tiltShadow','tiltGlare','navLogoSize','navLinkSize','sectionLabelSize','sectionLabelAlign','artistNameSize','lightboxTitleSize','aboutH2Size','aboutPSize','aboutMaxWidth','aboutBlockGap','aboutAlign','contactLinkSize','footerNameSize','spinSound','spinVolume'];
     const ALIGN_KEYS = ['rowAlign','sectionLabelAlign','aboutAlign'];
 
     function serializeTweaks() { return TWEAK_KEYS.map(k => k + ' = ' + TWEAKS[k]).join('\n'); }
@@ -2393,7 +2398,8 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       { key: 'stretchCap', label: 'Tope última fila', min: 1, max: 3, step: 0.1, unit: '×' },
       { key: 'rowAlign', label: 'Última fila incompleta', align: true },
       { group: 'Fondo y efecto de las fotos' },
-      { key: 'pageBg', label: 'Fondo de la galería (arriba y pie = 13)', min: 0, max: 60, step: 1, unit: '' },
+      { key: 'pageBg', label: 'Fondo de la galería', min: 0, max: 60, step: 1, unit: '' },
+      { key: 'barBg', label: 'Barra de arriba y pie', min: 0, max: 60, step: 1, unit: '' },
       { key: 'tiltMax', label: 'Inclinación con el mouse', min: 0, max: 20, step: 0.5, unit: '°' },
       { key: 'tiltShadow', label: 'Sombra de las fotos', min: 0, max: 200, step: 5, unit: '%' },
       { key: 'tiltGlare', label: 'Brillo que sigue al mouse', min: 0, max: 200, step: 5, unit: '%' },
