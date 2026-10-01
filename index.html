@@ -4128,6 +4128,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       let mode = null;                 // 'swipe' | 'pan' | 'pinch' | 'none'
       let ignore = false, startX = 0, startY = 0, axis = null, moved = false, tapZone = null;
       let lastTap = { t: 0, x: 0, y: 0 }, tapTimer = 0;
+      let swipeSamples = [];           // últimas posiciones del dedo (para medir la velocidad del swipe)
 
       const undoSwipe = () => {        // si un swipe venía empezado, vuelve todo a su lugar
         lb.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
@@ -4176,6 +4177,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           LbZoom.panStart(t.clientX, t.clientY);
         } else {
           mode = 'swipe';
+          swipeSamples = [{ x: t.clientX, t: performance.now() }];
           track().style.transition = 'none';
           lb.style.transition = 'none';
         }
@@ -4195,6 +4197,9 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
         }
         if (axis === 'x') {
+          const now = performance.now();
+          swipeSamples.push({ x: t.clientX, t: now });
+          while (swipeSamples.length > 2 && now - swipeSamples[0].t > 150) swipeSamples.shift();
           const atEdge = (lbIndex === 0 && dx > 0) || (lbIndex === lbImages.length - 1 && dx < 0);
           if (!atEdge) track().style.transform = `translateX(calc(-100vw + ${dx}px))`;
         } else if (axis === 'y') {
@@ -4238,7 +4243,14 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         const dx = t.clientX - startX;
         const dy = t.clientY - startY;
         if (axis === 'x' && !cancelled) {
-          if (Math.abs(dx) > window.innerWidth * 0.25) {
+          // Pasa de foto si arrastraste un 15% de la pantalla, o con un "golpecito"
+          // rápido de al menos 30 px (aunque sea corto). Si no, vuelve a su lugar.
+          const now = performance.now();
+          const ref = swipeSamples.find(s => now - s.t <= 120) || swipeSamples[swipeSamples.length - 1];
+          const v = ref && now > ref.t ? (t.clientX - ref.x) / (now - ref.t) : 0;   // px por ms
+          const far = Math.abs(dx) > window.innerWidth * 0.15;
+          const flick = Math.abs(dx) > 30 && Math.abs(v) > 0.4 && Math.sign(v) === Math.sign(dx);
+          if (far || flick) {
             lbNavBtn(dx < 0 ? 1 : -1);
           } else {
             lbResetTrack(true);
