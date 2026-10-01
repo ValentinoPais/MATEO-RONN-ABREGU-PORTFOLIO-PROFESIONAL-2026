@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mateo Ronn Abregu — Fotógrafo</title>
   <meta name="description" content="Fotógrafo especializado en shows, moda y fotografía social. Buenos Aires." />
@@ -15,13 +15,23 @@
       scroll-behavior: smooth;
       scrollbar-gutter: stable;   /* la barra de scroll de Windows ya tiene su lugar: nada "salta" al
                                      terminar la carga ni al abrir/cerrar una foto */
+      scroll-padding-top: var(--nav-space);   /* al saltar a una sección (o a un link con el teclado),
+                                                 queda justo debajo de la barra de arriba, no tapada */
     }
 
     /* ─── Variables ─── */
     :root {
-      --bg: #0d0d0d;                /* atrás de todo (y la pantalla de carga) */
-      --page-bg: #0d0d0d;           /* fondo de la galería: el oscuro (panel: "Fondo de la galería") */
-      --bar-bg: #161616;            /* barra de arriba y pie (About + ©): un poco más claros (panel: "Barra de arriba y pie") */
+      /* Un solo fondo, el oscuro, para TODO: galería, barra de arriba, pie y
+         pantalla de carga (panel: "Fondo de toda la página"). La barra de arriba
+         se distingue solo porque es apenas transparente: lo que pasa por detrás
+         se ve difuminado, como en YouTube (panel: opacidad y difuminado). */
+      --bg: #0d0d0d;
+      --bg-rgb: 13, 13, 13;         /* el mismo color, en números (para la barra semitransparente) */
+      --bar-alpha: 0.8;             /* opacidad de la barra de arriba (1 = sólida, 0 = invisible) */
+      --bar-blur: 20px;             /* cuánto se difumina lo que pasa por detrás de la barra */
+      --line: #262626;              /* líneas finas del pie (arriba del About y arriba del ©) */
+      --sbw: 0px;                   /* PC: ancho de la barra de scroll (lo mide el JS) */
+      --sbw-box: 0px;               /* PC: ancho de la cajita de esa barra (lo mide el JS) */
       --bg2: #111111;
       --card-shadow: 1;             /* fuerza de la sombra de las fotos (1 = 100%) */
       --card-glare: 1;              /* fuerza del brillo que sigue al mouse (1 = 100%) */
@@ -30,27 +40,30 @@
       --accent: #e8e8e8;
       --nav-h: 80px;
       --nav-space: 80px; /* alto real del nav (en celu son 2 renglones); lo ajusta el JS */
-      --font: 'Adobe Garamond', Times, serif;
-      --font-display: 'Bebas Neue', sans-serif;
+      --font: 'Roboto', 'Helvetica Neue', Arial, sans-serif;           /* tipografía de toda la página */
+      --font-display: 'Roboto', 'Helvetica Neue', Arial, sans-serif;   /* títulos, menú, pie (la misma) */
 
       /* ── Ajustables en vivo desde el panel (abrí la página con #ajustes) ──
-         Estos valores son los que después dejamos fijos en código. ── */
-      --nav-logo-size: 36px;
+         Estos valores son los que después dejamos fijos en código.
+         (Con Roboto, que es más ancha que la letra de antes, van al ~80% de
+         los tamaños de antes: así se ven del mismo tamaño.) ── */
+      --nav-logo-size: 29px;
       --nav-logo-mark-size: 60px;   /* tamaño del loguito (en celular se achica más abajo) */
-      --nav-link-size: 18px;
-      --section-label-size: 42px;   /* títulos de sección (Shows, Moda…); en celu: 80% */
+      --nav-link-size: 14px;
+      --section-label-size: 34px;   /* títulos de sección (Shows, Moda…); en celu: 80% */
       --section-label-align: center;
-      --artist-name-size: 20px;
-      --lightbox-title-size: 26px;  /* nombre del artista arriba a la izq. en la foto abierta (celu: 75%) */
-      --about-h2-size: 18px;
-      --about-p-size: 22px;
+      --artist-name-size: 16px;
+      --lightbox-title-size: 21px;  /* nombre del artista arriba a la izq. en la foto abierta (celu: 75%) */
+      --about-h2-size: 14px;
+      --about-p-size: 18px;
       --about-max-width: 800px;     /* ancho máx. de la columna About en el pie */
       --about-align: justify;       /* justificado = el texto arma un bloque parejo */
       --about-align-last: justify;  /* también el último renglón → bloque cuadradito */
       --about-hyphens: auto;        /* guiones al cortar palabras (solo cuando está justificado) */
       --about-block-gap: 16px;      /* separación entre bloques del About (uno por cada salto de línea) */
-      --contact-link-size: 22px;    /* links del pie (contacto y navegación) */
-      --footer-name-size: 15px;
+      --contact-link-size: 18px;    /* links del pie (navegación) */
+      --contact-icon-size: 28px;    /* íconos de Contacto (Instagram y mail) */
+      --footer-name-size: 12px;
       --row-align: center;       /* alineación de la última fila incompleta de la galería */
     }
 
@@ -76,9 +89,12 @@
       grid-template-columns: 1fr auto 1fr;
       align-items: center;
       padding: 0 20px;
-      background: var(--bar-bg);
+      /* Mismo color que el fondo, pero apenas transparente y con difuminado:
+         las fotos que pasan por detrás se ven borrosas (tipo YouTube). */
+      background: rgba(var(--bg-rgb), var(--bar-alpha));
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(var(--bar-blur));
       z-index: 100;
-      border-bottom: 1px solid #1a1a1a;
     }
 
     .nav-logo {
@@ -98,11 +114,12 @@
       grid-column: 2;
       justify-self: center;
       font-family: var(--font-display);
-      font-size: var(--nav-logo-size);
+      font-size: calc(var(--nav-logo-size) * var(--nav-fit, 1));   /* --nav-fit: se achica un poco si no entra (fitNav) */
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       white-space: nowrap;
+      color: #fff;                     /* en reposo: blanco puro (con el mouse encima se apaga) */
       transition: color 0.25s ease;
     }
 
@@ -147,10 +164,11 @@
        al costado → lateral, en una esquina → diagonal, como una moneda impulsada. */
 
     /* Hover (solo con mouse; en el celu no queda "pegado" al tocar):
-       · el nombre no cambia de forma: pasa a blanco puro (en reposo es #e8e8e8);
-       · los botones del menú pasan de gris a blanco, igual que el activo. */
+       · los botones del menú se PRENDEN: de gris a blanco, igual que el activo;
+       · el nombre hace lo mismo pero al revés: se APAGA, de blanco al gris de
+         los botones (sin cambiar de forma). */
     @media (hover: hover) {
-      .nav-name:hover { color: #fff; }
+      .nav-name:hover { color: var(--muted); }
       .nav-links a:hover { color: #fff; }
     }
 
@@ -158,21 +176,52 @@
       grid-column: 3;            /* columna derecha */
       justify-self: end;
       display: flex;
-      gap: 32px;
+      gap: calc(32px * var(--nav-fit, 1));
       list-style: none;
     }
 
     .nav-links a {
       font-family: var(--font-display);
-      font-size: var(--nav-link-size);
+      font-size: calc(var(--nav-link-size) * var(--nav-fit, 1));
       letter-spacing: 0.12em;
       text-transform: uppercase;
+      white-space: nowrap;          /* "Foto fija" nunca en dos renglones */
       color: var(--muted);
       transition: color 0.2s;
     }
     /* Sección que estás viendo: su botón queda en blanco (lo marca el JS según
        el scroll → updateActiveNav). */
     .nav-links a.active { color: #fff; }
+
+    /* Barra en DOS renglones: loguito + nombre arriba (centrados) y las
+       secciones abajo. En el celu siempre; en la PC, solo si las secciones no
+       entran al lado del nombre (ventana angosta o muchas secciones). Lo decide
+       el JS (fitNav) poniéndole la clase "stacked" a la barra. */
+    nav.stacked {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      column-gap: 10px;
+      row-gap: 8px;
+      height: auto;
+      padding: 12px 16px 10px;
+    }
+    nav.stacked .nav-name { white-space: normal; text-align: center; }  /* si no entra, puede ir a dos renglones */
+    nav.stacked .nav-links {
+      flex-basis: 100%;
+      min-width: 0;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    /* Centradas si entran; si son muchas y no entran, se deslizan con el dedo
+       (igual que el filmstrip de miniaturas del lightbox). */
+    nav.stacked .nav-links::before,
+    nav.stacked .nav-links::after { content: ''; margin: auto; }
+    nav.stacked .nav-links::-webkit-scrollbar { display: none; }
+    nav.stacked .nav-links li { flex-shrink: 0; }
 
 
     /* hamburger */
@@ -199,34 +248,73 @@
       position: fixed;
       top: var(--nav-h);
       left: 0; right: 0;
-      background: var(--bar-bg);
+      background: rgba(var(--bg-rgb), var(--bar-alpha));   /* igual que la barra de arriba */
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(var(--bar-blur));
       padding: 24px 40px 32px;
-      border-bottom: 1px solid #1a1a1a;
+      border-bottom: 1px solid var(--line);
       z-index: 99;
     }
     .mobile-menu.open { display: block; }
     .mobile-menu a {
       font-family: var(--font-display);
       display: block;
-      font-size: 18px;
+      font-size: 14px;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       color: var(--muted);
       padding: 12px 0;
-      border-bottom: 1px solid #1a1a1a;
+      border-bottom: 1px solid var(--line);
     }
     .mobile-menu a:last-child { border-bottom: none; }
 
     /* ─── Main wrapper ─── */
     main {
-      padding-top: var(--nav-space);
+      padding-top: var(--nav-space);   /* el contenido arranca debajo de la barra de arriba (que es fija) */
     }
-    /* La galería tiene su propio fondo (un poco más claro); la barra de arriba y el
-       pie quedan con el color de siempre (--bg). El espacio antes del pie va acá
-       adentro para que ese tramo también tenga el fondo de la galería. */
     #dynamicSections {
-      background: var(--page-bg);
-      padding-bottom: 80px;
+      padding-bottom: 80px;            /* espacio antes del pie */
+    }
+    /* En la PC (mouse o touchpad) NO scrollea la página entera: scrollea este
+       contenedor (las fotos + el pie). Ocupa toda la pantalla, así lo que
+       scrolleás pasa POR DETRÁS de la barra de arriba (que es translúcida); pero
+       su barra de scroll propia no se ve: la que se ve es #vscroll, una barra
+       nativa "gemela" que arranca justo debajo del menú y se mueve junto con el
+       contenedor (la maneja el JS → layoutVScroll). (El JS pregunta lo mismo con
+       innerScroll().) En el celu/tablet scrollea la página como siempre: así el
+       navegador puede esconder su barra al bajar y todo se siente nativo (ahí el
+       contenido también pasa por detrás de la barra de arriba). */
+    #vscroll { display: none; }
+    @media (hover: hover) and (pointer: fine) {
+      html { scrollbar-gutter: auto; }
+      html, body { height: 100%; overflow: hidden; }
+      main {
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        right: var(--sbw);                /* deja el lugar de la barra de scroll */
+        overflow-x: hidden;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+        overscroll-behavior: contain;
+        scroll-padding-top: var(--nav-space);   /* saltos a secciones: justo debajo de la barra */
+        scrollbar-width: none;            /* su barra no se ve: se ve la de #vscroll */
+      }
+      main::-webkit-scrollbar { display: none; }
+      main:focus { outline: none; }
+      body.loading main { overflow-y: hidden; }
+      #vscroll {
+        display: block;
+        position: fixed;
+        top: var(--nav-space); right: 0; bottom: 0;   /* arranca justo debajo del menú */
+        width: var(--sbw-box);
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        z-index: 100;
+        color-scheme: dark;                     /* barra oscura, como todo lo demás */
+        scrollbar-color: #444 var(--bg);        /* manija gris sobre el mismo fondo de la página */
+      }
+      #vscroll > div { width: 1px; }            /* "relleno" del largo justo (lo ajusta el JS) */
     }
 
     /* ─── Section titles ─── */
@@ -239,12 +327,11 @@
       color: #fff;
       text-align: var(--section-label-align);
       padding: 44px 20px 14px;
-      scroll-margin-top: var(--nav-space);
     }
 
     .empty-message {
       font-family: var(--font-display);
-      font-size: 18px;
+      font-size: 14px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--muted);
@@ -402,15 +489,18 @@
 
 
     /* ─── Pie de página: About + Contacto + Navegación ───────────────────
+         (fotos)
+         ─────────────────────────────── línea ─────────────────────────────
          [ ABOUT + texto en bloque ]                      [ CONTACTO   ]
                                                           [ NAVEGACIÓN ]
          ─────────────────────────────── línea ─────────────────────────────
                                © 2026 Mateo Ronn Abregu
-       Mismos colores y tipografías de siempre; solo cambia la disposición.
+       Mismo fondo que todo lo demás: lo separan dos líneas finas (--line), una
+       arriba (de las fotos) y otra abajo (del ©).
        En pantallas angostas se apila todo y Contacto/Navegación van centrados. */
     .site-footer {
-      background: var(--bar-bg);     /* mismo color que la barra de arriba */
-      border-top: 1px solid #1a1a1a;
+      background: var(--bg);
+      border-top: 1px solid var(--line);    /* línea fina: fotos | About */
     }
     .footer-main {
       display: flex;
@@ -428,7 +518,6 @@
       min-width: 0;
       max-width: var(--about-max-width);
       text-align: var(--about-align);
-      scroll-margin-top: var(--nav-space);  /* al tocar "About" en el menú, no queda tapado por el menú */
     }
 
     /* Títulos del pie (ABOUT, NAVEGACIÓN, CONTACTO): el estilo de siempre del "About". */
@@ -494,8 +583,180 @@
     }
     .footer-col a:hover { color: var(--muted); }
 
+    /* Contacto: íconos de Instagram y mail, en fila. Toman el color del texto
+       (y se apagan al gris con el mouse, como los links). Los dibujos son de
+       Bootstrap Icons (se cargan de cdn.jsdelivr.net). */
+    .footer-col ul.contact-icons { flex-direction: row; gap: 22px; }
+    .contact-icon {
+      display: block;
+      width: var(--contact-icon-size);
+      height: var(--contact-icon-size);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .contact-icon::before {
+      content: '';
+      display: block;
+      width: 100%;
+      height: 100%;
+      background-color: currentColor;
+      -webkit-mask: var(--icon) center / contain no-repeat;
+      mask: var(--icon) center / contain no-repeat;
+    }
+    .icon-instagram { --icon: url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/icons/instagram.svg"); }
+    .icon-mail, .cm-icon { --icon: url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/icons/envelope.svg"); }
+
+    /* ─── Ventanita "Escribime" (la abre el ícono del mail) ───
+       Mismo estilo que el resto: fondo oscuro, línea fina, Roboto en
+       mayúsculas para el título y los botones, gris para lo secundario. Atrás,
+       la página queda difuminada (como la barra de arriba). */
+    .contact-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 300;                       /* arriba de la barra (100); abajo de la pantalla de carga */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.5);
+      -webkit-backdrop-filter: blur(10px);
+      backdrop-filter: blur(10px);
+      opacity: 0;
+      transition: opacity 0.22s ease;
+    }
+    .contact-modal[hidden] { display: none; }
+    .contact-modal.open { opacity: 1; }
+    .cm-card {
+      position: relative;
+      width: min(420px, 100%);
+      padding: 38px 32px 30px;
+      background: rgba(var(--bg-rgb), 0.94);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
+      text-align: center;
+      transform: translateY(10px) scale(0.98);
+      transition: transform 0.28s cubic-bezier(.2, .8, .2, 1);
+    }
+    .contact-modal.open .cm-card { transform: none; }
+    .cm-close {
+      position: absolute;
+      top: 12px; right: 14px;
+      padding: 4px 6px;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 26px;
+      line-height: 1;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .cm-close:hover { color: #fff; }
+    .cm-icon {                            /* círculo con el sobre, como el loguito */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 58px;
+      height: 58px;
+      margin: 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: #141414;
+      color: var(--text);
+    }
+    .cm-icon::before {
+      content: '';
+      width: 24px;
+      height: 24px;
+      background-color: currentColor;
+      -webkit-mask: var(--icon) center / contain no-repeat;
+      mask: var(--icon) center / contain no-repeat;
+    }
+    .cm-title {
+      margin: 18px 0 10px;
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #fff;
+    }
+    .cm-text {
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 400;
+      line-height: 1.6;
+      letter-spacing: 0.01em;
+      color: var(--muted);
+      text-wrap: balance;                 /* renglones parejos (sin una palabra sola abajo) */
+    }
+    .cm-field {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 24px;
+      padding: 8px 8px 8px 16px;
+      background: #080808;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    .cm-email {
+      flex: 1;
+      min-width: 0;
+      text-align: left;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      -webkit-user-select: all;
+      user-select: all;                   /* un click lo selecciona entero */
+    }
+    .cm-copy,
+    .cm-send {
+      font-family: var(--font-display);
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .cm-copy {
+      flex: none;
+      padding: 9px 14px;
+      font-size: 11px;
+      color: var(--muted);
+      background: #161616;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .cm-copy:hover, .cm-copy.copied { color: #fff; border-color: #3a3a3a; }
+    .cm-send {
+      display: block;
+      margin-top: 12px;
+      padding: 15px 16px;
+      font-size: 13px;
+      color: #0d0d0d;
+      background: var(--text);
+      border-radius: 12px;
+      transition: background 0.2s;
+    }
+    .cm-send:hover { background: #fff; }
+    .cm-close:focus-visible, .cm-copy:focus-visible, .cm-send:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    @media (max-width: 600px) {
+      .cm-card { padding: 34px 20px 22px; }
+      .cm-text br { display: none; }      /* en el celu el texto se acomoda solo */
+      .cm-email { font-size: 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .cm-card { transform: none; transition: none; }
+    }
+
     .footer-bottom {
-      border-top: 1px solid #1a1a1a;
+      border-top: 1px solid var(--line);    /* línea fina: About | © */
       padding: 24px 20px 28px;
       text-align: center;
     }
@@ -508,10 +769,12 @@
       .footer-cols { align-items: center; text-align: center; gap: 44px; min-width: 0; }
       .footer-col h3 { text-align: center; }
       .footer-col ul { align-items: center; }
+      .footer-col ul.contact-icons { justify-content: center; }
     }
     .site-footer.no-about .footer-cols { align-items: center; text-align: center; }
     .site-footer.no-about .footer-col h3 { text-align: center; }
     .site-footer.no-about .footer-col ul { align-items: center; }
+    .site-footer.no-about .footer-col ul.contact-icons { justify-content: center; }
 
     .footer-name {
       font-family: var(--font-display);
@@ -526,6 +789,9 @@
        rápido al principio y cada vez más lento; cuando la primera pantalla ya está
        lista, completa de una y la pantalla se desvanece, como siempre. */
     body.loading { overflow: hidden; }
+    /* Mientras carga, la barra no difumina nada (está tapada y arriba de todo no
+       hay nada detrás): un trabajo menos para la compu justo cuando más carga. */
+    body.loading nav, body.loading .mobile-menu { -webkit-backdrop-filter: none; backdrop-filter: none; }
     #loader {
       position: fixed;
       inset: 0;
@@ -542,7 +808,8 @@
     }
     #loader-name {
       font-family: var(--font-display);
-      font-size: 36px;
+      font-size: min(29px, 6.8vw);      /* en el celu se achica para entrar en un renglón */
+      white-space: nowrap;
       letter-spacing: 0.12em;
       text-transform: uppercase;
       background: linear-gradient(to right, #e8e8e8 var(--p, 0%), #333 var(--p, 0%));
@@ -770,44 +1037,17 @@
     }
 
     @media (max-width: 600px) {
-      /* Nav en dos renglones: el nombre arriba y las secciones visibles justo
-         debajo (antes quedaban escondidas en el menú hamburguesa). */
-      nav {
-        display: flex;           /* en celu: icono + nombre arriba centrados, menú abajo */
-        flex-wrap: wrap;
-        justify-content: center;
-        align-items: center;
-        column-gap: 10px;
-        height: auto;
-        padding: 12px 16px 10px;
-        row-gap: 8px;
-      }
-      .nav-name {
-        font-size: 30px;
-        white-space: normal;       /* en celu puede ir a dos renglones */
-        text-align: center;
+      /* Celu: la barra va en dos renglones (nav.stacked, la pone el JS): el
+         nombre arriba al lado del loguito y las secciones justo debajo. */
+      .nav-name {                  /* lo más grande posible sin dejar de entrar en un renglón al lado del loguito */
+        font-size: clamp(18px, calc((100vw - 96px) / 12), 24px);
       }
       .nav-logo-mark {             /* loguito más chico en celular */
         width: 40px;
         height: 40px;
       }
-      .nav-links {
-        display: flex;
-        flex-basis: 100%;
-        min-width: 0;
-        flex-wrap: nowrap;
-        gap: 18px;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-      }
-      /* Centradas si entran; si son muchas y no entran, se deslizan con el dedo
-         (igual que el filmstrip de miniaturas del lightbox). */
-      .nav-links::before,
-      .nav-links::after { content: ''; margin: auto; }
-      .nav-links::-webkit-scrollbar { display: none; }
-      .nav-links li { flex-shrink: 0; }
-      .nav-links a { font-size: 16px; white-space: nowrap; }
+      .nav-links { gap: 18px; }
+      .nav-links a { font-size: 13px; }
       .hamburger { display: none; }
       .jgrid { padding: 0 10px; }
       .artist-name { display: none; }
@@ -853,12 +1093,13 @@
   <!-- Mobile menu -->
   <div class="mobile-menu" id="mobileMenu"></div>
 
-  <main>
+  <main tabindex="-1">
 
     <!-- Secciones generadas dinámicamente desde Drive (o datos de respaldo) -->
     <div id="dynamicSections"></div>
 
     <!-- ── Pie de página: About + Contacto + Navegación ─────────────────
+           ─────────────────────────────── línea ─────────────────────────────
            [ ABOUT + texto en bloque ]                    [ CONTACTO   ]
                                                           [ NAVEGACIÓN ]
            ─────────────────────────────── línea ─────────────────────────────
@@ -878,9 +1119,13 @@
         <div class="footer-cols">
           <div class="footer-col">
             <h3>Contacto</h3>
-            <ul>
-              <li><a href="mailto:mateoron33@gmail.com">mateoron33@gmail.com</a></li>
-              <li><a href="https://instagram.com/ronnfotografia_" target="_blank" rel="noopener">@ronnfotografia_</a></li>
+            <!-- Íconos: Instagram (abre el perfil) y mail (abre la ventanita
+                 "Escribime"; sin JS abre el mail directo). -->
+            <ul class="contact-icons">
+              <li><a class="contact-icon icon-instagram" href="https://instagram.com/ronnfotografia_" target="_blank" rel="noopener"
+                     aria-label="Instagram (@ronnfotografia_)" title="Instagram · @ronnfotografia_"></a></li>
+              <li><a class="contact-icon icon-mail" id="contactMailBtn" href="mailto:mateoron33@gmail.com"
+                     aria-label="Mail (mateoron33@gmail.com)" title="Mail" aria-haspopup="dialog"></a></li>
             </ul>
           </div>
           <div class="footer-col" role="navigation" aria-label="Navegación">
@@ -895,6 +1140,25 @@
     </footer>
 
   </main>
+
+  <!-- Ventanita "Escribime" (la abre el ícono del mail en Contacto). -->
+  <div class="contact-modal" id="contactModal" role="dialog" aria-modal="true" aria-labelledby="cmTitle" aria-describedby="cmText" hidden>
+    <div class="cm-card">
+      <button class="cm-close" type="button" aria-label="Cerrar">×</button>
+      <span class="cm-icon" aria-hidden="true"></span>
+      <h2 class="cm-title" id="cmTitle">Escribime</h2>
+      <p class="cm-text" id="cmText">¿Tenés una propuesta o querés que charlemos?<br>Mandame un mail.</p>
+      <div class="cm-field">
+        <span class="cm-email" id="cmEmail">mateoron33@gmail.com</span>
+        <button class="cm-copy" id="cmCopy" type="button">Copiar</button>
+      </div>
+      <a class="cm-send" href="mailto:mateoron33@gmail.com">Escribir un mail</a>
+    </div>
+  </div>
+
+  <!-- PC: la barra de scroll que se ve (arranca debajo del menú y se mueve
+       junto con <main>; ver layoutVScroll en el JS). En el celu no aparece. -->
+  <div id="vscroll" tabindex="-1" aria-hidden="true"><div></div></div>
 
   <!-- Lightbox -->
   <div class="lightbox" id="lightbox">
@@ -1106,7 +1370,181 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       footerNav.closest('.footer-col').hidden = !entries.length;   // sin secciones: no mostrar "Navegación" vacía
       lastActiveNavId = null;
       scheduleNavSpy();   // marcar de entrada la sección que se está viendo
+      if (typeof fitNav === 'function') fitNav();   // ¿entran las secciones al lado del nombre?
     }
+
+    /* ─── ¿Quién scrollea? ───
+       En la PC (mouse o touchpad) scrollea el CONTENEDOR de las fotos (<main>),
+       que ocupa toda la pantalla: las fotos pasan por detrás de la barra de
+       arriba (translúcida). En el celu y la tablet, la página entera, como
+       siempre. Todo lo que mira o mueve el scroll pregunta acá. */
+    const innerScrollMQ = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const mainEl = document.querySelector('main');
+    const innerScroll = () => innerScrollMQ.matches;
+    const scrollEl = () => innerScroll() ? mainEl : (document.scrollingElement || document.documentElement);
+    // Trabar / destrabar el scroll de fondo (mientras está abierta una foto).
+    function lockScroll(on) {
+      document.body.style.overflow = on ? 'hidden' : '';
+      mainEl.style.overflowY = on && innerScroll() ? 'hidden' : '';
+    }
+    // Teclas de scroll (↓ ↑, AvPág/RePág, espacio, Inicio/Fin) cuando el foco no
+    // está adentro del contenedor (p. ej. recién abierta la página o después de
+    // tocar el menú): se mueve el contenedor igual, y desde ahí el navegador
+    // ya las maneja solo.
+    document.addEventListener('keydown', e => {
+      if (!innerScroll() || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (document.body.classList.contains('loading') || document.getElementById('lightbox').classList.contains('open')) return;
+      if (document.getElementById('contactModal').classList.contains('open')) return;   // ventanita "Escribime" abierta
+      const t = e.target;
+      if (t && t.closest && t.closest('input, textarea, select, button, [contenteditable], #tweakPanel')) return;
+      if (mainEl.contains(t)) return;
+      const navEl = document.querySelector('nav');
+      const page = (mainEl.clientHeight - (navEl ? navEl.offsetHeight : 0)) * 0.875;   // lo que se ve debajo de la barra
+      let dy = null;
+      if (e.key === 'ArrowDown') dy = 60;
+      else if (e.key === 'ArrowUp') dy = -60;
+      else if (e.key === 'PageDown' || (e.key === ' ' && !e.shiftKey)) dy = page;
+      else if (e.key === 'PageUp' || (e.key === ' ' && e.shiftKey)) dy = -page;
+      else if (e.key === 'Home') dy = -mainEl.scrollTop;
+      else if (e.key === 'End') dy = mainEl.scrollHeight;
+      if (dy === null) return;
+      e.preventDefault();
+      mainEl.scrollBy({ top: dy, behavior: 'smooth' });
+      mainEl.focus({ preventScroll: true });
+    });
+
+    /* ─── PC: la barra de scroll que arranca debajo del menú ───
+       <main> ocupa toda la pantalla (así las fotos pasan por detrás de la barra
+       translúcida de arriba) y su barra propia está oculta. La que se ve es
+       #vscroll: una barra de scroll NATIVA "gemela", con el mismo recorrido, que
+       arranca justo debajo del menú. Las dos se mueven juntas: la ruedita, el
+       teclado o el menú mueven <main> y la barra lo sigue; arrastrar la barra,
+       clickear su riel o usar la ruedita encima de ella mueven <main>.
+       (Cada una ignora el "eco" del movimiento que le pasó la otra.) */
+    const vscroll = document.getElementById('vscroll');
+    const vspacer = vscroll.firstElementChild;
+    let vsBarEcho = null, vsMainEcho = null, vsRaf = 0;
+    function measureScrollbarWidth() {
+      const d = document.createElement('div');
+      d.style.cssText = 'position:absolute;left:-9999px;top:0;width:100px;height:100px;overflow-y:scroll;visibility:hidden;';
+      document.body.appendChild(d);
+      const w = d.offsetWidth - d.clientWidth;
+      d.remove();
+      return w;
+    }
+    function layoutVScroll() {
+      if (vsRaf) { cancelAnimationFrame(vsRaf); vsRaf = 0; }
+      if (!innerScroll()) return;
+      const w = measureScrollbarWidth();              // 0 = barras "flotantes" (Mac, Firefox en Windows 11…)
+      const s = document.documentElement.style;
+      if (s.getPropertyValue('--sbw') !== w + 'px') {
+        s.setProperty('--sbw', w + 'px');             // <main> le deja ese lugar
+        s.setProperty('--sbw-box', (w || 12) + 'px'); // con barras flotantes: una franjita para que aparezca
+      }
+      // Mismo recorrido que <main>: largo del relleno = alto visible de la barra + recorrido de <main>.
+      const range = Math.max(0, mainEl.scrollHeight - mainEl.clientHeight);
+      const h = Math.round(vscroll.clientHeight + range) + 'px';
+      if (vspacer.style.height !== h) vspacer.style.height = h;
+      syncBarToMain();
+    }
+    function scheduleVScroll() { if (!vsRaf) vsRaf = requestAnimationFrame(layoutVScroll); }
+    function syncBarToMain() {
+      const t = mainEl.scrollTop;
+      if (Math.abs(vscroll.scrollTop - t) < 1) return;
+      vsBarEcho = { t, at: performance.now() };
+      vscroll.scrollTop = t;
+    }
+    const isEcho = (echo, t) => echo && performance.now() - echo.at < 250 && Math.abs(t - echo.t) < 1;
+    mainEl.addEventListener('scroll', () => {
+      if (!innerScroll()) return;
+      if (isEcho(vsMainEcho, mainEl.scrollTop)) { vsMainEcho = null; return; }   // lo movió la barra: nada que copiar
+      vsMainEcho = null;
+      const barRange = vscroll.scrollHeight - vscroll.clientHeight;
+      const mainRange = mainEl.scrollHeight - mainEl.clientHeight;
+      if (Math.abs(barRange - mainRange) > 1) layoutVScroll();   // el contenido cambió de alto: acomodar primero
+      else syncBarToMain();
+    }, { passive: true });
+    vscroll.addEventListener('scroll', () => {
+      const t = vscroll.scrollTop;
+      if (isEcho(vsBarEcho, t)) { vsBarEcho = null; return; }    // la movimos nosotros (siguiendo a <main>)
+      vsBarEcho = null;
+      if (!innerScroll() || Math.abs(mainEl.scrollTop - t) < 1) return;
+      vsMainEcho = { t, at: performance.now() };
+      mainEl.scrollTo({ top: t, behavior: 'instant' });          // la arrastrás / clickeás / ruedita encima
+    }, { passive: true });
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(scheduleVScroll);
+      [mainEl, vscroll, document.getElementById('dynamicSections'), document.getElementById('siteFooter')]
+        .forEach(el => el && ro.observe(el));
+    }
+    window.addEventListener('resize', scheduleVScroll);          // zoom del navegador: cambia el ancho de la barra
+    innerScrollMQ.addEventListener && innerScrollMQ.addEventListener('change', scheduleVScroll);
+    layoutVScroll();                                             // ya, antes de armar la galería (para que no salte)
+
+    /* ─── Contacto: ventanita "Escribime" ───
+       El ícono del mail (en Contacto, en el pie) abre esta ventanita: el mail a
+       la vista con un botón para copiarlo, y otro para escribir un mail directo
+       (abre el programa de mail). Se cierra con la ×, tocando afuera o con Esc.
+       Mientras está abierta, la página de atrás no se mueve. (Sin JS, el ícono
+       igual abre el mail: es un link mailto:.) */
+    const contactModal = document.getElementById('contactModal');
+    const contactCopyBtn = document.getElementById('cmCopy');
+    let contactLastFocus = null, contactHideTimer = 0, contactCopyTimer = 0;
+    const contactIsOpen = () => contactModal.classList.contains('open');
+    function openContactModal(e) {
+      if (e) e.preventDefault();
+      if (contactIsOpen()) return;
+      clearTimeout(contactHideTimer);
+      contactLastFocus = document.activeElement;
+      contactModal.hidden = false;
+      void contactModal.offsetWidth;                         // así arranca la transición (aparece suave)
+      contactModal.classList.add('open');
+      lockScroll(true);
+      const send = contactModal.querySelector('.cm-send');
+      if (send) send.focus({ preventScroll: true });
+    }
+    function closeContactModal() {
+      if (!contactIsOpen()) return;
+      contactModal.classList.remove('open');
+      lockScroll(false);
+      contactHideTimer = setTimeout(() => { contactModal.hidden = true; }, 260);
+      if (contactLastFocus && contactLastFocus.focus) contactLastFocus.focus({ preventScroll: true });
+    }
+    document.getElementById('contactMailBtn').addEventListener('click', openContactModal);
+    contactModal.querySelector('.cm-close').addEventListener('click', closeContactModal);
+    contactModal.addEventListener('click', e => { if (e.target === contactModal) closeContactModal(); });   // tocar afuera
+    document.addEventListener('keydown', e => {
+      if (!contactIsOpen()) return;
+      if (e.key === 'Escape') { e.preventDefault(); closeContactModal(); return; }
+      if (e.key === 'Tab') {                                 // el foco no se escapa de la ventanita
+        const f = [...contactModal.querySelectorAll('button, a[href]')];
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !contactModal.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (document.activeElement === last || !contactModal.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+      }
+    });
+    // Copiar el mail (con el portapapeles moderno; si no se puede, a la antigua).
+    contactCopyBtn.addEventListener('click', async () => {
+      const email = document.getElementById('cmEmail').textContent.trim();
+      let ok = false;
+      try { await navigator.clipboard.writeText(email); ok = true; } catch (err) {}
+      if (!ok) {
+        const ta = document.createElement('textarea');
+        ta.value = email; ta.setAttribute('readonly', '');
+        ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+        document.body.appendChild(ta); ta.select();
+        try { ok = document.execCommand('copy'); } catch (err) {}
+        ta.remove();
+      }
+      if (!ok) {                                             // ni así: dejarlo seleccionado para copiarlo a mano
+        const r = document.createRange(); r.selectNodeContents(document.getElementById('cmEmail'));
+        const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      }
+      contactCopyBtn.textContent = ok ? '¡Copiado!' : 'Copialo';
+      contactCopyBtn.classList.toggle('copied', ok);
+      clearTimeout(contactCopyTimer);
+      contactCopyTimer = setTimeout(() => { contactCopyBtn.textContent = 'Copiar'; contactCopyBtn.classList.remove('copied'); }, 1800);
+    });
 
     /* ─── Menú: se ilumina la sección que estás viendo ──────────────────────
        Mientras scrolleás, el botón del menú de la sección que está en pantalla
@@ -1131,10 +1569,10 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       const line = navH + (window.innerHeight - navH) * 0.2;
       let current = targets[0];
       targets.forEach(t => { if (t.getBoundingClientRect().top <= line) current = t; });
-      const doc = document.documentElement;
-      if (window.scrollY <= 2) {
+      const sc = scrollEl();
+      if (sc.scrollTop <= 2) {
         current = targets[0];                       // arriba de todo → la primera sección
-      } else if (window.scrollY + window.innerHeight >= doc.scrollHeight - 4) {
+      } else if (sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 4) {
         current = targets[targets.length - 1];      // llegaste al final → la última sección
       }
       setActiveNav(current.id);
@@ -1179,15 +1617,18 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       clearTimeout(navJumpTimer); clearTimeout(navJumpMax);
       updateActiveNav();                             // al final: la sección donde quedaste
     }
-    window.addEventListener('scroll', () => {
+    const onPageScroll = () => {
       if (navJumping) {                              // sigue el salto: "terminó" si no hay scroll por 160ms
         clearTimeout(navJumpTimer);
         navJumpTimer = setTimeout(endNavJump, 160);
         return;
       }
       scheduleNavSpy();
-    }, { passive: true });
-    window.addEventListener('scrollend', () => { if (navJumping) endNavJump(); });
+    };
+    [window, mainEl].forEach(t => {                  // scrollea la página (celu) o el contenedor (PC)
+      t.addEventListener('scroll', onPageScroll, { passive: true });
+      t.addEventListener('scrollend', () => { if (navJumping) endNavJump(); });
+    });
     const SCROLL_KEYS = ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '];
     ['wheel', 'touchstart', 'keydown'].forEach(ev => window.addEventListener(ev, e => {
       if (!navJumping || (ev === 'keydown' && SCROLL_KEYS.indexOf(e.key) === -1)) return;
@@ -1219,26 +1660,29 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       portraitBoost: 1.9,    // qué tan más grandes se ven las verticales
       stretchCap: 1.6,       // tope para estirar la última fila
       rowAlign: 'center',    // left | center | right  (fila incompleta)
-      // Fondo y efecto de las fotos
-      pageBg: 13,            // gris del fondo de la galería (0 = negro): el oscuro
-      barBg: 22,             // gris de la barra de arriba y del pie (About + ©): un poco más claro
+      // Fondo y barra de arriba
+      pageBg: 13,            // gris del fondo de TODA la página (0 = negro): galería, barra de arriba y pie
+      barAlpha: 80,          // opacidad de la barra de arriba (%): 100 = sólida; menos = se ven más las fotos de atrás
+      barBlur: 20,           // difuminado de lo que pasa por detrás de la barra (px)
+      lineGray: 38,          // gris de las líneas finas del pie (arriba del About y arriba del ©)
+      // Efecto de las fotos
       tiltMax: 9,            // inclinación máxima de las fotos con el mouse (grados; 0 = sin efecto)
       tiltShadow: 100,       // fuerza de la sombra de las fotos (%)
       tiltGlare: 100,        // fuerza del brillo que sigue al mouse (%)
       // Tipografía (px) y alineación
-      navLogoSize: 36,
-      navLinkSize: 18,
-      sectionLabelSize: 42,        // títulos de sección (en celu: 80%)
+      navLogoSize: 29,             // (con Roboto ≈ 80% de los tamaños de antes: se ven igual de grandes)
+      navLinkSize: 14,
+      sectionLabelSize: 34,        // títulos de sección (en celu: 80%)
       sectionLabelAlign: 'center', // left | center | right
-      artistNameSize: 20,
-      lightboxTitleSize: 26,       // nombre del artista en la foto abierta (en celu: 75%)
-      aboutH2Size: 18,
-      aboutPSize: 22,
+      artistNameSize: 16,
+      lightboxTitleSize: 21,       // nombre del artista en la foto abierta (en celu: 75%)
+      aboutH2Size: 14,
+      aboutPSize: 18,
       aboutMaxWidth: 800,          // ancho máx. de la columna About en el pie
       aboutBlockGap: 16,           // separación entre bloques del About (px)
       aboutAlign: 'justify',       // left | center | right | justify (justify = bloque parejo)
-      contactLinkSize: 22,         // links del pie (contacto y navegación)
-      footerNameSize: 15,
+      contactLinkSize: 18,         // links del pie (navegación)
+      footerNameSize: 12,
       // Sonido de la moneda (el loguito)
       spinSound: 'visita',         // 'visita' = en cada visita se sortea: Boing (90%) o Miau (10%). Los demás: COIN_SOUND_LIST, se prueban en #ajustes
       spinVolume: 100,             // % (100 = como fue diseñado cada sonido)
@@ -2364,16 +2808,20 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       s.setProperty('--about-align-last', TWEAKS.aboutAlign === 'justify' ? 'justify' : 'auto');
       s.setProperty('--row-align', alignToFlex(TWEAKS.rowAlign));
       const g = Math.round(Math.min(255, Math.max(0, TWEAKS.pageBg)));
-      s.setProperty('--page-bg', `rgb(${g}, ${g}, ${g})`);
-      const gb = Math.round(Math.min(255, Math.max(0, TWEAKS.barBg)));
-      s.setProperty('--bar-bg', `rgb(${gb}, ${gb}, ${gb})`);
+      s.setProperty('--bg', `rgb(${g}, ${g}, ${g})`);
+      s.setProperty('--bg-rgb', `${g}, ${g}, ${g}`);
+      s.setProperty('--bar-alpha', Math.min(100, Math.max(0, TWEAKS.barAlpha)) / 100);
+      s.setProperty('--bar-blur', Math.max(0, TWEAKS.barBlur) + 'px');
+      const gl = Math.round(Math.min(255, Math.max(0, TWEAKS.lineGray)));
+      s.setProperty('--line', `rgb(${gl}, ${gl}, ${gl})`);
       s.setProperty('--card-shadow', Math.max(0, TWEAKS.tiltShadow) / 100);
       s.setProperty('--card-glare', Math.max(0, TWEAKS.tiltGlare) / 100);
       justifyAll(); // re-acomoda la galería con rowHeight/gap/boost/cap nuevos
       scheduleAboutFit(); // tamaño/ancho/alineación del About pueden haber cambiado
+      if (typeof scheduleFitNav === 'function') scheduleFitNav(); // tamaño del nombre/menú: ¿sigue entrando en un renglón?
     }
 
-    const TWEAK_KEYS = ['rowHeight','gap','portraitBoost','stretchCap','rowAlign','pageBg','barBg','tiltMax','tiltShadow','tiltGlare','navLogoSize','navLinkSize','sectionLabelSize','sectionLabelAlign','artistNameSize','lightboxTitleSize','aboutH2Size','aboutPSize','aboutMaxWidth','aboutBlockGap','aboutAlign','contactLinkSize','footerNameSize','spinSound','spinVolume'];
+    const TWEAK_KEYS = ['rowHeight','gap','portraitBoost','stretchCap','rowAlign','pageBg','barAlpha','barBlur','lineGray','tiltMax','tiltShadow','tiltGlare','navLogoSize','navLinkSize','sectionLabelSize','sectionLabelAlign','artistNameSize','lightboxTitleSize','aboutH2Size','aboutPSize','aboutMaxWidth','aboutBlockGap','aboutAlign','contactLinkSize','footerNameSize','spinSound','spinVolume'];
     const ALIGN_KEYS = ['rowAlign','sectionLabelAlign','aboutAlign'];
 
     function serializeTweaks() { return TWEAK_KEYS.map(k => k + ' = ' + TWEAKS[k]).join('\n'); }
@@ -2397,9 +2845,12 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       { key: 'portraitBoost', label: 'Tamaño de verticales', min: 1, max: 2.6, step: 0.05, unit: '×' },
       { key: 'stretchCap', label: 'Tope última fila', min: 1, max: 3, step: 0.1, unit: '×' },
       { key: 'rowAlign', label: 'Última fila incompleta', align: true },
-      { group: 'Fondo y efecto de las fotos' },
-      { key: 'pageBg', label: 'Fondo de la galería', min: 0, max: 60, step: 1, unit: '' },
-      { key: 'barBg', label: 'Barra de arriba y pie', min: 0, max: 60, step: 1, unit: '' },
+      { group: 'Fondo y barra de arriba' },
+      { key: 'pageBg', label: 'Fondo de toda la página', min: 0, max: 60, step: 1, unit: '' },
+      { key: 'barAlpha', label: 'Barra de arriba — opacidad', min: 0, max: 100, step: 1, unit: '%' },
+      { key: 'barBlur', label: 'Barra de arriba — difuminado', min: 0, max: 60, step: 1, unit: 'px' },
+      { key: 'lineGray', label: 'Líneas del pie', min: 0, max: 120, step: 1, unit: '' },
+      { group: 'Efecto de las fotos' },
       { key: 'tiltMax', label: 'Inclinación con el mouse', min: 0, max: 20, step: 0.5, unit: '°' },
       { key: 'tiltShadow', label: 'Sombra de las fotos', min: 0, max: 200, step: 5, unit: '%' },
       { key: 'tiltGlare', label: 'Brillo que sigue al mouse', min: 0, max: 200, step: 5, unit: '%' },
@@ -2413,7 +2864,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       { key: 'aboutPSize', label: 'About — texto', min: 12, max: 44, step: 1, unit: 'px' },
       { key: 'aboutMaxWidth', label: 'About — ancho de la columna', min: 300, max: 1000, step: 10, unit: 'px' },
       { key: 'aboutBlockGap', label: 'About — espacio entre bloques', min: 0, max: 60, step: 1, unit: 'px' },
-      { key: 'contactLinkSize', label: 'Pie — links (contacto y navegación)', min: 10, max: 32, step: 1, unit: 'px' },
+      { key: 'contactLinkSize', label: 'Pie — links de navegación', min: 10, max: 32, step: 1, unit: 'px' },
       { key: 'footerNameSize', label: 'Contacto — ©', min: 10, max: 28, step: 1, unit: 'px' },
       { group: 'Alineación (izq / centro / der)' },
       { key: 'sectionLabelAlign', label: 'Título de sección', align: true },
@@ -2593,7 +3044,59 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     init();
 
     window.scrollTo(0, 0);
+    mainEl.scrollTo({ top: 0, behavior: 'instant' });
     history.scrollRestoration = 'manual';
+
+    /* ─── ¿Entra la barra en un renglón? ───
+       Loguito a la izquierda, nombre en el centro exacto y secciones a la
+       derecha… si entran. Si no entran justo, el nombre y las secciones se
+       achican un poco (--nav-fit), pero nunca a menos de 12 px las secciones.
+       Si ni así entran (ventana angosta, muchas secciones), la barra pasa a dos
+       renglones (clase "stacked": nombre arriba, secciones abajo). En el celu,
+       siempre. */
+    const navNarrowMQ = window.matchMedia('(max-width: 600px)');
+    const NAV_MIN_LINK_PX = 12;        // las secciones no se achican a menos que esto: si no, dos renglones
+    let fitNavRaf = 0;
+    function fitNav() {
+      if (fitNavRaf) { cancelAnimationFrame(fitNavRaf); fitNavRaf = 0; }
+      const navEl = document.querySelector('nav');
+      const nameEl = navEl && navEl.querySelector('.nav-name');
+      const linksEl = document.getElementById('navLinks'), logoEl = document.getElementById('navLogo');
+      if (!navEl || !nameEl || !linksEl || !logoEl) return;
+      let stack = navNarrowMQ.matches, fit = 1;
+      const minFit = Math.max(0.72, NAV_MIN_LINK_PX / (TWEAKS.navLinkSize || 14));
+      navEl.style.setProperty('--nav-fit', '1');
+      if (!stack) {
+        navEl.classList.remove('stacked');                 // medir como queda en un renglón, a tamaño completo
+        const cs = getComputedStyle(navEl);
+        const inner = navEl.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+        const nameW = nameEl.getBoundingClientRect().width;
+        const linksW = linksEl.scrollWidth, logoW = logoEl.getBoundingClientRect().width;
+        const half = inner / 2 - 24;                       // mitad de la barra, menos un respiro
+        // achicando todo por "fit": secciones + medio nombre (y loguito + medio nombre) entran en la mitad
+        fit = Math.floor(Math.min(1, half / (linksW + nameW / 2), (half - logoW) * 2 / nameW) * 100) / 100;
+        // comprobar de verdad (a tamaños chicos el texto no achica exacto) y, si hace falta, un poquito más
+        const navMid = navEl.getBoundingClientRect().left + parseFloat(cs.paddingLeft) + inner / 2;
+        for (let i = 0; i < 8 && fit >= minFit; i++) {
+          navEl.style.setProperty('--nav-fit', String(fit));
+          const n = nameEl.getBoundingClientRect(), l = linksEl.getBoundingClientRect(), g = logoEl.getBoundingClientRect();
+          const ok = linksEl.scrollWidth <= linksEl.clientWidth + 1 && l.left - n.right >= 20 && n.left - g.right >= 20
+            && Math.abs((n.left + n.right) / 2 - navMid) < 2;   // y el nombre sigue en el centro exacto
+          if (ok) break;
+          fit = Math.round((fit - 0.02) * 100) / 100;
+        }
+        if (fit < minFit) { stack = true; fit = 1; }
+      }
+      navEl.style.setProperty('--nav-fit', String(fit));
+      navEl.classList.toggle('stacked', stack);
+    }
+    function scheduleFitNav() { if (!fitNavRaf) fitNavRaf = requestAnimationFrame(fitNav); }
+    window.addEventListener('resize', scheduleFitNav);
+    if (document.fonts) {                                  // con la tipografía ya cargada cambian los anchos
+      if (document.fonts.ready) document.fonts.ready.then(fitNav);
+      if (document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', scheduleFitNav);
+    }
+    fitNav();
 
     /* En celular el nav ocupa dos renglones (nombre + secciones), así que su
        alto es variable. Medimos el nav real y lo guardamos en --nav-space para
@@ -2613,15 +3116,14 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       e.preventDefault();
       // Si estamos al final de la página → subir arriba de todo.
       // Si no → bajar al final de todo (el footer/contacto).
-      const doc = document.documentElement;
-      const scrollY = window.scrollY || window.pageYOffset;
-      const maxScroll = doc.scrollHeight - window.innerHeight;
-      const atBottom = scrollY >= maxScroll - 4; // margen de 4px por redondeos
+      const sc = scrollEl();
+      const maxScroll = sc.scrollHeight - sc.clientHeight;
+      const atBottom = sc.scrollTop >= maxScroll - 4; // margen de 4px por redondeos
       // Salto: en el menú se marca directo la sección de destino (la primera si
       // subimos, la última si bajamos) sin "barrer" las del medio.
       const targets = navTargets();
       if (targets.length) startNavJump((atBottom ? targets[0] : targets[targets.length - 1]).id);
-      window.scrollTo({ top: atBottom ? 0 : doc.scrollHeight, behavior: 'smooth' });
+      sc.scrollTo({ top: atBottom ? 0 : sc.scrollHeight, behavior: 'smooth' });
     }
 
     /* ─── Loguito: inclinación 3D EXAGERADA en hover + giro "moneda" al click ───
@@ -3001,7 +3503,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       lb.style.transform = '';
       lb.style.opacity = '';
       lb.classList.add('open');
-      document.body.style.overflow = 'hidden';
+      lockScroll(true);
       // Mobile: scroll background NOW while lightbox covers screen
       if (isMobile() && artist.cardEl) {
         artist.cardEl.scrollIntoView({ behavior: 'instant', block: 'center' });
@@ -3468,7 +3970,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
 
     function closeLightbox(fromSwipe) {
       const lb = document.getElementById('lightbox');
-      document.body.style.overflow = '';
+      lockScroll(false);
       if (!fromSwipe) {
         lb.style.transition = 'opacity 0.18s ease';
         lb.style.opacity = '0';
@@ -3570,7 +4072,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         if (axis === 'x' && Math.abs(dx) > window.innerWidth * 0.15) {
           lbNavBtn(dx < 0 ? 1 : -1);
         } else if (axis === 'y' && Math.abs(dy) > 100) {
-          document.body.style.overflow = '';
+          lockScroll(false);
           lb.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
           lb.style.transform = `translateY(${dy > 0 ? '100vh' : '-100vh'})`;
           lb.style.opacity = '0';
@@ -3724,7 +4226,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
             lbResetTrack(true);
           }
         } else if (axis === 'y' && Math.abs(dy) > 100 && !cancelled) {
-          document.body.style.overflow = '';
+          lockScroll(false);
           lb.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
           lb.style.transform = `translateY(${dy > 0 ? '100vh' : '-100vh'})`;
           lb.style.opacity = '0';
