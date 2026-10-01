@@ -312,9 +312,26 @@
         overscroll-behavior: contain;
         z-index: 100;
         color-scheme: dark;                     /* barra oscura, como todo lo demás */
-        scrollbar-color: #444 var(--bg);        /* manija gris sobre el mismo fondo de la página */
       }
       #vscroll > div { width: 1px; }            /* "relleno" del largo justo (lo ajusta el JS) */
+    }
+    /* Barra de scroll propia (custom): finita, manija gris redondeada que se
+       aclara con el mouse, sin flechitas y sobre el mismo fondo de la página.
+       (.sb-probe es la cajita invisible con la que el JS mide su ancho.) */
+    #vscroll::-webkit-scrollbar, .sb-probe::-webkit-scrollbar { width: 10px; }
+    #vscroll::-webkit-scrollbar-track, .sb-probe::-webkit-scrollbar-track { background: transparent; }
+    #vscroll::-webkit-scrollbar-thumb, .sb-probe::-webkit-scrollbar-thumb {
+      min-height: 48px;
+      background: #3a3a3a;
+      background-clip: padding-box;
+      border: 2px solid transparent;            /* manija de 6px con aire a los costados */
+      border-radius: 10px;
+    }
+    #vscroll::-webkit-scrollbar-thumb:hover { background-color: #5a5a5a; }
+    #vscroll::-webkit-scrollbar-thumb:active { background-color: #777; }
+    #vscroll::-webkit-scrollbar-button { display: none; }
+    @supports not selector(::-webkit-scrollbar) {   /* Firefox: lo más parecido que deja */
+      #vscroll, .sb-probe { scrollbar-width: thin; scrollbar-color: #3a3a3a transparent; }
     }
 
     /* ─── Section titles ─── */
@@ -1426,6 +1443,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     let vsBarEcho = null, vsMainEcho = null, vsRaf = 0;
     function measureScrollbarWidth() {
       const d = document.createElement('div');
+      d.className = 'sb-probe';                      // con el mismo estilo que la barra custom
       d.style.cssText = 'position:absolute;left:-9999px;top:0;width:100px;height:100px;overflow-y:scroll;visibility:hidden;';
       document.body.appendChild(d);
       const w = d.offsetWidth - d.clientWidth;
