@@ -38,6 +38,7 @@
       --text: #e8e8e8;
       --muted: #999;
       --accent: #e8e8e8;
+      --skel: rgba(255, 255, 255, 0.07);   /* gris de los bloques del esqueleto de carga (y del recuadro de cada foto mientras baja) */
       --nav-h: 80px;
       --nav-space: 80px; /* alto real del nav (en celu son 2 renglones); lo ajusta el JS */
       --font: 'Roboto', 'Helvetica Neue', Arial, sans-serif;           /* tipografía de toda la página */
@@ -397,7 +398,7 @@
       height: 100%;
       overflow: hidden;
       transform-origin: 50% 50%;
-      background: rgba(255, 255, 255, 0.045);   /* recuadro de muestra (un poco más claro que el fondo) */
+      background: var(--skel);   /* recuadro de muestra (un poco más claro que el fondo) */
     }
     /* Mientras la portada no llegó: el recuadro ya tiene el tamaño JUSTO (la
        proporción de cada foto viene de Drive, así nada se mueve) y un brillito
@@ -410,6 +411,7 @@
       background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.07) 50%, transparent 65%);
       background-size: 250% 100%;
       animation: card-shimmer 1.4s ease-in-out infinite;
+      animation-delay: var(--shimmer-delay, 0ms);   /* todos al mismo paso, aunque se rearme la galería (ver syncShimmer) */
       pointer-events: none;
     }
     @keyframes card-shimmer {
@@ -801,39 +803,81 @@
       color: #333;
     }
 
-    /* ─── Pantalla de carga ───
-       El nombre se llena de blanco con el progreso (lo mueve el JS → PageLoader):
-       rápido al principio y cada vez más lento; cuando la primera pantalla ya está
-       lista, completa de una y la pantalla se desvanece, como siempre. */
+    /* ─── Pantalla de carga (como la de YouTube) ───
+       Mientras carga (body.loading) la página ya está armada en su lugar real,
+       pero "en esqueleto": el loguito es un círculo gris, los textos (nombre,
+       secciones, títulos) son barritas grises de su mismo ancho y cada foto es
+       su recuadro gris, con el tamaño y el lugar justos (las mismas filas
+       justificadas que después, según la pantalla). Arriba de todo, una línea
+       blanca muestra el progreso (la mueve el JS → PageLoader): rápido al
+       principio y cada vez más lento; cuando la primera pantalla ya está lista,
+       se completa, se desvanece y aparece todo junto (body.revealing: las
+       barritas se van mientras entran los textos, las fotos y el loguito). */
     body.loading { overflow: hidden; }
-    /* Mientras carga, la barra no difumina nada (está tapada y arriba de todo no
-       hay nada detrás): un trabajo menos para la compu justo cuando más carga. */
+    body.loading nav, body.loading main { pointer-events: none; }   /* nada se toca hasta que aparece */
+    /* Mientras carga, la barra no difumina nada (arriba de todo no hay nada
+       detrás): un trabajo menos para la compu justo cuando más carga. */
     body.loading nav, body.loading .mobile-menu { -webkit-backdrop-filter: none; backdrop-filter: none; }
-    #loader {
+
+    /* La línea de progreso, pegada arriba de todo (encima de la barra). */
+    #loader-bar {
       position: fixed;
-      inset: 0;
-      background: var(--bg);
-      z-index: 999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: opacity 0.6s ease;
-    }
-    #loader.hidden {
-      opacity: 0;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: #fff;
+      transform: scaleX(0);
+      transform-origin: 0 50%;
+      z-index: 1000;
       pointer-events: none;
+      transition: opacity 0.4s ease;
     }
-    #loader-name {
-      font-family: var(--font-display);
-      font-size: min(29px, 6.8vw);      /* en el celu se achica para entrar en un renglón */
-      white-space: nowrap;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      background: linear-gradient(to right, #e8e8e8 var(--p, 0%), #333 var(--p, 0%));
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
+    #loader-bar.done { opacity: 0; }
+
+    /* Textos → barrita gris del mismo ancho (el texto queda invisible). */
+    body.loading .nav-name,
+    body.loading .nav-links a,
+    body.loading .section-label > span { color: transparent; }
+    body:is(.loading, .revealing) .nav-name,
+    body:is(.loading, .revealing) .nav-links a,
+    body:is(.loading, .revealing) .section-label > span { position: relative; }
+    body:is(.loading, .revealing) .nav-name::after,
+    body:is(.loading, .revealing) .nav-links a::after,
+    body:is(.loading, .revealing) .section-label > span::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0.12em;              /* sin el aire que deja la última letra (letter-spacing) */
+      top: 50%;
+      height: 0.7em;              /* ≈ el alto de las mayúsculas */
+      transform: translateY(-50%);
+      border-radius: 4px;
+      background: var(--skel);
+      transition: opacity 0.4s ease;
     }
+    body:is(.loading, .revealing) .nav-name::after { right: 0.08em; }
+    body.revealing .nav-name::after,
+    body.revealing .nav-links a::after,
+    body.revealing .section-label > span::after { opacity: 0; }
+    .section-label > span { transition: color 0.4s ease; }
+
+    /* Loguito → círculo gris. */
+    .nav-logo-mark { border-radius: 50%; transition: background-color 0.4s ease; }
+    .coin-front { transition: opacity 0.4s ease; }
+    body.loading .nav-logo-mark { background-color: var(--skel); }
+    body.loading .coin-front { opacity: 0; }
+
+    /* Fotos → su recuadro gris con el brillito, aunque ya hayan bajado:
+       aparecen todas juntas al final. Sombras, nombres y pie, también al final. */
+    body.loading .artist-card img { opacity: 0; }
+    body.loading .artist-card.is-loaded .card-inner::before {
+      animation: card-shimmer 1.4s ease-in-out infinite;
+      animation-delay: var(--shimmer-delay, 0ms);
+      opacity: 1;
+    }
+    body.loading .card-shadow { opacity: 0; }
+    body.loading .artist-name,
+    body.loading .site-footer,
+    body.loading #vscroll { visibility: hidden; }
 
     /* ─── Lightbox ─── */
     .lightbox {
@@ -1085,10 +1129,11 @@
     }
   </style>
 </head>
-<body>
+<body class="loading">
 
-  <!-- Loader -->
-  <div id="loader"><span id="loader-name">Mateo Ronn Abregu</span></div>
+  <!-- Pantalla de carga: la línea de progreso de arriba. El resto es la
+       misma página "en esqueleto" (body.loading; ver el CSS y PageLoader). -->
+  <div id="loader-bar" aria-hidden="true"></div>
 
   <!-- Nav -->
   <nav>
@@ -2391,6 +2436,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     function renderSections(sections) {
       const container = document.getElementById('dynamicSections');
       container.innerHTML = '';
+      syncShimmer(container);
 
       if (!sections || !sections.length) {
         firstSectionId = null;
@@ -2408,7 +2454,9 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         const labelEl = document.createElement('p');
         labelEl.className = 'section-label';
         labelEl.id = section.id;
-        labelEl.textContent = section.label;
+        const labelText = document.createElement('span');   // en un <span>: mientras carga es una barrita de su mismo ancho
+        labelText.textContent = section.label;
+        labelEl.appendChild(labelText);
         container.appendChild(labelEl);
 
         const grid = document.createElement('div');
@@ -2468,7 +2516,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           const fixAR = () => {
             if (img.naturalWidth && img.naturalHeight) {
               const real = img.naturalWidth / img.naturalHeight;
-              if (Math.abs(real - item.ar) / item.ar > 0.01) { item.ar = real; scheduleJustify(); }
+              if (Math.abs(real - item.ar) / item.ar > 0.01) { item.ar = real; scheduleJustify(); scheduleSkeletonSave(); }
             }
           };
           img.addEventListener('load', fixAR);
@@ -2479,25 +2527,119 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       });
 
       buildNav(sections);
+      saveSkeletonModel();   // la próxima visita arranca con este mismo esqueleto
     }
 
-    /* ─── Pantalla de carga: progreso que se frena y completa de una ───
-       · Arranca apenas abre la página. El nombre se llena rápido al principio y
-         cada vez más lento (nunca llega solo al final): a 1 s va por un 33 %, a
-         3 s por un 67 %, y de ahí casi no avanza mientras siga cargando.
+    /* ─── Esqueleto de la pantalla de carga ───
+       Mientras Drive responde, la página ya se arma con su forma real: la barra
+       de arriba con sus secciones, los títulos y un recuadro por cada portada,
+       con las mismas filas justificadas que después (cambian según el ancho de
+       la pantalla: celu, tablet, PC). Todo en gris (body.loading). Cuando llegan
+       los datos, renderSections lo reemplaza por la galería de verdad, que
+       mientras sigue cargando se ve igual, así que no salta nada.
+       ¿Cómo sabe cuántas portadas hay y de qué forma? Por la última visita: se
+       guarda en el navegador (son solo unos números). La primera vez usa
+       SKELETON_DEFAULT, que es cómo estaba el Drive cuando se armó esto. Si
+       Mateo cambia cosas no se rompe nada: esa primera visita arranca con un
+       esqueleto algo distinto hasta que llegan los datos, y listo. */
+    const SKELETON_KEY = 'mra-esqueleto-v1';
+    const SKELETON_DEFAULT = (() => {
+      const H = 1.5, V = 2 / 3, C = 1;   // horizontal (3:2), vertical (2:3), cuadrada
+      return {
+        about: true,
+        sections: [
+          { label: 'SHOWS',     ars: [H, H, H, H, H, H, V, H, H, H, H, H, H, H, C, H, H, H, H, V, V] },
+          { label: 'MODA',      ars: [V, H, H, V, H, V, H, H, H, C, H] },
+          { label: 'FOTO FIJA', ars: [H, H, H, H, C, H, H] },
+          { label: 'SOCIALES',  ars: [V, V, H, V, V] },
+        ],
+      };
+    })();
+
+    function readSkeletonModel() {
+      try {
+        const m = JSON.parse(localStorage.getItem(SKELETON_KEY));
+        const ok = m && Array.isArray(m.sections) && m.sections.length && m.sections.every(sec =>
+          sec && typeof sec.label === 'string' && Array.isArray(sec.ars) && sec.ars.length &&
+          sec.ars.every(ar => typeof ar === 'number' && ar > 0.05 && ar < 20));
+        if (ok) return m;
+      } catch (e) {}
+      return SKELETON_DEFAULT;
+    }
+
+    // Guarda la disposición de la galería que se está viendo (títulos +
+    // proporción de cada portada) para el esqueleto de la próxima visita.
+    let skeletonSaveTimer = 0;
+    function saveSkeletonModel() {
+      clearTimeout(skeletonSaveTimer);
+      const sections = Array.from(document.querySelectorAll('#dynamicSections .jgrid'), grid => ({
+        label: grid.previousElementSibling ? grid.previousElementSibling.textContent : '',
+        ars: (grid._cards || []).map(c => Math.round(c.ar * 10000) / 10000),
+      })).filter(sec => sec.ars.length);
+      if (!sections.length) return;   // sin datos (p. ej. Drive no respondió): se queda lo que había
+      try { localStorage.setItem(SKELETON_KEY, JSON.stringify({ about: aboutHasText, sections })); } catch (e) {}
+    }
+    function scheduleSkeletonSave() {
+      clearTimeout(skeletonSaveTimer);
+      skeletonSaveTimer = setTimeout(saveSkeletonModel, 1500);
+    }
+
+    // El brillito de los recuadros va con un reloj común: si la galería se
+    // rearma (esqueleto → datos reales), sigue al mismo paso, sin saltar.
+    function syncShimmer(el) {
+      el.style.setProperty('--shimmer-delay', -Math.round(performance.now() % 1400) + 'ms');
+    }
+
+    // Arma la estructura de la página con recuadros vacíos: mismas clases y
+    // mismo justifyGrid que la galería real → mismo lugar, mismo tamaño.
+    function renderSkeleton() {
+      const model = readSkeletonModel();
+      const container = document.getElementById('dynamicSections');
+      container.innerHTML = '';
+      syncShimmer(container);
+      model.sections.forEach(sec => {
+        const labelEl = document.createElement('p');
+        labelEl.className = 'section-label';
+        const labelText = document.createElement('span');
+        labelText.textContent = sec.label;
+        labelEl.appendChild(labelText);
+        container.appendChild(labelEl);
+
+        const grid = document.createElement('div');
+        grid.className = 'jgrid';
+        grid._cards = sec.ars.map(ar => {
+          const card = document.createElement('div');
+          card.className = 'artist-card';
+          const inner = document.createElement('div');
+          inner.className = 'card-inner';
+          card.appendChild(inner);
+          return { el: card, ar };
+        });
+        container.appendChild(grid);
+        justifyGrid(grid);
+      });
+      aboutHasText = !!model.about;   // así la barra de arriba también reserva su "About"
+      buildNav(model.sections.map(sec => ({ id: slugify(sec.label), label: sec.label })));
+    }
+
+    /* ─── Pantalla de carga: la línea de arriba, que se frena y completa de una ───
+       · Arranca apenas abre la página (abajo, la página "en esqueleto"). La
+         línea avanza rápido al principio y cada vez más lento (nunca llega sola
+         al final): a 1 s va por un 33 %, a 3 s por un 67 %, y de ahí casi no
+         avanza mientras siga cargando.
        · Cuando está lista la PRIMERA PANTALLA (datos + las fotos que se ven de
-         entrada, ya decodificadas + la tipografía), completa de una hasta el 100%
-         y la pantalla se desvanece (como siempre): abajo ya está todo cargado.
+         entrada, ya decodificadas + la tipografía), completa de una hasta el
+         100 %, se desvanece y aparece todo junto: cada foto, texto y el loguito
+         en el lugar de su bloque gris.
        · Después, las demás portadas se precargan en orden, de a dos, así cuando
          bajás ya están (si el celu está en "ahorro de datos", no).
        · Red de seguridad: nunca más de 8 s esperando fotos (las que falten
-         siguen cargando detrás). */
+         siguen cargando detrás, con su recuadro gris). */
     const PageLoader = (() => {
-      const el = document.getElementById('loader');
-      const nameEl = document.getElementById('loader-name');
+      const bar = document.getElementById('loader-bar');
       const t0 = performance.now();
       let last = t0, shown = 0, done = false, gone = false, raf = 0;
-      const paint = () => { if (nameEl) nameEl.style.setProperty('--p', (shown * 100).toFixed(2) + '%'); };
+      const paint = () => { if (bar) bar.style.transform = 'scaleX(' + shown.toFixed(4) + ')'; };
       function frame(now) {
         const dt = Math.min(100, now - last);
         last = now;
@@ -2510,24 +2652,27 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
             shown = 1;
             paint();
             raf = 0;
-            setTimeout(hide, 200);                                 // un instante con el nombre completo
+            setTimeout(hide, 150);                                 // un instante con la línea completa
             return;
           }
         }
         paint();
         raf = requestAnimationFrame(frame);
       }
-      function hide() {                                            // se desvanece (0.6 s) y se saca
+      function hide() {                  // la línea se desvanece y aparece todo (0.4 s)
         if (gone) return;
         gone = true;
-        document.body.classList.remove('loading');
-        if (el) el.classList.add('hidden');
+        const b = document.body;
+        b.classList.add('revealing');    // las barritas grises se van mientras entran los textos
+        b.classList.remove('loading');
+        if (bar) bar.classList.add('done');
         setTimeout(() => {
-          if (el) el.remove();
+          b.classList.remove('revealing');
+          if (bar) bar.remove();
           document.dispatchEvent(new Event('pageloader:done'));
-        }, el ? 700 : 0);
+        }, 450);
       }
-      if (el) raf = requestAnimationFrame(frame);
+      raf = requestAnimationFrame(frame);
       return {
         finish() { done = true; if (!raf && !gone) raf = requestAnimationFrame(frame); },
       };
@@ -3129,6 +3274,12 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     }
     window.addEventListener('resize', syncNavHeight);
     window.addEventListener('load', syncNavHeight);
+
+    /* El esqueleto de la pantalla de carga se arma YA, sin esperar a Drive
+       (con los ajustes de TWEAKS ya aplicados, así mide igual que después). */
+    applyTweaks();
+    renderSkeleton();
+    syncNavHeight();
 
     function logoClick(e) {
       e.preventDefault();
