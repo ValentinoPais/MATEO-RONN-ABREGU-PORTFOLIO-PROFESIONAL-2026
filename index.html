@@ -4,6 +4,10 @@
   <meta charset="UTF-8" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Los datos (Drive) y las fotos vienen de Google: la conexión se abre de
+       entrada, así cuando se piden ya está lista (un viaje menos). -->
+  <link rel="preconnect" href="https://www.googleapis.com" crossorigin />
+  <link rel="preconnect" href="https://lh3.googleusercontent.com" />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mateo Ronn Abregu — Fotógrafo</title>
@@ -1254,10 +1258,42 @@
       return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size || 1600}`;
     }
 
-    // Reescribe el tamaño (sz=wN) de una URL de Drive ya generada — para pedir
-    // una versión liviana (miniatura) en vez de la de máxima resolución.
+    /* Links DIRECTOS al servidor de imágenes de Google. Para cada foto, Drive da
+       un "thumbnailLink" (lh3.googleusercontent.com/…=s220) que sirve la foto en
+       el ancho que se le pida (=w800) y en WebP (-rw: pesa ~⅓ menos que el JPG).
+       Así no se pasa por drive.google.com/thumbnail, que primero REDIRIGE a ese
+       mismo servidor: un viaje de ida y vuelta menos por cada foto.
+       Google avisa que esos links "duran horas": si alguno falla (venció, o
+       Google cambia algo), toda la página vuelve sola a los links de siempre,
+       que no vencen (switchToDriveLinks). */
+    const driveDirectIds = new Map();   // link directo sin el tamaño → id del archivo
+    let driveDirectOk = true;
+    const isDirectLink = (src) => /^https:\/\/lh\d\.googleusercontent\.com\//.test(src || '');
+    const directBase = (src) => src.replace(/=[^=\/]*$/, '');   // saca el "=s220" / "=w800-rw" del final
+
+    // La URL de una foto de Drive en 1600 px (la de la foto ampliada).
+    function driveFileUrl(file) {
+      if (driveDirectOk && isDirectLink(file.thumbnailLink)) {
+        const base = directBase(file.thumbnailLink);
+        driveDirectIds.set(base, file.id);
+        return base + '=w1600-rw';
+      }
+      return driveImageUrl(file.id);
+    }
+
+    // La misma foto en otro ancho (portada, miniatura, zoom), para los dos tipos de link.
     function driveThumbUrl(src, size) {
+      if (isDirectLink(src)) return directBase(src) + '=w' + size + '-rw';
       return src.replace(/sz=w\d+/, 'sz=w' + size);
+    }
+
+    // Link directo → el de siempre, en el mismo ancho (null si no era directo).
+    function driveFallbackUrl(src) {
+      if (!isDirectLink(src)) return null;
+      const id = driveDirectIds.get(directBase(src));
+      if (!id) return null;
+      const m = /=w(\d+)/.exec(src);
+      return driveImageUrl(id, m ? +m[1] : 1600);
     }
 
     // Saca prefijos numéricos de orden: "1 - Skrillex" / "01_Skrillex" → "Skrillex"
@@ -1280,9 +1316,9 @@
       if (opts.imagesOnly)  q += ` and mimeType contains 'image/'`;
       // Para imágenes pedimos también su ancho/alto real (imageMediaMetadata):
       // así la grilla justificada conoce las proporciones antes de cargar las
-      // fotos y no hay "salto" de layout.
+      // fotos y no hay "salto" de layout. Y su link directo (thumbnailLink).
       const fields = opts.imagesOnly
-        ? 'files(id,name,imageMediaMetadata(width,height))'
+        ? 'files(id,name,thumbnailLink,imageMediaMetadata(width,height))'
         : 'files(id,name)';
       const url = 'https://www.googleapis.com/drive/v3/files'
         + `?q=${encodeURIComponent(q)}`
@@ -1317,7 +1353,7 @@
           const meta = files[0].imageMediaMetadata || {}; // dims de la PORTADA (1ra foto)
           return {
             name: cleanDriveName(af.name),
-            images: files.map(f => driveImageUrl(f.id)),
+            images: files.map(driveFileUrl),
             coverW: meta.width || null,
             coverH: meta.height || null,
           };
@@ -2346,7 +2382,52 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
 
     function justifyAll() {
       document.querySelectorAll('.jgrid').forEach(justifyGrid);
+      // Si una portada ya pedida quedó más grande en pantalla (la ventana
+      // creció, se giró el celu), se pide en más resolución.
+      document.querySelectorAll('.artist-card img').forEach(img => { if (img._coverW) loadCover(img); });
     }
+
+    /* ─── Cada portada, del tamaño en que se ve ───
+       Antes todas se pedían a 1600 px de ancho, pero en pantalla miden ~240 a
+       ~540 px. Ahora se pide lo que mide × la densidad de la pantalla (tope 2x:
+       en un celu 3x la diferencia no se ve y pesa más del doble), redondeado
+       para arriba de a 100 px (así un cambio chico de ventana no vuelve a bajar
+       todo) y nunca más de 1600. El navegador igual la achica: no se nota. */
+    function coverWidthFor(cssWidth) {
+      const need = cssWidth * Math.min(window.devicePixelRatio || 1, 2);
+      return Math.max(200, Math.min(1600, Math.ceil(need / 100) * 100));
+    }
+    // Le pone el src a una portada según lo que mide ahora (o se lo cambia por
+    // una más grande si creció; nunca por una más chica).
+    function loadCover(img) {
+      const artist = img._artist, cssW = img.offsetWidth;
+      if (!artist || !cssW) return;
+      const w = coverWidthFor(cssW);
+      if (img._coverW >= w) return;
+      img._coverW = w;
+      img.src = driveThumbUrl(artist.images[0], w);
+    }
+
+    // Si un link directo falla, TODO pasa a los links de siempre: los datos de
+    // cada artista (el lightbox usa el mismo array) y las fotos ya pedidas.
+    let currentSections = [];
+    function switchToDriveLinks() {
+      if (!driveDirectOk) return;
+      driveDirectOk = false;
+      currentSections.forEach(sec => sec.artists.forEach(a => {
+        a.images.forEach((u, i) => { a.images[i] = driveFallbackUrl(u) || u; });
+      }));
+      document.querySelectorAll('.artist-card img, .lb-thumb').forEach(im => {
+        const fb = driveFallbackUrl(im.getAttribute('src'));
+        if (fb) im.src = fb;
+      });
+      if (document.getElementById('lightbox').classList.contains('open')) lbUpdateSlides();
+    }
+    // (El "error" de una foto no sube por el documento: se escucha en la captura.)
+    document.addEventListener('error', e => {
+      const el = e.target;
+      if (el && el.tagName === 'IMG' && isDirectLink(el.getAttribute('src'))) switchToDriveLinks();
+    }, true);
 
     // Recalcular en resize / cambio de orientación, con un pequeño debounce.
     let justifyTimer = null;
@@ -2437,6 +2518,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       const container = document.getElementById('dynamicSections');
       container.innerHTML = '';
       syncShimmer(container);
+      currentSections = sections || [];
 
       if (!sections || !sections.length) {
         firstSectionId = null;
@@ -2464,7 +2546,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         grid._cards = [];
         container.appendChild(grid);
 
-        section.artists.forEach((artist, idx) => {
+        section.artists.forEach((artist) => {
           if (!artist.images || !artist.images.length) return;
           const card = document.createElement('div');
           card.className = 'artist-card';
@@ -2476,10 +2558,12 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           const inner = document.createElement('div');     // lo que se inclina con el mouse
           inner.className = 'card-inner';
 
+          // La foto se pide DESPUÉS (loadCover), cuando ya se sabe cuánto mide
+          // en pantalla: primero las de la primera pantalla y, recién cuando
+          // apareció la página, las demás.
           const img = document.createElement('img');
-          img.src = artist.images[0];
           img.alt = artist.name;
-          if (idx >= 4) img.loading = 'lazy';
+          img._artist = artist;
 
           const glare = document.createElement('span');    // brillo que sigue al mouse
           glare.className = 'card-glare';
@@ -2489,9 +2573,15 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           name.className = 'artist-name';
           name.textContent = artist.name;
 
-          // Aparece de una recién cuando la foto bajó entera y está decodificada.
-          img.addEventListener('error', () => card.classList.add('is-error'), { once: true });
-          whenImageShown(img).then(() => { if (img.naturalWidth) card.classList.add('is-loaded'); });
+          // Aparece de una recién cuando la foto bajó entera y está decodificada
+          // (en cada carga: la primera, la de respaldo o una en más resolución).
+          // Si falló un link directo y ya se está pidiendo el de siempre, no es error.
+          img.addEventListener('load', () => whenImageShown(img).then(() => {
+            if (img.naturalWidth) card.classList.add('is-loaded');
+          }));
+          img.addEventListener('error', () => setTimeout(() => {
+            if (img.complete && !img.naturalWidth) card.classList.add('is-error');
+          }, 0));
 
           inner.appendChild(img);
           inner.appendChild(glare);
@@ -2500,6 +2590,18 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           card.appendChild(inner);
           attachTilt(card);
           card.addEventListener('click', () => openArtistLightbox(artist));
+          // Con el mouse: si se queda un momento encima (o aprieta), ya se va
+          // pidiendo la foto en grande, así al abrirla está lista. (En el celu
+          // no: apoyar el dedo para scrollear gastaría datos.)
+          let warmTimer = 0;
+          const warm = () => {
+            if (artist.warmed) return;
+            artist.warmed = true;
+            new Image().src = artist.images[0];
+          };
+          card.addEventListener('pointerenter', e => { if (e.pointerType === 'mouse') warmTimer = setTimeout(warm, 150); });
+          card.addEventListener('pointerleave', () => clearTimeout(warmTimer));
+          card.addEventListener('pointerdown', e => { if (e.pointerType === 'mouse') warm(); });
 
           artist.cardEl = card;
 
@@ -2690,8 +2792,11 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       });
     }
 
-    // Cuando se fue la pantalla de carga: las demás portadas, en orden y de a dos.
+    // Cuando se fue la pantalla de carga: las demás portadas. Todas quedan
+    // "lazy" (el navegador baja solas las que se van acercando al bajar) y,
+    // además, se precargan en orden, de a dos.
     function preloadRestOfCovers(list) {
+      list.forEach(img => { img.loading = 'lazy'; loadCover(img); });
       const cn = navigator.connection;
       if (cn && (cn.saveData || /(^|-)2g$/.test(cn.effectiveType || ''))) return;   // datos limitados: cargan al bajar
       let i = 0, active = 0;
@@ -2719,9 +2824,11 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         const r = img.getBoundingClientRect();
         return r.width > 0 && r.bottom > 0 && r.top < vh + 40;
       });
+      // SOLO estas se piden ya (las demás no tienen src todavía): así no
+      // compiten con las de abajo y la página aparece antes.
       first.forEach(img => {
-        img.loading = 'eager';
         try { img.fetchPriority = 'high'; } catch (e) {}
+        loadCover(img);
       });
       const waits = first.map(whenImageShown);
       if (document.fonts && document.fonts.ready) waits.push(document.fonts.ready.catch(() => {}));
@@ -3666,6 +3773,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       lbCurrentArtist = artist;
       document.getElementById('lbTitle').textContent = artist.name;
       lbUpdateSlides();
+      lbShowCoverWhileLoading(artist);
       lbBuildFilmstrip();
       lbResetTrack(false);
       const lb = document.getElementById('lightbox');
@@ -3677,6 +3785,29 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       if (isMobile() && artist.cardEl) {
         artist.cardEl.scrollIntoView({ behavior: 'instant', block: 'center' });
       }
+    }
+
+    // Al abrir un artista: si la foto en grande todavía no llegó, se muestra la
+    // portada que ya estaba en pantalla (un instante se ve apenas menos nítida)
+    // en vez del circulito, y cuando la grande está lista se cambia sola.
+    function lbShowCoverWhileLoading(artist) {
+      const slot = imgC(), big = lbImages[0];
+      const cover = artist.cardEl && artist.cardEl.querySelector('img');
+      if (!slot || !big || !cover || !cover.naturalWidth || lbIsReady(slot, big)) return;
+      const small = cover.currentSrc || cover.src;
+      if (slot._lbStop) slot._lbStop();          // este slot deja de esperar a la grande
+      slot.src = small;
+      slot.classList.remove('lb-img-loading');
+      lbSyncLoader();                            // sin circulito
+      const pre = new Image();
+      pre.src = big;
+      const swap = () => {
+        if (lbIndex !== 0 || lbImages[0] !== big || slot.getAttribute('src') !== small) return;   // ya se movió
+        if (!document.getElementById('lightbox').classList.contains('open')) return;
+        slot.src = big;
+        lbDecoded.add(big);
+      };
+      (pre.decode ? pre.decode() : Promise.resolve()).then(swap, () => {});
     }
 
     /* ─── Zoom de la foto ampliada ───
@@ -3777,7 +3908,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       let hiFor = null;
       function hiRes() {                        // la misma foto en más resolución (una vez por foto)
         const im = img(), src = im && im.getAttribute('src');
-        if (!src || hiFor === src || !/sz=w\d+/.test(src)) return;
+        if (!src || hiFor === src || !(/sz=w\d+/.test(src) || isDirectLink(src))) return;
         const hi = driveThumbUrl(src, 3200);
         if (hi === src) return;
         hiFor = src;
