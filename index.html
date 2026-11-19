@@ -8,7 +8,7 @@
        entrada, así cuando se piden ya está lista (un viaje menos). -->
   <link rel="preconnect" href="https://www.googleapis.com" crossorigin />
   <link rel="preconnect" href="https://lh3.googleusercontent.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&display=swap" rel="stylesheet" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mateo Ronn Abregu — Fotógrafo</title>
   <meta name="description" content="Fotógrafo especializado en shows, moda y fotografía social. Buenos Aires." />
@@ -45,13 +45,13 @@
       --skel: rgba(255, 255, 255, 0.07);   /* gris de los bloques del esqueleto de carga (y del recuadro de cada foto mientras baja) */
       --nav-h: 80px;
       --nav-space: 80px; /* alto real del nav (en celu son 2 renglones); lo ajusta el JS */
-      --font: 'Roboto', 'Helvetica Neue', Arial, sans-serif;           /* tipografía de toda la página */
-      --font-display: 'Roboto', 'Helvetica Neue', Arial, sans-serif;   /* títulos, menú, pie (la misma) */
+      --font: 'Manrope', 'Helvetica Neue', Arial, sans-serif;           /* tipografía de toda la página */
+      --font-display: 'Manrope', 'Helvetica Neue', Arial, sans-serif;   /* títulos, menú, pie (la misma) */
 
       /* ── Ajustables en vivo desde el panel (abrí la página con #ajustes) ──
          Estos valores son los que después dejamos fijos en código.
-         (Con Roboto, que es más ancha que la letra de antes, van al ~80% de
-         los tamaños de antes: así se ven del mismo tamaño.) ── */
+         (Se ajustaron con Roboto, que iba al ~80% de los tamaños de antes;
+         Manrope tiene un ancho parecido, así que quedan igual.) ── */
       --nav-logo-size: 29px;
       --nav-logo-mark-size: 60px;   /* tamaño del loguito (en celular se achica más abajo) */
       --nav-link-size: 14px;
@@ -629,7 +629,7 @@
     .icon-mail, .cm-icon { --icon: url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/icons/envelope.svg"); }
 
     /* ─── Ventanita "Escribime" (la abre el ícono del mail) ───
-       Mismo estilo que el resto: fondo oscuro, línea fina, Roboto en
+       Mismo estilo que el resto: fondo oscuro, línea fina, la misma letra en
        mayúsculas para el título y los botones, gris para lo secundario. Atrás,
        la página queda difuminada (como la barra de arriba). */
     .contact-modal {
@@ -1769,7 +1769,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       tiltShadow: 100,       // fuerza de la sombra de las fotos (%)
       tiltGlare: 100,        // fuerza del brillo que sigue al mouse (%)
       // Tipografía (px) y alineación
-      navLogoSize: 29,             // (con Roboto ≈ 80% de los tamaños de antes: se ven igual de grandes)
+      navLogoSize: 29,             // (ajustados con Roboto ≈ 80% de los tamaños de antes; con Manrope quedan igual)
       navLinkSize: 14,
       sectionLabelSize: 34,        // títulos de sección (en celu: 80%)
       sectionLabelAlign: 'center', // left | center | right
