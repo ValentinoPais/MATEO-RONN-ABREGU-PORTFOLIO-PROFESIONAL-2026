@@ -338,6 +338,20 @@
     @supports not selector(::-webkit-scrollbar) {   /* Firefox: lo más parecido que deja */
       #vscroll, .sb-probe { scrollbar-width: thin; scrollbar-color: #3a3a3a transparent; }
     }
+    /* En el celu NO hay barra de scroll (no hace falta):
+       · pantalla angosta (≤ 600 px, la del celu): no se muestra la barra propia
+         aunque haya mouse (p. ej. la ventana de la PC achicada) y <main> usa
+         todo el ancho (ya no le deja lugar);
+       · celu/tablet (táctil): tampoco la del navegador.
+       En la PC, con la ventana normal, queda igual que siempre. */
+    @media (max-width: 600px) {
+      #vscroll { display: none; }
+      main { right: 0; }
+    }
+    @media not all and (hover: hover) and (pointer: fine) {
+      html { scrollbar-width: none; }
+      html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
+    }
 
     /* ─── Section titles ─── */
     .section-label {
@@ -1521,6 +1535,8 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
        (Cada una ignora el "eco" del movimiento que le pasó la otra.) */
     const vscroll = document.getElementById('vscroll');
     const vspacer = vscroll.firstElementChild;
+    const vsHiddenMQ = window.matchMedia('(max-width: 600px)');   // celu: la barra no se muestra (ver CSS)
+    const barShown = () => innerScroll() && !vsHiddenMQ.matches;
     let vsBarEcho = null, vsMainEcho = null, vsRaf = 0;
     function measureScrollbarWidth() {
       const d = document.createElement('div');
@@ -1533,7 +1549,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     }
     function layoutVScroll() {
       if (vsRaf) { cancelAnimationFrame(vsRaf); vsRaf = 0; }
-      if (!innerScroll()) return;
+      if (!barShown()) return;                        // celu / táctil: sin barra, nada que acomodar
       const w = measureScrollbarWidth();              // 0 = barras "flotantes" (Mac, Firefox en Windows 11…)
       const s = document.documentElement.style;
       if (s.getPropertyValue('--sbw') !== w + 'px') {
@@ -1555,7 +1571,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     }
     const isEcho = (echo, t) => echo && performance.now() - echo.at < 250 && Math.abs(t - echo.t) < 1;
     mainEl.addEventListener('scroll', () => {
-      if (!innerScroll()) return;
+      if (!barShown()) return;
       if (isEcho(vsMainEcho, mainEl.scrollTop)) { vsMainEcho = null; return; }   // lo movió la barra: nada que copiar
       vsMainEcho = null;
       const barRange = vscroll.scrollHeight - vscroll.clientHeight;
@@ -1567,7 +1583,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       const t = vscroll.scrollTop;
       if (isEcho(vsBarEcho, t)) { vsBarEcho = null; return; }    // la movimos nosotros (siguiendo a <main>)
       vsBarEcho = null;
-      if (!innerScroll() || Math.abs(mainEl.scrollTop - t) < 1) return;
+      if (!barShown() || Math.abs(mainEl.scrollTop - t) < 1) return;
       vsMainEcho = { t, at: performance.now() };
       mainEl.scrollTo({ top: t, behavior: 'instant' });          // la arrastrás / clickeás / ruedita encima
     }, { passive: true });
@@ -1578,6 +1594,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     }
     window.addEventListener('resize', scheduleVScroll);          // zoom del navegador: cambia el ancho de la barra
     innerScrollMQ.addEventListener && innerScrollMQ.addEventListener('change', scheduleVScroll);
+    vsHiddenMQ.addEventListener && vsHiddenMQ.addEventListener('change', scheduleVScroll);   // de celu a PC: vuelve la barra
     layoutVScroll();                                             // ya, antes de armar la galería (para que no salte)
 
     /* ─── Contacto: ventanita "Escribime" ───
