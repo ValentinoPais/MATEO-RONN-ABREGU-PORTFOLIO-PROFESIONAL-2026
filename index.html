@@ -380,13 +380,13 @@
     .jgrid {
       display: flex;
       flex-direction: column;
-      gap: 10px;            /* el JS lo ajusta por pantalla */
+      gap: 0;               /* fotos pegadas (el JS lo pone según TWEAKS.gap) */
       padding: 0 20px;
     }
     .jrow {
       display: flex;
       justify-content: var(--row-align); /* alineación de la última fila incompleta */
-      gap: 10px;            /* el JS lo ajusta por pantalla */
+      gap: 0;               /* fotos pegadas (el JS lo pone según TWEAKS.gap) */
       /* la altura de cada fila la fija el JS */
     }
 
@@ -445,7 +445,8 @@
       left: 4%; right: 4%; top: 8%; bottom: 0;
       background: #000;
       filter: blur(12px);
-      opacity: calc(0.4 * var(--card-shadow));    /* sombra leve, siempre */
+      opacity: 0;           /* en reposo, sin sombra: con las fotos pegadas se vería como una
+                               rayita oscura sobre la de al lado. Aparece con el mouse (abajo). */
       transform: translate3d(0, 8px, 0);
       transition: opacity 0.5s ease;
       pointer-events: none;
@@ -950,6 +951,13 @@
       opacity: 1;
     }
     body.loading .card-shadow { opacity: 0; }
+    /* Con las fotos pegadas, en el esqueleto cada recuadro lleva una rayita fina
+       del color del fondo contra el de al lado y el de arriba: así se siguen
+       viendo las fotos de a una (mismo tamaño y lugar; al aparecer, se va). */
+    .card-inner { transition: box-shadow 0.4s ease; }
+    body.loading .jrow > .artist-card + .artist-card .card-inner { box-shadow: inset 1px 0 0 var(--bg); }
+    body.loading .jrow + .jrow > .artist-card .card-inner { box-shadow: inset 0 1px 0 var(--bg); }
+    body.loading .jrow + .jrow > .artist-card + .artist-card .card-inner { box-shadow: inset 1px 1px 0 var(--bg); }
     body.loading .artist-name,
     body.loading .site-footer,
     body.loading #vscroll { visibility: hidden; }
@@ -1856,7 +1864,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     const TWEAKS = {
       // Galería de portadas
       rowHeight: 405,        // alto de fila objetivo (px, en desktop)
-      gap: 10,               // espacio entre fotos (px)
+      gap: 0,                // espacio entre fotos (px): 0 = todas pegadas (antes 10)
       portraitBoost: 1.9,    // qué tan más grandes se ven las verticales
       stretchCap: 1.6,       // tope para estirar la última fila
       rowAlign: 'center',    // left | center | right  (fila incompleta)
@@ -2424,9 +2432,9 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
 
     function justifyParams() {
       const w = window.innerWidth, H = TWEAKS.rowHeight, g = TWEAKS.gap;
-      // En tablet/mobile se baja proporcional (mismas relaciones de antes).
-      if (w <= 600) return { targetH: Math.round(H * 0.667), gap: Math.max(2, g - 4) };
-      if (w <= 900) return { targetH: Math.round(H * 0.864), gap: Math.max(2, g - 2) };
+      // En tablet/mobile se baja proporcional (mismas relaciones de antes; con 0, pegadas en todas).
+      if (w <= 600) return { targetH: Math.round(H * 0.667), gap: Math.max(0, g - 4) };
+      if (w <= 900) return { targetH: Math.round(H * 0.864), gap: Math.max(0, g - 2) };
       return { targetH: H, gap: g };
     }
 
