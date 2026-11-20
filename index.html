@@ -381,7 +381,7 @@
       display: flex;
       flex-direction: column;
       gap: 0;               /* fotos pegadas (el JS lo pone según TWEAKS.gap) */
-      padding: 0 20px;
+      padding: 0;           /* de borde a borde: sin margen a los costados */
     }
     .jrow {
       display: flex;
@@ -1176,10 +1176,6 @@
     }
 
     /* ─── Responsive ─── */
-    @media (max-width: 900px) {
-      .jgrid { padding: 0 16px; }
-    }
-
     @media (max-width: 600px) {
       /* Celu: la barra va en dos renglones (nav.stacked, la pone el JS): el
          nombre arriba al lado del loguito y las secciones justo debajo. */
@@ -1193,7 +1189,6 @@
       .nav-links { gap: 18px; }
       .nav-links a { font-size: 13px; }
       .hamburger { display: none; }
-      .jgrid { padding: 0 10px; }
       .artist-name { display: none; }
       .lightbox-title {
         --lightbox-title-size-m: calc(var(--lightbox-title-size) * 0.75);
