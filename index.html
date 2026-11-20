@@ -203,11 +203,13 @@
       user-select: none;
       pointer-events: none;
       opacity: 0;
-      transition: opacity 0.25s ease;   /* al despertarse: abre el ojo rápido */
+      visibility: hidden;               /* despierto (lo normal): el logo de siempre, sin nada encima */
+      transition: opacity 0.25s ease, visibility 0s linear 0.25s;   /* al despertarse: abre el ojo rápido */
     }
     body.cat-asleep .coin-sleep {
       opacity: 1;
-      transition-duration: 1.6s;        /* al dormirse: el párpado baja despacio */
+      visibility: visible;
+      transition: opacity 1.6s ease, visibility 0s;                 /* al dormirse: el párpado baja despacio */
     }
     .cat-zzz {
       position: absolute;               /* (el loguito, con su perspective, es la referencia) */
@@ -219,9 +221,14 @@
       font: 700 var(--zzz-size)/1 var(--font-display);
       color: var(--muted);
       opacity: 0;
-      transition: opacity 0.3s ease;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0s linear 0.3s;
     }
-    body.cat-asleep .cat-zzz { opacity: 1; transition: opacity 0.6s ease 1.2s; }   /* cuando ya cerró el ojo */
+    body.cat-asleep .cat-zzz {          /* cuando ya cerró el ojo */
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 0.6s ease 1.2s, visibility 0s linear 1.2s;
+    }
     .cat-zzz i {
       position: absolute;
       left: 0;
@@ -5078,44 +5085,56 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     })();
 
     /* ─── Huevo de pascua: el gato se duerme ───
-       Si durante un minuto nadie toca la página (ni el mouse, ni el dedo, ni el
-       teclado, ni la ruedita), el gato del logo cierra el ojo-lente y le salen
-       unas z (ver .coin-sleep y .cat-zzz en el CSS); el ícono de la pestaña
-       también se duerme. Cualquier movimiento lo despierta. No se duerme
-       mientras carga la página ni con una foto o el contacto abiertos.
-       (Para verlo sin esperar: en la consola, CatNap.sleep()) */
+       Por defecto el gato está como siempre (despierto). Sólo si pasa UN MINUTO
+       SEGUIDO sin que nadie toque nada (mouse, dedo, teclado, ruedita) con la
+       página a la vista, cierra el ojo-lente y le salen unas z (ver .coin-sleep
+       y .cat-zzz en el CSS); el ícono de la pestaña también se duerme.
+       Cualquier movimiento lo despierta y el minuto vuelve a contar de cero. Si
+       se cambia de pestaña o de app, queda despierto y el minuto también vuelve
+       a cero. No se duerme mientras carga la página ni con una foto o el
+       contacto abiertos.
+       (Para verlo sin esperar: en la consola, CatNap.sleep(); y CatNap.wake()) */
     const CatNap = (() => {
-      const AFTER_MS = 60000;                      // cuánto tiempo quieto hasta que se duerme
+      const AFTER_MS = 60000;                      // cuánto tiempo quieto hasta que se duerme (1 minuto)
       const body = document.body;
-      const icons = [...document.querySelectorAll('link[rel="icon"]')];
-      const iconHrefs = icons.map(l => l.getAttribute('href'));
       const ICON_SLEEP = 'data:image/png;base64,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';
-      let timer = 0, asleep = false, lastArm = 0;
+      let timer = 0, asleep = false, lastArm = 0, sleepIcon = null;
       const busy = () => body.classList.contains('loading') || !!document.querySelector('.lightbox.open, .contact-modal.open');
-      function arm() {
+      function setAsleep(on) {
+        if (on === asleep) return;
+        asleep = on;
+        body.classList.toggle('cat-asleep', on);
+        if (on) {                                  // ícono dormido: uno MÁS, al final (gana mientras está)
+          sleepIcon = document.createElement('link');
+          sleepIcon.rel = 'icon';
+          sleepIcon.type = 'image/png';
+          sleepIcon.href = ICON_SLEEP;
+          document.head.appendChild(sleepIcon);
+        } else if (sleepIcon) {                   // al sacarlo vuelven solos los de siempre
+          sleepIcon.remove();
+          sleepIcon = null;
+        }
+      }
+      function arm() {                             // el minuto arranca de cero
         clearTimeout(timer);
         lastArm = performance.now();
-        timer = setTimeout(sleep, AFTER_MS);
+        if (!document.hidden) timer = setTimeout(sleep, AFTER_MS);   // sólo cuenta con la página a la vista
       }
       function sleep() {
-        if (asleep) return;
+        if (document.hidden) return;
         if (busy()) return arm();                  // ahora no: lo intenta de nuevo en un minuto
-        asleep = true;
-        body.classList.add('cat-asleep');
-        icons.forEach(l => l.setAttribute('href', ICON_SLEEP));
+        setAsleep(true);
       }
       function wake() {
-        if (asleep) {
-          asleep = false;
-          body.classList.remove('cat-asleep');
-          icons.forEach((l, i) => l.setAttribute('href', iconHrefs[i]));
-        } else if (performance.now() - lastArm < 1000) return;   // el mouse se mueve mucho: alcanza con rearmar una vez por segundo
+        if (asleep) setAsleep(false);
+        else if (performance.now() - lastArm < 1000) return;   // el mouse se mueve mucho: alcanza con rearmar una vez por segundo
         arm();
       }
       ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart', 'scroll'].forEach(type =>
         window.addEventListener(type, wake, { capture: true, passive: true }));
+      document.addEventListener('visibilitychange', () => { setAsleep(false); arm(); });
       arm();
-      return { sleep, wake };
+      return { sleep: () => setAsleep(true), wake: () => { setAsleep(false); arm(); } };
     })();
 
     /* ─── Firma en la consola ───
