@@ -3896,13 +3896,27 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       }
     }
 
+    // Ancho con el que se ve en el lightbox una foto de w×h px: el mismo cálculo que
+    // hace el CSS de .lb-slide img (tamaño natural, achicado hasta entrar en
+    // 90vw × min(88vh, 100vh − 96px)).
+    function lbFitWidth(w, h) {
+      const bw = innerWidth * 0.9, bh = Math.min(innerHeight * 0.88, innerHeight - 96);
+      return w * Math.min(1, bw / w, bh / h);
+    }
+
     // Al abrir un artista: si la foto en grande todavía no llegó, se muestra la
     // portada que ya estaba en pantalla (un instante se ve apenas menos nítida)
     // en vez del circulito, y cuando la grande está lista se cambia sola.
+    // PERO solo si la portada ya se ve del MISMO tamaño que la grande (en el celu,
+    // sí). En la PC la portada es bastante más chica que la foto ampliada: se veía
+    // chiquita y después crecía. Ahí no se usa: queda el circulito de carga y la
+    // grande aparece directo en su tamaño (si ya estaba cargada, aparece de una).
     function lbShowCoverWhileLoading(artist) {
       const slot = imgC(), big = lbImages[0];
       const cover = artist.cardEl && artist.cardEl.querySelector('img');
       if (!slot || !big || !cover || !cover.naturalWidth || lbIsReady(slot, big)) return;
+      const cw = cover.naturalWidth, ch = cover.naturalHeight;
+      if (lbFitWidth(cw, ch) < lbFitWidth(1600, 1600 * ch / cw) - 1) return;   // se vería más chica
       const small = cover.currentSrc || cover.src;
       if (slot._lbStop) slot._lbStop();          // este slot deja de esperar a la grande
       slot.src = small;
