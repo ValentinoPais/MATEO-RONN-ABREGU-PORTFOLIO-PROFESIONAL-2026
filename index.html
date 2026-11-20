@@ -471,10 +471,15 @@
     .artist-card.is-tilting .card-glare { opacity: var(--card-glare); }
 
     .artist-card img {
-      position: relative;
+      position: absolute;
       z-index: 1;
-      width: 100%;
-      height: 100%;
+      /* 1 px de más por lado (lo recorta .card-inner): así la foto tapa SIEMPRE
+         todo su recuadro, aunque el navegador la ubique un pelito corrida. Con las
+         fotos pegadas, si no, a veces asoma una rayita gris de 1 px entre una y otra. */
+      top: -1px;
+      left: -1px;
+      width: calc(100% + 2px);
+      height: calc(100% + 2px);
       object-fit: cover;
       display: block;
       filter: brightness(0.88) saturate(0.9);
