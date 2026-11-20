@@ -33,8 +33,9 @@
       --bg-rgb: 13, 13, 13;         /* el mismo color, en números (para la barra semitransparente) */
       --bar-alpha: 0.8;             /* opacidad de la barra de arriba (1 = sólida, 0 = invisible) */
       --bar-blur: 20px;             /* cuánto se difumina lo que pasa por detrás de la barra */
-      --line: #262626;              /* líneas finas (menú del celu, chip y ventanita de contacto) */
+      --line: #262626;              /* líneas finas (bandas de los títulos, menú del celu, chip y ventanita de contacto) */
       --footer-bg: #1b1b1b;         /* el pie (debajo del telón): un poco más claro que el fondo */
+      --band-bg: #151515;           /* la banda de los títulos de sección: apenas más clara que el fondo */
       --sbw: 0px;                   /* PC: ancho de la barra de scroll (lo mide el JS) */
       --sbw-box: 0px;               /* PC: ancho de la cajita de esa barra (lo mide el JS) */
       --bg2: #111111;
@@ -56,7 +57,7 @@
       --nav-logo-size: 29px;
       --nav-logo-mark-size: 60px;   /* tamaño del loguito (en celular se achica más abajo) */
       --nav-link-size: 14px;
-      --section-label-size: 34px;   /* títulos de sección (Shows, Moda…); en celu: 80% */
+      --section-label-size: 15px;   /* títulos de sección (Shows, Moda…): la banda; en celu: 87% */
       --section-label-align: center;
       --artist-name-size: 16px;
       --lightbox-title-size: 21px;  /* nombre del artista arriba a la izq. en la foto abierta (celu: 75%) */
@@ -353,21 +354,28 @@
     }
 
     /* ─── Section titles ─── */
+    /* Título de sección = una BANDA de lado a lado, apenas más clara que el fondo,
+       con una línea fina arriba y otra abajo: separa una sección de la otra. El
+       nombre va chico, centrado y bien espaciado. Los px del padding son el espacio
+       QUE SE VE hasta las mayúsculas: con line-height 1, en Manrope las mayúsculas
+       arrancan 0.145em debajo del borde de arriba de la caja y terminan 0.105em
+       antes del de abajo. */
     .section-label {
       font-family: var(--font-display);
       font-size: var(--section-label-size);
       font-weight: 700;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.3em;
       text-transform: uppercase;
-      color: #fff;
+      color: var(--text);
       text-align: var(--section-label-align);
-      /* Pegado a sus fotos (apenas unos px abajo) y con más aire arriba, así se lee
-         como el título de lo que sigue. Los px son el espacio QUE SE VE hasta las
-         mayúsculas: con line-height 1, en Manrope las mayúsculas arrancan 0.145em
-         debajo del borde de arriba de la caja y terminan 0.105em antes del de abajo. */
       line-height: 1;
-      padding: calc(32px - 0.145em) 20px calc(9px - 0.105em);
+      padding: calc(22px - 0.145em) 20px calc(22px - 0.105em);
+      background: var(--band-bg);
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
     }
+    /* El espaciado de la última letra no corre el nombre del centro. */
+    .section-label > span { margin-right: -0.3em; }
 
     .empty-message {
       font-family: var(--font-display);
@@ -541,11 +549,16 @@
          al llegar al final, la galería se levanta y lo va destapando de abajo
          hacia arriba (como en el video de opciones).
          Cómo: el pie arranca metido debajo de la última pantalla de la galería
-         (margin-top negativo = el alto que se ve debajo de la barra, --stage-h)
-         y su contenido (.footer-stage) es sticky arriba, justo debajo de la
-         barra: mientras el telón sube, no se mueve. .footer-spacer es el lugar
-         que necesita el sticky para quedarse quieto (no se ve: lo tapa el
-         contenido).
+         (margin-top negativo, --reveal-h) y su contenido (.footer-stage) es
+         sticky arriba, justo debajo de la barra: mientras el telón sube, no se
+         mueve. .footer-spacer es el lugar que necesita el sticky para quedarse
+         quieto (no se ve: lo tapa el contenido).
+         Celu: la barra del navegador aparece y se esconde al scrollear, y con
+         eso cambia el alto de la pantalla. NADA del pie depende de eso (si no,
+         el pie cambiaba de tamaño y se reacomodaba mientras scrolleabas): el
+         contenido mide la pantalla con la barra a la vista (svh) y el resto se
+         calcula con la pantalla grande (lvh), así el final de la página es
+         siempre donde el telón terminó de subir.
          El pie mide EXACTAMENTE lo que se ve debajo de la barra (100% del alto):
          cuando el telón terminó de subir, ahí termina la página; el pie nunca
          sigue bajando. Lo de adentro va centrado, y si no entra, el JS
@@ -559,20 +572,28 @@
       box-shadow: 0 18px 40px rgba(0, 0, 0, 0.85), 0 2px 0 rgba(0, 0, 0, 0.6);   /* borde del telón */
     }
     .site-footer {
-      --stage-h: calc(100vh - var(--nav-space));
+      --stage-h: calc(100vh - var(--nav-space));    /* alto del contenido del pie */
+      --reveal-h: calc(100vh - var(--nav-space));   /* cuánto arranca metido debajo del telón */
+      --spacer-h: calc(100vh - var(--nav-space));   /* lugar para que el contenido quede quieto */
       position: relative;
       z-index: 0;
-      margin-top: calc(-1 * var(--stage-h));
+      margin-top: calc(-1 * var(--reveal-h));
       background: var(--footer-bg);
+      overflow-anchor: none;               /* el navegador no "acomoda" el scroll tomando el pie de referencia */
       /* El texto del pie no se selecciona (ni con doble click, ni arrastrando, ni
          manteniendo apretado en el celu, que tampoco abre el menú de copiar). */
       -webkit-user-select: none;
       user-select: none;
       -webkit-touch-callout: none;
     }
-    @supports (height: 100dvh) {
-      /* celu: lo que se ve de verdad, con o sin la barra del navegador (cambia sola al scrollear) */
-      .site-footer { --stage-h: calc(100dvh - var(--nav-space)); }
+    @supports (height: 100svh) {
+      /* svh = pantalla con la barra del navegador a la vista; lvh = sin ella. Fijos:
+         no cambian al scrollear. (En la PC son iguales a vh.) */
+      .site-footer {
+        --stage-h: calc(100svh - var(--nav-space));
+        --reveal-h: calc(100lvh - var(--nav-space));
+        --spacer-h: calc(200lvh - 100svh - var(--nav-space));
+      }
     }
     .footer-stage {
       position: sticky;
@@ -592,7 +613,7 @@
       flex-direction: column;
       align-items: center;
     }
-    .footer-spacer { height: var(--stage-h); }
+    .footer-spacer { height: var(--spacer-h); }
     /* Para medir el alto de pantalla más chico (con la barra del navegador a la
        vista): el About se acomoda para entrar ahí, así entra siempre. */
     .footer-probe {
@@ -976,6 +997,7 @@
       transition: opacity 0.4s ease;
     }
     body:is(.loading, .revealing) .nav-name::after { right: 0.08em; }
+    body:is(.loading, .revealing) .section-label > span::after { right: 0.3em; }
     body.revealing .nav-name::after,
     body.revealing .nav-links a::after,
     body.revealing .section-label > span::after { opacity: 0; }
@@ -1298,7 +1320,7 @@
       }
       #lb-filmstrip { bottom: 14px; gap: 6px; padding: 8px; }
       .lb-thumb { width: 38px; height: 38px; }
-      .section-label { font-size: calc(var(--section-label-size) * 0.8); padding: calc(24px - 0.145em) 10px calc(7px - 0.105em); }
+      .section-label { font-size: calc(var(--section-label-size) * 0.87); padding: calc(18px - 0.145em) 12px calc(18px - 0.105em); }
       .footer-stage { padding: calc(56px * var(--fs, 1)) 20px calc(96px * var(--fs, 1)); }    /* abajo: lugar para el chip de contacto */
       #about p { font-size: calc(var(--about-p-size) * 0.85 * var(--ft, 1)); }   /* un poco más chico en el celu → el About queda menos alto */
     }
@@ -2067,7 +2089,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       pageBg: 13,            // gris del fondo de TODA la página (0 = negro): galería, barra de arriba y pie
       barAlpha: 80,          // opacidad de la barra de arriba (%): 100 = sólida; menos = se ven más las fotos de atrás
       barBlur: 20,           // difuminado de lo que pasa por detrás de la barra (px)
-      lineGray: 38,          // gris de las líneas finas (menú del celu, chip y ventanita de contacto)
+      lineGray: 38,          // gris de las líneas finas (bandas de los títulos, menú del celu, chip y ventanita de contacto)
       // Efecto de las fotos
       tiltMax: 9,            // inclinación máxima de las fotos con el mouse (grados; 0 = sin efecto)
       tiltShadow: 100,       // fuerza de la sombra de las fotos (%)
@@ -2075,7 +2097,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       // Tipografía (px) y alineación
       navLogoSize: 29,             // (ajustados con Roboto ≈ 80% de los tamaños de antes; con Manrope quedan igual)
       navLinkSize: 14,
-      sectionLabelSize: 34,        // títulos de sección (en celu: 80%)
+      sectionLabelSize: 15,        // títulos de sección: la banda (en celu: 87%)
       sectionLabelAlign: 'center', // left | center | right
       artistNameSize: 16,
       lightboxTitleSize: 21,       // nombre del artista en la foto abierta (en celu: 75%)
@@ -3463,6 +3485,8 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       s.setProperty('--bg-rgb', `${g}, ${g}, ${g}`);
       const fg = Math.min(255, g + 14);                // el pie (debajo del telón): un poco más claro que el fondo
       s.setProperty('--footer-bg', `rgb(${fg}, ${fg}, ${fg})`);
+      const bb = Math.min(255, g + 8);                 // la banda de los títulos: apenas más clara que el fondo
+      s.setProperty('--band-bg', `rgb(${bb}, ${bb}, ${bb})`);
       s.setProperty('--bar-alpha', Math.min(100, Math.max(0, TWEAKS.barAlpha)) / 100);
       s.setProperty('--bar-blur', Math.max(0, TWEAKS.barBlur) + 'px');
       const gl = Math.round(Math.min(255, Math.max(0, TWEAKS.lineGray)));
@@ -3502,7 +3526,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       { key: 'pageBg', label: 'Fondo de toda la página', min: 0, max: 60, step: 1, unit: '' },
       { key: 'barAlpha', label: 'Barra de arriba — opacidad', min: 0, max: 100, step: 1, unit: '%' },
       { key: 'barBlur', label: 'Barra de arriba — difuminado', min: 0, max: 60, step: 1, unit: 'px' },
-      { key: 'lineGray', label: 'Líneas finas (menú del celu, chip, ventanita)', min: 0, max: 120, step: 1, unit: '' },
+      { key: 'lineGray', label: 'Líneas finas (títulos, menú del celu, chip, ventanita)', min: 0, max: 120, step: 1, unit: '' },
       { group: 'Efecto de las fotos' },
       { key: 'tiltMax', label: 'Inclinación con el mouse', min: 0, max: 20, step: 0.5, unit: '°' },
       { key: 'tiltShadow', label: 'Sombra de las fotos', min: 0, max: 200, step: 5, unit: '%' },
