@@ -67,7 +67,6 @@
       --about-hyphens: auto;        /* guiones al cortar palabras (solo cuando está justificado) */
       --about-block-gap: 16px;      /* separación entre bloques del About (uno por cada salto de línea) */
       --contact-link-size: 18px;    /* links del pie (navegación) */
-      --contact-icon-size: 28px;    /* íconos de Contacto (Instagram y mail) */
       --footer-name-size: 12px;
       --row-align: center;       /* alineación de la última fila incompleta de la galería */
     }
@@ -525,16 +524,16 @@
     }
 
 
-    /* ─── Pie de página: About + Contacto + Navegación ───────────────────
+    /* ─── Pie de página: About + Navegación ──────────────────────────────
          (fotos)
          ─────────────────────────────── línea ─────────────────────────────
-         [ ABOUT + texto en bloque ]                      [ CONTACTO   ]
-                                                          [ NAVEGACIÓN ]
+         [ ABOUT + texto en bloque ]                      [ NAVEGACIÓN ]
          ─────────────────────────────── línea ─────────────────────────────
                                © 2026 Mateo Ronn Abregu
        Mismo fondo que todo lo demás: lo separan dos líneas finas (--line), una
        arriba (de las fotos) y otra abajo (del ©).
-       En pantallas angostas se apila todo y Contacto/Navegación van centrados. */
+       En pantallas angostas se apila todo y Navegación va centrada.
+       (El contacto no está acá: es el chip fijo de abajo a la derecha.) */
     .site-footer {
       background: var(--bg);
       border-top: 1px solid var(--line);    /* línea fina: fotos | About */
@@ -557,7 +556,7 @@
       text-align: var(--about-align);
     }
 
-    /* Títulos del pie (ABOUT, NAVEGACIÓN, CONTACTO): el estilo de siempre del "About". */
+    /* Títulos del pie (ABOUT, NAVEGACIÓN): el estilo de siempre del "About". */
     #about h2,
     .footer-col h3 {
       font-family: var(--font-display);
@@ -595,7 +594,7 @@
     /* Renglones ya elegidos por el JS: cada uno entra justo, nunca se parte. */
     #about p .about-line { white-space: nowrap; }
 
-    /* Columna derecha: Contacto arriba y Navegación abajo, uno encima del otro. */
+    /* Columna derecha: Navegación. */
     .footer-cols {
       display: flex;
       flex-direction: column;
@@ -620,36 +619,85 @@
     }
     .footer-col a:hover { color: var(--muted); }
 
-    /* Contacto: íconos de Instagram y mail, en fila. Toman el color del texto
-       (y se apagan al gris con el mouse, como los links). Los dibujos son de
-       Bootstrap Icons (se cargan de cdn.jsdelivr.net). */
-    .footer-col ul.contact-icons { flex-direction: row; gap: 22px; }
-    .contact-icon {
-      display: block;
-      width: var(--contact-icon-size);
-      height: var(--contact-icon-size);
+    /* Íconos de Instagram y del mail: dibujos de Bootstrap Icons (se cargan de
+       cdn.jsdelivr.net), pintados con el color del texto (como máscara). */
+    .icon-instagram { --icon: url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/icons/instagram.svg"); }
+    .icon-mail, .contact-chip { --icon: url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/icons/envelope.svg"); }
+
+    /* ─── Chip de contacto ───
+       Circulito fijo abajo a la derecha de la pantalla, siempre arriba de todo
+       (fotos, barra, lightbox). Tiene el sobre y abre la ventanita. Mientras
+       carga la página no se ve: cuando aparecen las fotos, sube desde abajo de
+       la pantalla. Con una foto abierta, si abajo están las miniaturas, sube
+       un poco para no taparlas. */
+    .contact-chip {
+      --chip-size: 58px;
+      --chip-gap: 24px;                   /* distancia a los bordes de la pantalla */
+      position: fixed;
+      right: calc(var(--chip-gap) + env(safe-area-inset-right, 0px));
+      bottom: calc(var(--chip-gap) + env(safe-area-inset-bottom, 0px));
+      z-index: 250;                       /* arriba de la barra (100) y del lightbox (200-203); abajo de la ventanita (300) */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--chip-size);
+      height: var(--chip-size);
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: #141414;
+      color: var(--text);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      cursor: pointer;
       -webkit-tap-highlight-color: transparent;
+      transition: color 0.2s, border-color 0.2s, bottom 0.35s cubic-bezier(.2, .8, .2, 1);
     }
-    .contact-icon::before {
+    .contact-chip::before {
       content: '';
-      display: block;
-      width: 100%;
-      height: 100%;
+      width: 24px;
+      height: 24px;
       background-color: currentColor;
       -webkit-mask: var(--icon) center / contain no-repeat;
       mask: var(--icon) center / contain no-repeat;
     }
-    .icon-instagram { --icon: url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/icons/instagram.svg"); }
-    .icon-mail, .cm-icon { --icon: url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/icons/envelope.svg"); }
+    @media (hover: hover) {
+      .contact-chip:hover { color: #fff; border-color: #3a3a3a; }
+    }
+    .contact-chip:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+    @media (max-width: 600px) {
+      .contact-chip { --chip-size: 52px; --chip-gap: 16px; }
+      .contact-chip::before { width: 22px; height: 22px; }
+    }
+    /* Foto abierta con miniaturas abajo (ocupan hasta 90px del borde): el chip sube. */
+    body:has(.lightbox.open #lb-filmstrip.visible:not(.hidden)) .contact-chip {
+      bottom: calc(102px + env(safe-area-inset-bottom, 0px));
+    }
+    /* Entrada: durante la pantalla de carga no está; apenas aparecen las fotos
+       (se va body.loading) sube desde abajo de la pantalla, derecho y sin
+       rebote: arranca rápido y frena suave al llegar. Con "reducir movimiento"
+       del sistema: aparece con un fundido. */
+    .contact-chip { animation: chip-rise 0.55s cubic-bezier(.22, .8, .3, 1) 0.2s both; }
+    body.loading .contact-chip { visibility: hidden; pointer-events: none; animation: none; }
+    @keyframes chip-rise {
+      from { transform: translateY(calc(var(--chip-size) + var(--chip-gap) + 48px + env(safe-area-inset-bottom, 0px))); }
+    }
+    @keyframes chip-fade { from { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) {
+      .contact-chip { animation: chip-fade 0.3s 0.2s both; }
+    }
 
-    /* ─── Ventanita "Escribime" (la abre el ícono del mail) ───
+    /* ─── Ventanita de contacto (la abre el chip de abajo a la derecha) ───
        Mismo estilo que el resto: fondo oscuro, línea fina, la misma letra en
-       mayúsculas para el título y los botones, gris para lo secundario. Atrás,
-       la página queda difuminada (como la barra de arriba). */
+       mayúsculas para el título y los botones, gris para lo secundario. Arriba,
+       el título y una línea de texto; abajo, uno arriba del otro, Instagram y
+       el mail: cada uno con su iconito, el dato y "Copiar". Tocar el Instagram
+       abre el perfil; tocar el mail lo copia. Se cierra con la × (arriba a la
+       derecha), tocando afuera o con Esc. Aparece y se va con un fundido suave; atrás, la página
+       queda difuminada y quieta (no se scrollea). */
     .contact-modal {
       position: fixed;
       inset: 0;
-      z-index: 300;                       /* arriba de la barra (100); abajo de la pantalla de carga */
+      z-index: 300;                       /* arriba de todo, también del chip (250); abajo de la pantalla de carga */
       display: flex;
       align-items: center;
       justify-content: center;
@@ -658,7 +706,8 @@
       -webkit-backdrop-filter: blur(10px);
       backdrop-filter: blur(10px);
       opacity: 0;
-      transition: opacity 0.22s ease;
+      transition: opacity 0.25s ease;     /* fundido suave, igual al abrir y al cerrar */
+      touch-action: none;                 /* en el celu, arrastrar acá no mueve la página de atrás */
     }
     .contact-modal[hidden] { display: none; }
     .contact-modal.open { opacity: 1; }
@@ -671,13 +720,11 @@
       border-radius: 16px;
       box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6);
       text-align: center;
-      transform: translateY(10px) scale(0.98);
-      transition: transform 0.28s cubic-bezier(.2, .8, .2, 1);
     }
-    .contact-modal.open .cm-card { transform: none; }
+    .cm-card:focus { outline: none; }
     .cm-close {
       position: absolute;
-      top: 12px; right: 14px;
+      top: 12px; right: 14px;             /* arriba a la derecha */
       padding: 4px 6px;
       background: none;
       border: none;
@@ -688,28 +735,8 @@
       transition: color 0.2s;
     }
     .cm-close:hover { color: #fff; }
-    .cm-icon {                            /* círculo con el sobre, como el loguito */
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 58px;
-      height: 58px;
-      margin: 0 auto;
-      border: 1px solid var(--line);
-      border-radius: 50%;
-      background: #141414;
-      color: var(--text);
-    }
-    .cm-icon::before {
-      content: '';
-      width: 24px;
-      height: 24px;
-      background-color: currentColor;
-      -webkit-mask: var(--icon) center / contain no-repeat;
-      mask: var(--icon) center / contain no-repeat;
-    }
     .cm-title {
-      margin: 18px 0 10px;
+      margin: 0 0 10px;
       font-family: var(--font-display);
       font-size: 20px;
       font-weight: 700;
@@ -726,20 +753,52 @@
       color: var(--muted);
       text-wrap: balance;                 /* renglones parejos (sin una palabra sola abajo) */
     }
+    /* Instagram y mail, uno arriba del otro: primero el iconito, después el dato
+       y a la derecha "Copiar". */
+    .cm-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 24px;
+    }
     .cm-field {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-top: 24px;
+      width: 100%;
+      margin: 0;
       padding: 8px 8px 8px 16px;
       background: #080808;
       border: 1px solid var(--line);
       border-radius: 12px;
+      font: inherit;
+      color: var(--text);
+      text-align: left;
+      -webkit-tap-highlight-color: transparent;
     }
-    .cm-email {
+    button.cm-field { cursor: pointer; }  /* el del mail: tocarlo entero lo copia */
+    .cm-link {                            /* el de Instagram: iconito + usuario → abre el perfil */
       flex: 1;
       min-width: 0;
-      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: inherit;
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button.cm-field .cm-ficon { margin-right: 2px; }   /* mismo aire que en el de Instagram */
+    .cm-ficon {
+      flex: none;
+      width: 18px;
+      height: 18px;
+      background-color: currentColor;
+      -webkit-mask: var(--icon) center / contain no-repeat;
+      mask: var(--icon) center / contain no-repeat;
+    }
+    .cm-value {
+      flex: 1;
+      min-width: 0;
       font-family: var(--font);
       font-size: 15px;
       font-weight: 400;
@@ -748,48 +807,48 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      -webkit-user-select: all;
-      user-select: all;                   /* un click lo selecciona entero */
-    }
-    .cm-copy,
-    .cm-send {
-      font-family: var(--font-display);
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      cursor: pointer;
-      -webkit-tap-highlight-color: transparent;
+      transition: color 0.2s;
     }
     .cm-copy {
       flex: none;
+      min-width: var(--cm-copy-w, 0px);   /* el JS lo fija al ancho de "¡Listo!": al copiar no se mueve nada */
       padding: 9px 14px;
+      font-family: var(--font-display);
       font-size: 11px;
+      font-weight: 700;
+      line-height: normal;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-align: center;
       color: var(--muted);
       background: #161616;
       border: 1px solid var(--line);
       border-radius: 8px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
       transition: color 0.2s, border-color 0.2s;
     }
-    .cm-copy:hover, .cm-copy.copied { color: #fff; border-color: #3a3a3a; }
-    .cm-send {
-      display: block;
-      margin-top: 12px;
-      padding: 15px 16px;
-      font-size: 13px;
-      color: #0d0d0d;
-      background: var(--text);
-      border-radius: 12px;
-      transition: background 0.2s;
+    .cm-copy.copied { color: #fff; border-color: #3a3a3a; }
+    @media (hover: hover) {
+      .cm-link:hover .cm-value { color: #fff; }
+      .cm-copy:hover, button.cm-field:hover .cm-copy { color: #fff; border-color: #3a3a3a; }
     }
-    .cm-send:hover { background: #fff; }
-    .cm-close:focus-visible, .cm-copy:focus-visible, .cm-send:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+    .cm-close:focus-visible, .cm-copy:focus-visible, .cm-link:focus-visible, button.cm-field:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
+    }
     @media (max-width: 600px) {
       .cm-card { padding: 34px 20px 22px; }
       .cm-text br { display: none; }      /* en el celu el texto se acomoda solo */
-      .cm-email { font-size: 14px; }
+      .cm-field { padding-left: 14px; }
+      .cm-value { font-size: 14px; }
     }
-    @media (prefers-reduced-motion: reduce) {
-      .cm-card { transform: none; transition: none; }
+    @media (max-width: 400px) {           /* celus angostos: un poco menos de aire, así el mail entra entero */
+      .contact-modal { padding: 12px; }
+      .cm-card { padding: 30px 16px 18px; }
+      .cm-field { gap: 8px; padding: 8px 6px 8px 12px; }
+      .cm-link { gap: 10px; }
+      .cm-value { letter-spacing: 0.01em; }
     }
 
     .footer-bottom {
@@ -798,7 +857,7 @@
       text-align: center;
     }
 
-    /* Tablet / celu: todo apilado; Contacto y Navegación (y sus títulos) centrados. */
+    /* Tablet / celu: todo apilado; Navegación (y su título) centrada. */
     @media (max-width: 860px) {
       .footer-main { flex-direction: column; align-items: center; gap: 56px; }
       #about { max-width: none; width: 100%; }
@@ -806,12 +865,10 @@
       .footer-cols { align-items: center; text-align: center; gap: 44px; min-width: 0; }
       .footer-col h3 { text-align: center; }
       .footer-col ul { align-items: center; }
-      .footer-col ul.contact-icons { justify-content: center; }
     }
     .site-footer.no-about .footer-cols { align-items: center; text-align: center; }
     .site-footer.no-about .footer-col h3 { text-align: center; }
     .site-footer.no-about .footer-col ul { align-items: center; }
-    .site-footer.no-about .footer-col ul.contact-icons { justify-content: center; }
 
     .footer-name {
       font-family: var(--font-display);
@@ -1178,18 +1235,19 @@
     <!-- Secciones generadas dinámicamente desde Drive (o datos de respaldo) -->
     <div id="dynamicSections"></div>
 
-    <!-- ── Pie de página: About + Contacto + Navegación ─────────────────
+    <!-- ── Pie de página: About + Navegación ─────────────────────────────
            ─────────────────────────────── línea ─────────────────────────────
-           [ ABOUT + texto en bloque ]                    [ CONTACTO   ]
-                                                          [ NAVEGACIÓN ]
+           [ ABOUT + texto en bloque ]                    [ NAVEGACIÓN ]
            ─────────────────────────────── línea ─────────────────────────────
                                  © 2026 Mateo Ronn Abregu
          · About: el texto sale del documento "about" (o about.txt) de la
            carpeta PRINCIPAL de Drive. Con texto → se muestra; vacío / no
            existe → la columna queda oculta y se saca del menú. Lo llena el
            JS (loadAboutText/renderAbout).
-         · Contacto (mail e Instagram), Navegación (los mismos botones del
-           menú de arriba, los arma buildNav) y el © se ven SIEMPRE. ── -->
+         · Navegación (los mismos botones del menú de arriba, los arma
+           buildNav) y el © se ven SIEMPRE.
+         · El contacto (Instagram y mail) no va acá: es el chip fijo de abajo
+           a la derecha, que abre la ventanita. ── -->
     <footer class="site-footer" id="siteFooter">
       <div class="footer-main">
         <section id="about" class="footer-about" hidden>
@@ -1197,17 +1255,6 @@
           <div id="aboutText"></div>
         </section>
         <div class="footer-cols">
-          <div class="footer-col">
-            <h3>Contacto</h3>
-            <!-- Íconos: Instagram (abre el perfil) y mail (abre la ventanita
-                 "Escribime"; sin JS abre el mail directo). -->
-            <ul class="contact-icons">
-              <li><a class="contact-icon icon-instagram" href="https://instagram.com/ronnfotografia_" target="_blank" rel="noopener"
-                     aria-label="Instagram (@ronnfotografia_)" title="Instagram · @ronnfotografia_"></a></li>
-              <li><a class="contact-icon icon-mail" id="contactMailBtn" href="mailto:mateoron33@gmail.com"
-                     aria-label="Mail (mateoron33@gmail.com)" title="Mail" aria-haspopup="dialog"></a></li>
-            </ul>
-          </div>
           <div class="footer-col" role="navigation" aria-label="Navegación">
             <h3>Navegación</h3>
             <ul id="footerNav"></ul>
@@ -1221,18 +1268,31 @@
 
   </main>
 
-  <!-- Ventanita "Escribime" (la abre el ícono del mail en Contacto). -->
+  <!-- Chip de contacto: circulito fijo abajo a la derecha; abre la ventanita. -->
+  <button class="contact-chip" id="contactChip" type="button" aria-label="Contacto" title="Contacto"
+          aria-haspopup="dialog" aria-controls="contactModal" aria-expanded="false"></button>
+
+  <!-- Ventanita de contacto: Instagram (abre el perfil) y mail (tocarlo lo
+       copia), uno arriba del otro, cada uno con su "Copiar". -->
   <div class="contact-modal" id="contactModal" role="dialog" aria-modal="true" aria-labelledby="cmTitle" aria-describedby="cmText" hidden>
-    <div class="cm-card">
+    <div class="cm-card" tabindex="-1">
       <button class="cm-close" type="button" aria-label="Cerrar">×</button>
-      <span class="cm-icon" aria-hidden="true"></span>
       <h2 class="cm-title" id="cmTitle">Escribime</h2>
-      <p class="cm-text" id="cmText">¿Tenés una propuesta o querés que charlemos?<br>Mandame un mail.</p>
-      <div class="cm-field">
-        <span class="cm-email" id="cmEmail">mateoron33@gmail.com</span>
-        <button class="cm-copy" id="cmCopy" type="button">Copiar</button>
+      <p class="cm-text" id="cmText">¿Tenés una propuesta o querés que charlemos? <br>Hablame por Instagram o mandame un mail.</p>
+      <div class="cm-fields">
+        <div class="cm-field">
+          <a class="cm-link" href="https://instagram.com/ronnfotografia_" target="_blank" rel="noopener" aria-label="Instagram: @ronnfotografia_ (abre el perfil)">
+            <span class="cm-ficon icon-instagram" aria-hidden="true"></span>
+            <span class="cm-value">@ronnfotografia_</span>
+          </a>
+          <button class="cm-copy" type="button" data-copy="@ronnfotografia_" aria-label="Copiar el usuario de Instagram">Copiar</button>
+        </div>
+        <button class="cm-field" type="button" data-copy="mateoron33@gmail.com" aria-label="Copiar el mail: mateoron33@gmail.com">
+          <span class="cm-ficon icon-mail" aria-hidden="true"></span>
+          <span class="cm-value">mateoron33@gmail.com</span>
+          <span class="cm-copy" aria-hidden="true">Copiar</span>
+        </button>
       </div>
-      <a class="cm-send" href="mailto:mateoron33@gmail.com">Escribir un mail</a>
     </div>
   </div>
 
@@ -1597,36 +1657,50 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     vsHiddenMQ.addEventListener && vsHiddenMQ.addEventListener('change', scheduleVScroll);   // de celu a PC: vuelve la barra
     layoutVScroll();                                             // ya, antes de armar la galería (para que no salte)
 
-    /* ─── Contacto: ventanita "Escribime" ───
-       El ícono del mail (en Contacto, en el pie) abre esta ventanita: el mail a
-       la vista con un botón para copiarlo, y otro para escribir un mail directo
-       (abre el programa de mail). Se cierra con la ×, tocando afuera o con Esc.
-       Mientras está abierta, la página de atrás no se mueve. (Sin JS, el ícono
-       igual abre el mail: es un link mailto:.) */
+    /* ─── Contacto: chip + ventanita ───
+       El chip (abajo a la derecha, siempre visible) abre la ventanita:
+       Instagram (tocarlo abre el perfil) y el mail (tocarlo lo copia), cada uno
+       con su "Copiar". Se cierra con la ×, tocando afuera o con Esc. Mientras
+       está abierta, lo de atrás no se mueve (si había una foto abierta, al
+       cerrar la ventanita sigue ahí, igual de quieta). */
     const contactModal = document.getElementById('contactModal');
-    const contactCopyBtn = document.getElementById('cmCopy');
-    let contactLastFocus = null, contactHideTimer = 0, contactCopyTimer = 0;
+    const contactChip = document.getElementById('contactChip');
+    const contactCard = contactModal.querySelector('.cm-card');
+    let contactLastFocus = null, contactHideTimer = 0;
     const contactIsOpen = () => contactModal.classList.contains('open');
+    const lightboxIsOpen = () => document.getElementById('lightbox').classList.contains('open');
+    function fitCopyButtons() {                              // ancho fijo = el de "¡Listo!" (no salta al copiar)
+      contactModal.querySelectorAll('.cm-copy').forEach(b => {
+        const txt = b.textContent;
+        b.style.removeProperty('--cm-copy-w');
+        b.textContent = '¡Listo!';
+        const w = b.getBoundingClientRect().width;
+        b.textContent = txt;
+        if (w) b.style.setProperty('--cm-copy-w', Math.ceil(w) + 'px');
+      });
+    }
     function openContactModal(e) {
       if (e) e.preventDefault();
       if (contactIsOpen()) return;
       clearTimeout(contactHideTimer);
       contactLastFocus = document.activeElement;
       contactModal.hidden = false;
+      fitCopyButtons();
       void contactModal.offsetWidth;                         // así arranca la transición (aparece suave)
       contactModal.classList.add('open');
+      contactChip.setAttribute('aria-expanded', 'true');
       lockScroll(true);
-      const send = contactModal.querySelector('.cm-send');
-      if (send) send.focus({ preventScroll: true });
+      contactCard.focus({ preventScroll: true });
     }
     function closeContactModal() {
       if (!contactIsOpen()) return;
       contactModal.classList.remove('open');
-      lockScroll(false);
-      contactHideTimer = setTimeout(() => { contactModal.hidden = true; }, 260);
+      contactChip.setAttribute('aria-expanded', 'false');
+      if (!lightboxIsOpen()) lockScroll(false);             // con una foto abierta, todo sigue quieto
+      contactHideTimer = setTimeout(() => { contactModal.hidden = true; }, 280);
       if (contactLastFocus && contactLastFocus.focus) contactLastFocus.focus({ preventScroll: true });
     }
-    document.getElementById('contactMailBtn').addEventListener('click', openContactModal);
+    contactChip.addEventListener('click', openContactModal);
     contactModal.querySelector('.cm-close').addEventListener('click', closeContactModal);
     contactModal.addEventListener('click', e => { if (e.target === contactModal) closeContactModal(); });   // tocar afuera
     document.addEventListener('keydown', e => {
@@ -1634,32 +1708,42 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       if (e.key === 'Escape') { e.preventDefault(); closeContactModal(); return; }
       if (e.key === 'Tab') {                                 // el foco no se escapa de la ventanita
         const f = [...contactModal.querySelectorAll('button, a[href]')];
-        const first = f[0], last = f[f.length - 1];
-        if (e.shiftKey && (document.activeElement === first || !contactModal.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
-        else if (!e.shiftKey && (document.activeElement === last || !contactModal.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+        const first = f[0], last = f[f.length - 1], a = document.activeElement, inside = f.includes(a);
+        if (e.shiftKey && (a === first || !inside)) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && (a === last || !inside)) { e.preventDefault(); first.focus(); }
       }
     });
-    // Copiar el mail (con el portapapeles moderno; si no se puede, a la antigua).
-    contactCopyBtn.addEventListener('click', async () => {
-      const email = document.getElementById('cmEmail').textContent.trim();
+    // Copiar (Instagram o mail): con el portapapeles moderno; si no se puede, a
+    // la antigua; y si ni así, el dato queda seleccionado para copiarlo a mano.
+    async function copyText(text) {
+      try { await navigator.clipboard.writeText(text); return true; } catch (err) {}
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
+      document.body.appendChild(ta); ta.select();
       let ok = false;
-      try { await navigator.clipboard.writeText(email); ok = true; } catch (err) {}
-      if (!ok) {
-        const ta = document.createElement('textarea');
-        ta.value = email; ta.setAttribute('readonly', '');
-        ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0;';
-        document.body.appendChild(ta); ta.select();
-        try { ok = document.execCommand('copy'); } catch (err) {}
-        ta.remove();
-      }
-      if (!ok) {                                             // ni así: dejarlo seleccionado para copiarlo a mano
-        const r = document.createRange(); r.selectNodeContents(document.getElementById('cmEmail'));
-        const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
-      }
-      contactCopyBtn.textContent = ok ? '¡Copiado!' : 'Copialo';
-      contactCopyBtn.classList.toggle('copied', ok);
-      clearTimeout(contactCopyTimer);
-      contactCopyTimer = setTimeout(() => { contactCopyBtn.textContent = 'Copiar'; contactCopyBtn.classList.remove('copied'); }, 1800);
+      try { ok = document.execCommand('copy'); } catch (err) {}
+      ta.remove();
+      return ok;
+    }
+    contactModal.querySelectorAll('[data-copy]').forEach(el => {
+      const pill = el.classList.contains('cm-copy') ? el : el.querySelector('.cm-copy');
+      const value = el.closest('.cm-field').querySelector('.cm-value');
+      let timer = 0;
+      el.addEventListener('click', async e => {
+        e.preventDefault();
+        const ok = await copyText(el.dataset.copy);
+        if (document.activeElement !== el) el.focus({ preventScroll: true });   // (la copia a la antigua se lleva el foco)
+        if (!ok) {                                           // no se pudo: queda seleccionado para copiarlo a mano
+          const r = document.createRange(); r.selectNodeContents(value);
+          const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+          return;
+        }
+        pill.textContent = '¡Listo!';
+        pill.classList.add('copied');
+        clearTimeout(timer);
+        timer = setTimeout(() => { pill.textContent = 'Copiar'; pill.classList.remove('copied'); }, 1800);
+      });
     });
 
     /* ─── Menú: se ilumina la sección que estás viendo ──────────────────────
@@ -3191,7 +3275,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         '#tweakPanel .tp-actions button{flex:1;background:#1f1f1f;border:1px solid #333;color:#e8e8e8;padding:7px 0;border-radius:6px;cursor:pointer;font-size:12px;}',
         '#tweakPanel .tp-actions button:hover{border-color:#ff5a5f;}',
         '#tweakPanel .tp-hint{margin-top:8px;color:#777;font-size:10.5px;line-height:1.5;}',
-        '#tweakLauncher{position:fixed;bottom:16px;right:16px;z-index:9999;width:44px;height:44px;border-radius:50%;background:rgba(18,18,18,.92);color:#ff5a5f;border:1px solid #2a2a2a;cursor:pointer;font-size:19px;line-height:1;box-shadow:0 6px 20px rgba(0,0,0,.4);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}',
+        '#tweakLauncher{position:fixed;bottom:16px;left:16px;z-index:9999;width:44px;height:44px;border-radius:50%;background:rgba(18,18,18,.92);color:#ff5a5f;border:1px solid #2a2a2a;cursor:pointer;font-size:19px;line-height:1;box-shadow:0 6px 20px rgba(0,0,0,.4);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}',
         '#tweakLauncher:hover{border-color:#ff5a5f;}'
       ].join('');
       document.head.appendChild(style);
@@ -4307,6 +4391,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
 
     document.addEventListener('keydown', e => {
       if (!document.getElementById('lightbox').classList.contains('open')) return;
+      if (e.defaultPrevented || contactIsOpen()) return;          // la ventanita de contacto está arriba: es suya
       if (e.key === 'Escape') { if (LbZoom.isZoomed()) LbZoom.reset(true); else closeLightbox(); }   // con zoom: primero vuelve
       if (e.key === 'ArrowLeft') lbNavBtn(-1);
       if (e.key === 'ArrowRight') lbNavBtn(1);
