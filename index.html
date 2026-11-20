@@ -564,6 +564,11 @@
       z-index: 0;
       margin-top: calc(-1 * var(--stage-h));
       background: var(--footer-bg);
+      /* El texto del pie no se selecciona (ni con doble click, ni arrastrando, ni
+         manteniendo apretado en el celu, que tampoco abre el menú de copiar). */
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
     }
     @supports (height: 100dvh) {
       /* celu: lo que se ve de verdad, con o sin la barra del navegador (cambia sola al scrollear) */
@@ -650,13 +655,13 @@
     /* Renglones ya elegidos por el JS: cada uno entra justo, nunca se parte. */
     #about p .about-line { white-space: nowrap; }
 
-    /* Volver arriba: flechita y texto chico, como los títulos. */
+    /* Volver arriba: un caret (como los ‹ › de la foto abierta) y texto chico, como los títulos. */
     .footer-top {
       margin-top: calc(56px * var(--fs, 1));
       display: inline-flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
       padding: 8px 12px;
       background: none;
       border: 0;
@@ -677,7 +682,7 @@
       height: 22px;
       fill: none;
       stroke: currentColor;
-      stroke-width: 1.6;
+      stroke-width: 2.3;                      /* grueso como los ‹ › de la foto abierta */
       stroke-linecap: round;
       stroke-linejoin: round;
       transition: transform 0.2s;
@@ -1348,7 +1353,7 @@
             <div id="aboutText"></div>
           </section>
           <button class="footer-top" id="footerTop" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 15 12 9.5l5.5 5.5"/></svg>
             <span>Volver arriba</span>
           </button>
         </div>
