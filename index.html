@@ -543,12 +543,13 @@
          Cómo: el pie arranca metido debajo de la última pantalla de la galería
          (margin-top negativo = el alto que se ve debajo de la barra, --stage-h)
          y su contenido (.footer-stage) es sticky arriba, justo debajo de la
-         barra: mientras el telón sube, no se mueve. Cuando el telón ya se fue,
-         el pie scrollea normal (en el celu, si es más alto que la pantalla, ahí
-         se lee el resto). .footer-spacer es el lugar que necesita el sticky
-         para quedarse quieto (no se ve: lo tapa el contenido).
-         El contenido mide como mínimo esa pantalla: en la PC, destapado, el pie
-         ocupa toda la pantalla y lo de adentro va centrado.
+         barra: mientras el telón sube, no se mueve. .footer-spacer es el lugar
+         que necesita el sticky para quedarse quieto (no se ve: lo tapa el
+         contenido).
+         El pie mide EXACTAMENTE lo que se ve debajo de la barra (100% del alto):
+         cuando el telón terminó de subir, ahí termina la página; el pie nunca
+         sigue bajando. Lo de adentro va centrado, y si no entra, el JS
+         (fitFooter) achica primero los espacios y después la letra.
          Sin navegación ni ©; abajo, "Volver arriba". (El contacto no está acá:
          es el chip fijo de abajo a la derecha.) */
     #dynamicSections {
@@ -564,24 +565,46 @@
       margin-top: calc(-1 * var(--stage-h));
       background: var(--footer-bg);
     }
-    @supports (height: 100svh) {
-      .site-footer { --stage-h: calc(100svh - var(--nav-space)); }   /* celu: el alto con la barra del navegador a la vista */
+    @supports (height: 100dvh) {
+      /* celu: lo que se ve de verdad, con o sin la barra del navegador (cambia sola al scrollear) */
+      .site-footer { --stage-h: calc(100dvh - var(--nav-space)); }
     }
     .footer-stage {
       position: sticky;
       top: var(--nav-space);
       box-sizing: border-box;
-      min-height: var(--stage-h);
+      height: var(--stage-h);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 72px 40px 56px;
+      /* --fs: espacios (1 = normales; el JS los achica si el About no entra) */
+      padding: calc(72px * var(--fs, 1)) 40px calc(56px * var(--fs, 1));
+    }
+    .footer-inner {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     .footer-spacer { height: var(--stage-h); }
+    /* Para medir el alto de pantalla más chico (con la barra del navegador a la
+       vista): el About se acomoda para entrar ahí, así entra siempre. */
+    .footer-probe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 0;
+      height: 100vh;
+      visibility: hidden;
+      pointer-events: none;
+    }
+    @supports (height: 100svh) { .footer-probe { height: 100svh; } }
+    /* Caso extremo (ej. celu acostado): ni con la letra más chica entra → el pie
+       crece y se scrollea, para que no se corte nada. */
+    .site-footer.footer-tall .footer-stage { height: auto; min-height: var(--stage-h); }
     /* Sin About: un pie chiquito, solo con "Volver arriba" (sin telón). */
     .site-footer.no-about { margin-top: 0; }
-    .site-footer.no-about .footer-stage { position: static; min-height: 0; padding: 40px 20px 96px; }
+    .site-footer.no-about .footer-stage { position: static; height: auto; padding: 40px 20px 96px; }
     .site-footer.no-about .footer-spacer { display: none; }
 
     #about {
@@ -599,7 +622,7 @@
       text-transform: uppercase;
       color: var(--muted);
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: calc(30px * var(--fs, 1));
     }
 
     /* Texto del About en BLOQUES cuadraditos: cada salto de línea del
@@ -612,11 +635,11 @@
        entre palabras no quedan exagerados. */
     #about p {
       font-family: var(--font-display);
-      font-size: var(--about-p-size);
+      font-size: calc(var(--about-p-size) * var(--ft, 1));   /* --ft: lo achica el JS si no entra */
       font-weight: 400;
-      line-height: 1.7;
+      line-height: var(--flh, 1.7);
       color: #d0d0d0;
-      margin-bottom: var(--about-block-gap);   /* separación entre bloques */
+      margin-bottom: calc(var(--about-block-gap) * (0.5 + 0.5 * var(--fs, 1)));   /* separación entre bloques */
       text-align-last: var(--about-align-last);
       -webkit-hyphens: var(--about-hyphens);
       hyphens: var(--about-hyphens);
@@ -629,7 +652,7 @@
 
     /* Volver arriba: flechita y texto chico, como los títulos. */
     .footer-top {
-      margin-top: 56px;
+      margin-top: calc(56px * var(--fs, 1));
       display: inline-flex;
       flex-direction: column;
       align-items: center;
@@ -1271,8 +1294,8 @@
       #lb-filmstrip { bottom: 14px; gap: 6px; padding: 8px; }
       .lb-thumb { width: 38px; height: 38px; }
       .section-label { font-size: calc(var(--section-label-size) * 0.8); padding: calc(24px - 0.145em) 10px calc(7px - 0.105em); }
-      .footer-stage { padding: 56px 20px 96px; }    /* abajo: lugar para el chip de contacto */
-      #about p { font-size: calc(var(--about-p-size) * 0.85); }   /* un poco más chico en el celu → el About queda menos alto */
+      .footer-stage { padding: calc(56px * var(--fs, 1)) 20px calc(96px * var(--fs, 1)); }    /* abajo: lugar para el chip de contacto */
+      #about p { font-size: calc(var(--about-p-size) * 0.85 * var(--ft, 1)); }   /* un poco más chico en el celu → el About queda menos alto */
     }
   </style>
 </head>
@@ -1319,16 +1342,19 @@
            a la derecha, que abre la ventanita. ── -->
     <footer class="site-footer" id="siteFooter">
       <div class="footer-stage">
-        <section id="about" class="footer-about" hidden>
-          <h2>About</h2>
-          <div id="aboutText"></div>
-        </section>
-        <button class="footer-top" id="footerTop" type="button">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg>
-          <span>Volver arriba</span>
-        </button>
+        <div class="footer-inner">
+          <section id="about" class="footer-about" hidden>
+            <h2>About</h2>
+            <div id="aboutText"></div>
+          </section>
+          <button class="footer-top" id="footerTop" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg>
+            <span>Volver arriba</span>
+          </button>
+        </div>
       </div>
       <div class="footer-spacer" aria-hidden="true"></div>
+      <div class="footer-probe" aria-hidden="true"></div>
     </footer>
 
   </main>
@@ -3300,11 +3326,91 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         }
       });
     }
+    /* ─── El pie entra justo en una pantalla ───
+       El pie (debajo del telón) mide exactamente lo que se ve debajo de la barra:
+       cuando el telón termina de subir, ahí termina la página y no baja más. Si
+       el About no entra en ese alto, primero se achican los espacios (--fs) y,
+       si no alcanza, la letra (--ft, con el interlineado un poco más junto), hasta
+       FOOTER_MIN_PX. Se mide con el alto de pantalla más CHICO (en el celu, con la
+       barra del navegador a la vista): así entra siempre; con la barra escondida
+       sobra un poco de aire. Caso extremo (ni así entra, ej. el celu acostado):
+       queda lo más compacto y el pie crece lo justo. */
+    const FOOTER_MIN_PX = 10;          // letra más chica permitida para el texto del About
+    const FOOTER_MIN_SPACE = 0.35;     // espacios: hasta un 35% de lo normal
+    let footerFitKey = '';
+    function fitFooter() {
+      const footer = document.getElementById('siteFooter');
+      const stage = footer.querySelector('.footer-stage');
+      const inner = footer.querySelector('.footer-inner');
+      const probe = footer.querySelector('.footer-probe');
+      const st = footer.style;
+      const setVars = (fs, ft) => {
+        st.setProperty('--fs', fs.toFixed(3));
+        st.setProperty('--ft', ft.toFixed(3));
+        st.setProperty('--flh', ft < 0.999 ? '1.55' : '1.7');
+      };
+      const need = () => {
+        const cs = getComputedStyle(stage);
+        return inner.offsetHeight + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      };
+      footer.classList.remove('footer-tall');
+      setVars(1, 1);
+      fitAboutBlocks();
+      if (!aboutHasText) { footerFitKey = ''; return; }
+      const navH = document.querySelector('nav').offsetHeight;
+      const avail = (probe.offsetHeight || window.innerHeight) - navH;
+      footerFitKey = [avail, document.getElementById('aboutText').clientWidth, aboutFontsGen, TWEAKS.aboutPSize].join('|');
+      if (need() <= avail) return;                                   // entra tal cual
+      // 1) achicar los espacios
+      setVars(FOOTER_MIN_SPACE, 1);
+      if (need() <= avail) {
+        let lo = FOOTER_MIN_SPACE, hi = 1;
+        for (let i = 0; i < 8; i++) { const m = (lo + hi) / 2; setVars(m, 1); if (need() <= avail) lo = m; else hi = m; }
+        setVars(lo, 1);
+        return;
+      }
+      // 2) achicar la letra (y juntar un poco los renglones). Para buscar el tamaño se
+      //    mide con el texto "suelto" (cortado por el navegador, rápido); al final se
+      //    arman los renglones justificados de verdad y se confirma que entre.
+      const basePx = parseFloat(getComputedStyle(document.querySelector('#aboutText p')).fontSize) || 16;
+      const minT = Math.min(1, FOOTER_MIN_PX / basePx);
+      const plain = () => document.querySelectorAll('#aboutText p').forEach(p => {
+        const t = aboutSource.get(p);
+        if (t === undefined) return;
+        p.textContent = ''; p.textContent = t;                        // texto nuevo (sin renglones forzados)
+        p.classList.remove('about-fitted');
+        p.style.textAlignLast = '';
+      });
+      plain();
+      setVars(FOOTER_MIN_SPACE, minT);
+      let lo = minT, hi = 1;
+      if (need() <= avail) {
+        for (let i = 0; i < 8; i++) { const m = (lo + hi) / 2; setVars(FOOTER_MIN_SPACE, m); if (need() <= avail) lo = m; else hi = m; }
+      }
+      for (let k = 0; k < 6; k++) {                                   // renglones de verdad: si no entra, un poco más chica
+        setVars(FOOTER_MIN_SPACE, lo); fitAboutBlocks();
+        if (need() <= avail) return;
+        if (lo <= minT) break;
+        lo = Math.max(minT, lo * 0.97);
+      }
+      setVars(FOOTER_MIN_SPACE, minT); fitAboutBlocks();             // ni así (ej. celu acostado): lo más compacto
+      footer.classList.add('footer-tall');                           // y el pie crece lo justo para que no se corte
+    }
     let aboutFitRaf = 0;
     function scheduleAboutFit() {
       cancelAnimationFrame(aboutFitRaf);
-      aboutFitRaf = requestAnimationFrame(fitAboutBlocks);
+      aboutFitRaf = requestAnimationFrame(fitFooter);
     }
+    // Si cambia el alto de la pantalla (o de la barra de arriba), volver a acomodar el
+    // pie. (Que se esconda la barra del navegador del celu no cambia nada: se mide con
+    // la pantalla más chica, así que ahí no se recalcula.)
+    window.addEventListener('resize', () => {
+      if (!aboutHasText) return;
+      const probe = document.querySelector('#siteFooter .footer-probe');
+      const navH = document.querySelector('nav').offsetHeight;
+      const key = [(probe.offsetHeight || window.innerHeight) - navH, document.getElementById('aboutText').clientWidth, aboutFontsGen, TWEAKS.aboutPSize].join('|');
+      if (key !== footerFitKey) scheduleAboutFit();
+    });
     // Recalcular si cambia el ANCHO del texto (pantalla, barra de scroll de Windows
     // que aparece al terminar el loader) o cuando termina de cargar la tipografía.
     if (window.ResizeObserver) {
@@ -3643,7 +3749,11 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
        que el contenido y el scroll a cada sección dejen el espacio justo. */
     function syncNavHeight() {
       const navEl = document.querySelector('nav');
-      if (navEl) document.documentElement.style.setProperty('--nav-space', navEl.offsetHeight + 'px');
+      if (!navEl) return;
+      const v = navEl.offsetHeight + 'px';
+      if (document.documentElement.style.getPropertyValue('--nav-space') === v) return;
+      document.documentElement.style.setProperty('--nav-space', v);
+      if (typeof scheduleAboutFit === 'function') scheduleAboutFit();   // el pie mide "pantalla − barra"
     }
     if (window.ResizeObserver) {
       const navEl = document.querySelector('nav');
