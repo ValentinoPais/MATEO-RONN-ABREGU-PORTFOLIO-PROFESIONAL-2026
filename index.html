@@ -976,12 +976,31 @@
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.96);
       z-index: 200;
       align-items: center;
       justify-content: center;
     }
     .lightbox.open { display: flex; }
+    /* El fondo negro es una capa aparte (no las fotos): al arrastrar la foto para
+       arriba o abajo, la foto se mueve y el fondo NO, solo se va aclarando y deja
+       ver la página (ver LbPull). En el punto de cierre queda al 35%. */
+    .lb-backdrop {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      opacity: calc(1 - var(--lb-pull, 0) * 0.65);
+      transition: opacity 0.22s ease;
+      will-change: opacity;
+      pointer-events: none;
+    }
+    /* Mientras se arrastra: todo sigue al dedo, sin transiciones. */
+    .lightbox.lb-pull .lb-backdrop,
+    .lightbox.lb-pull .lightbox-title,
+    .lightbox.lb-pull .lightbox-close,
+    .lightbox.lb-pull .lightbox-zone,
+    .lightbox.lb-pull .lb-loader { transition: none; }
+    .lightbox.lb-pull #lb-filmstrip { transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .lightbox.lb-closing .lb-backdrop { opacity: 0; }
 
     #lb-track {
       position: absolute;
@@ -1010,7 +1029,6 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      background: #000;
     }
 
     .lb-slide img {
@@ -1045,6 +1063,8 @@
       color: var(--muted);
       z-index: 201;
       pointer-events: none;
+      opacity: calc(1 - var(--lb-pull, 0));   /* al arrastrar la foto para cerrar, se desvanece */
+      transition: opacity 0.22s ease;
     }
 
     /* ─── Carga de la foto ampliada: el circulito de siempre (mismo recuadro,
@@ -1069,7 +1089,7 @@
       transition: opacity 0.25s ease;
       z-index: 199;
     }
-    .lb-loader.show { opacity: 1; }
+    .lb-loader.show { opacity: calc(1 - var(--lb-pull, 0)); }
     .lb-loader svg {
       width: 22px;
       height: 22px;
@@ -1101,6 +1121,7 @@
       -webkit-backdrop-filter: blur(6px);
       backdrop-filter: blur(6px);
       z-index: 203;
+      opacity: calc(1 - var(--lb-pull, 0));   /* al arrastrar la foto para cerrar, se desvanece */
       scrollbar-width: none;
       transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s ease;
       -webkit-user-select: none;
@@ -1115,22 +1136,54 @@
        de las miniaturas que van pasando por debajo del cursor. */
     #lb-filmstrip.dragging,
     #lb-filmstrip.dragging .lb-thumb { cursor: grabbing; }
+    /* PC: mientras se arrastra la página con el mouse (ver setupDragScroll). */
+    body.drag-scrolling, body.drag-scrolling * { cursor: grabbing !important; -webkit-user-select: none !important; user-select: none !important; }
+    body.drag-scrolling .artist-name { opacity: 0 !important; }
     #lb-filmstrip.dragging .lb-thumb:not(.active) { opacity: 0.45; }
 
+    /* Cada miniatura es un recuadro (con la foto adentro). Mientras bajan, se ve
+       el recuadro de muestra con el brillito (como las fotos de la página); cuando
+       bajaron TODAS, aparecen juntas (#lb-filmstrip.ready). */
     .lb-thumb {
+      position: relative;
+      display: block;
       width: 50px;
       height: 50px;
       flex-shrink: 0;
-      object-fit: cover;
+      overflow: hidden;
       cursor: pointer;
       border-radius: 3px;
+      background: var(--skel);
       opacity: 0.45;
       filter: brightness(0.75) saturate(0.8);
       pointer-events: auto;
       -webkit-touch-callout: none;
-      -webkit-user-drag: none;
       transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
     }
+    .lb-thumb::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.07) 50%, transparent 65%);
+      background-size: 250% 100%;
+      animation: card-shimmer 1.4s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .lb-thumb img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      -webkit-user-drag: none;
+      user-select: none;
+    }
+    #lb-filmstrip.ready .lb-thumb img { opacity: 1; }
+    #lb-filmstrip.ready .lb-thumb::before { animation: none; opacity: 0; }
     .lb-thumb.active {
       opacity: 1;
       filter: brightness(1.05) saturate(1.15);
@@ -1149,7 +1202,8 @@
       line-height: 1;
       background: none;
       border: none;
-      transition: color 0.2s;
+      opacity: calc(1 - var(--lb-pull, 0));   /* al arrastrar la foto para cerrar, se desvanece */
+      transition: color 0.2s, opacity 0.22s ease;
       z-index: 201;
     }
     .lightbox-close:hover { color: var(--text); }
@@ -1162,6 +1216,7 @@
       cursor: pointer;
       padding: 120px 24px;
       border-radius: 12px;
+      opacity: calc(1 - var(--lb-pull, 0));   /* al arrastrar la foto para cerrar, se desvanece */
       transition: background 0.2s, opacity 0.25s ease;
     }
     .lightbox-zone.prev { left: 0; padding-left: max(24px, calc(5vw - 40px)); }
@@ -1314,6 +1369,7 @@
 
   <!-- Lightbox -->
   <div class="lightbox" id="lightbox">
+    <div class="lb-backdrop" aria-hidden="true"></div>
     <button class="lightbox-close" onclick="closeLightbox()">×</button>
     <p class="lightbox-title" id="lbTitle"></p>
     <div class="lb-loader" id="lbLoader"><svg viewBox="0 0 22 22" aria-hidden="true"><circle class="lb-ring-track" cx="11" cy="11" r="10"/><circle class="lb-ring-fill" cx="11" cy="11" r="10"/></svg></div>
@@ -1604,6 +1660,75 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       mainEl.scrollBy({ top: dy, behavior: 'smooth' });
       mainEl.focus({ preventScroll: true });
     });
+
+    /* ─── PC: arrastrar la página con el mouse (como con el dedo en el celu) ───
+       Mantener apretado el botón izquierdo y mover: la página sigue al mouse; al
+       soltar sigue un poco con inercia y frena sola (la ruedita o una tecla la
+       frenan). Un click sin arrastrar sigue abriendo la foto; después de
+       arrastrar, soltar no abre nada. No arranca sobre links, botones ni campos. */
+    (function setupDragScroll() {
+      const THRESHOLD = 6;        // px que hay que mover para que cuente como arrastre
+      const FRICTION = 0.95;      // inercia al soltar (por cuadro de 60 Hz; más cerca de 1 = más lejos)
+      let pid = null, startY = 0, startTop = 0, dragging = false, blockClick = false;
+      let lastY = 0, lastT = 0, vel = 0, raf = 0, lastFrame = 0;
+      const stopGlide = () => { if (raf) cancelAnimationFrame(raf); raf = 0; };
+      const scrollTo = (top) => mainEl.scrollTo({ top, behavior: 'instant' });
+      mainEl.addEventListener('pointerdown', e => {
+        if (!innerScroll() || e.pointerType !== 'mouse' || e.button !== 0) return;
+        if (document.body.classList.contains('loading')) return;
+        if (e.target.closest('a, button, input, textarea, select, label, [contenteditable]')) return;
+        stopGlide();
+        pid = e.pointerId;
+        startY = lastY = e.clientY; lastT = e.timeStamp;
+        startTop = mainEl.scrollTop; vel = 0; dragging = false;
+      });
+      window.addEventListener('pointermove', e => {
+        if (e.pointerId !== pid) return;
+        const dy = e.clientY - startY;
+        if (!dragging) {
+          if (Math.abs(dy) < THRESHOLD) return;            // todavía puede ser un click
+          dragging = true;
+          try { mainEl.setPointerCapture(pid); } catch (err) {}
+          document.body.classList.add('drag-scrolling');
+          const sel = window.getSelection && window.getSelection();
+          if (sel) sel.removeAllRanges();                   // nada de texto seleccionado
+        }
+        e.preventDefault();
+        scrollTo(startTop - dy);
+        const dt = e.timeStamp - lastT;
+        if (dt > 0) vel = 0.8 * ((lastY - e.clientY) / dt) + 0.2 * vel;   // px por ms
+        lastY = e.clientY; lastT = e.timeStamp;
+      });
+      function glide(now) {
+        const dt = Math.min(50, now - lastFrame);
+        lastFrame = now;
+        const before = mainEl.scrollTop;
+        scrollTo(before + vel * dt);
+        vel *= Math.pow(FRICTION, dt / 16.7);
+        if (Math.abs(vel) < 0.02 || Math.abs(mainEl.scrollTop - before) < 0.1) { raf = 0; return; }   // frenó o llegó al borde
+        raf = requestAnimationFrame(glide);
+      }
+      const end = e => {
+        if (e.pointerId !== pid) return;
+        pid = null;
+        if (!dragging) return;                               // fue un click: sigue normal
+        dragging = false;
+        document.body.classList.remove('drag-scrolling');
+        blockClick = true;                                   // el click que llega al soltar no abre nada
+        setTimeout(() => { blockClick = false; }, 0);
+        if (e.timeStamp - lastT > 80) vel = 0;               // se quedó quieto antes de soltar: sin inercia
+        if (Math.abs(vel) > 0.05) { lastFrame = performance.now(); raf = requestAnimationFrame(glide); }
+      };
+      window.addEventListener('pointerup', end);
+      window.addEventListener('pointercancel', end);
+      mainEl.addEventListener('click', e => {
+        if (!blockClick) return;
+        blockClick = false;
+        e.stopPropagation(); e.preventDefault();
+      }, true);
+      mainEl.addEventListener('wheel', stopGlide, { passive: true });
+      window.addEventListener('keydown', stopGlide);
+    })();
 
     /* ─── PC: la barra de scroll que arranca debajo del menú ───
        <main> ocupa toda la pantalla (así las fotos pasan por detrás de la barra
@@ -2538,7 +2663,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       currentSections.forEach(sec => sec.artists.forEach(a => {
         a.images.forEach((u, i) => { a.images[i] = driveFallbackUrl(u) || u; });
       }));
-      document.querySelectorAll('.artist-card img, .lb-thumb').forEach(im => {
+      document.querySelectorAll('.artist-card img, .lb-thumb img').forEach(im => {
         const fb = driveFallbackUrl(im.getAttribute('src'));
         if (fb) im.src = fb;
       });
@@ -2619,6 +2744,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
 
       card.addEventListener('pointerenter', e => {
         if (e.pointerType !== 'mouse' || !tiltHoverMQ.matches || tiltReduceMQ.matches || !(TWEAKS.tiltMax > 0)) return;
+        if (document.body.classList.contains('drag-scrolling')) return;   // arrastrando la página
         const atRest = !raf;
         hovering = true;
         card.classList.add('is-lifted', 'is-tilting');
@@ -3900,6 +4026,8 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       const lb = document.getElementById('lightbox');
       lb.style.transform = '';
       lb.style.opacity = '';
+      lb.classList.remove('lb-pull', 'lb-closing');
+      lb.style.removeProperty('--lb-pull');
       lb.classList.add('open');
       lockScroll(true);
       // Mobile: scroll background NOW while lightbox covers screen
@@ -3958,6 +4086,10 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
        · Cambiar de foto, abrir otra o cambiar el tamaño de la ventana: vuelve a 1×. */
     const LbZoom = (() => {
       const MAX = 4, DOUBLE_TAP = 2.5;
+      // Menos de esto (apenas acercada) no queda: al soltar vuelve sola a 1×, como un
+      // elástico. Si no, parecía que las miniaturas de abajo no volvían más.
+      const SNAP = 1.2;
+      let snapTimer = 0;
       let s = 1, x = 0, y = 0;                 // zoom y corrimiento actuals (px)
       let base = null;                          // lugar de la foto sin zoom (px de pantalla)
       let anim = 0, wheelTarget = 1, wheelAnchor = null, ideal = null;
@@ -4034,6 +4166,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         const v = view();
         const cs = s, cx = x, cy = y;
         const s2 = clampNum(s, 1, MAX);
+        if (s2 < SNAP) { tweenTo(1, 0, 0, (ms || 260) + 60); return; }   // apenas acercada: vuelve a 1×
         scaleAround(s2, px === undefined ? v.w / 2 : px, py === undefined ? v.h / 2 : py);
         const L = limits(s2);
         const x2 = clampNum(x, L.x[0], L.x[1]), y2 = clampNum(y, L.y[0], L.y[1]);
@@ -4056,7 +4189,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       return {
         isZoomed: () => s > 1.01,
         reset(animate) {
-          stop(); pan = pinch = null; wheelTarget = 1;
+          stop(); clearTimeout(snapTimer); pan = pinch = null; wheelTarget = 1;
           if (animate && base && s > 1.001) { tweenTo(1, 0, 0, 280); return; }
           s = 1; x = 0; y = 0;
           apply();
@@ -4065,6 +4198,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         // ── ruedita (PC) ──
         wheel(e) {
           if (!ready()) return;
+          clearTimeout(snapTimer);
           const wheeling = !!wheelAnchor;            // ya hay un zoom de ruedita andando
           if (!wheeling) {
             stop();
@@ -4092,7 +4226,13 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
             y = clampNum(ideal.y, L.y[0], L.y[1]);
             apply();
             if (Math.abs(wheelTarget - s) > 0.0005) anim = requestAnimationFrame(step);
-            else { anim = 0; wheelAnchor = null; ideal = null; if (s <= 1.001) { s = 1; x = y = 0; apply(); } }
+            else {
+              anim = 0; wheelAnchor = null; ideal = null;
+              if (s <= 1.001) { s = 1; x = y = 0; apply(); }
+              else if (s < SNAP) snapTimer = setTimeout(() => {           // quedó apenas acercada: vuelve a 1×
+                if (!pan && !pinch && !wheelAnchor && s > 1.001 && s < SNAP) tweenTo(1, 0, 0, 320);
+              }, 350);
+            }
           };
           anim = requestAnimationFrame(step);
         },
@@ -4120,6 +4260,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           const fresh = performance.now() - b.t < 60;                  // si ya se había frenado, sin inercia
           // Adónde llega con la inercia; y si el zoom quedó pasado (pinch → un dedo), vuelve al tope.
           const cs = s, cx = x, cy = y, s2 = clampNum(s, 1, MAX);
+          if (s2 < SNAP) { tweenTo(1, 0, 0, 320); return; }               // apenas acercada: vuelve a 1×
           x += fresh ? vx * 220 : 0;
           y += fresh ? vy * 220 : 0;
           scaleAround(s2, b.px, b.py);
@@ -4175,7 +4316,8 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           if (s <= 1.001 && !measure()) return;
           const v = view();
           const cs = s, cx = x, cy = y;
-          const s2 = clampNum(s * factor, 1, MAX);
+          let s2 = clampNum(s * factor, 1, MAX);
+          if (s2 < SNAP) s2 = 1;                                          // apenas acercada: directo a 1×
           scaleAround(s2, v.w / 2, v.h / 2);
           const L = limits(s2);
           const x2 = clampNum(x, L.x[0], L.x[1]), y2 = clampNum(y, L.y[0], L.y[1]);
@@ -4236,37 +4378,37 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       const strip = document.getElementById('lb-filmstrip');
       lbStopFilmstripMotion();
       strip.innerHTML = '';
-      strip.classList.remove('visible');
+      strip.classList.remove('visible', 'ready');
       const token = ++lbStripToken;
       if (lbImages.length <= 1) { strip.classList.add('hidden'); return; }
       strip.classList.remove('hidden');
       const size = lbThumbPx(), waits = [];
       lbImages.forEach((src, i) => {
-        const t = document.createElement('img');
+        const t = document.createElement('span');          // el recuadro (con la foto adentro)
         t.className = 'lb-thumb' + (i === lbIndex ? ' active' : '');
-        t.alt = '';
-        t.decoding = 'async';
-        t.draggable = false;   // que el arrastre con mouse deslice la tira, no "agarre" la foto
         t.addEventListener('click', e => {
           e.stopPropagation();
           lbJumpTo(i);
         });
-        // Todas (no "lazy"): la tira sube recién cuando bajaron todas.
+        const im = document.createElement('img');
+        im.alt = '';
+        im.decoding = 'async';
+        im.draggable = false;  // que el arrastre con mouse deslice la tira, no "agarre" la foto
         waits.push(new Promise(res => {
-          t.addEventListener('load', res, { once: true });
-          t.addEventListener('error', res, { once: true });
+          im.addEventListener('load', res, { once: true });
+          im.addEventListener('error', res, { once: true });
         }));
-        t.src = driveSquareThumbUrl(src, size);
+        im.src = driveSquareThumbUrl(src, size);          // todas ya (no "lazy")
+        t.appendChild(im);
         strip.appendChild(t);
       });
       requestAnimationFrame(lbScrollFilmstripToActive);
-      // Sube desde abajo (con un pequeño rebote) cuando están TODAS las miniaturas,
-      // así aparecen juntas de golpe. Si alguna tarda demasiado, sube igual a los 4 s.
-      const show = () => {
-        if (token !== lbStripToken || !document.getElementById('lightbox').classList.contains('open')) return;
-        requestAnimationFrame(() => requestAnimationFrame(() => strip.classList.add('visible')));
-      };
-      Promise.race([Promise.all(waits), new Promise(r => setTimeout(r, 4000))]).then(show);
+      // Sube al toque desde abajo (con un pequeño rebote), con los recuadros de muestra.
+      requestAnimationFrame(() => requestAnimationFrame(() => strip.classList.add('visible')));
+      // Cuando bajaron TODAS las miniaturas, aparecen juntas de golpe (si alguna tarda
+      // demasiado, aparecen igual a los 4 s).
+      const ready = () => { if (token === lbStripToken) strip.classList.add('ready'); };
+      Promise.race([Promise.all(waits), new Promise(r => setTimeout(r, 4000))]).then(ready);
     }
 
     function lbUpdateFilmstripActive() {
@@ -4463,6 +4605,50 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       if (e.target.tagName === 'IMG') e.preventDefault();
     });
 
+    // ─── Arrastrar la foto para arriba o para abajo = cerrar (mouse y dedo) ───
+    //  · Se mueve SOLO la foto, siguiendo al dedo / al mouse.
+    //  · El fondo no se mueve: se va aclarando (deja ver la página), y la ×, el
+    //    nombre, las flechas y las miniaturas se desvanecen con él.
+    //  · A dist() px llega a su punto máximo y ahí se queda: soltando desde ese
+    //    punto, se cierra; si soltás antes, todo vuelve a su lugar.
+    const LbPull = (() => {
+      const lb = () => document.getElementById('lightbox');
+      const dist = () => Math.round(Math.min(160, Math.max(110, innerHeight * 0.15)));
+      const CLOSE_MS = 240;
+      return {
+        start() {
+          lb().classList.add('lb-pull');
+          track().style.transition = 'none';
+        },
+        move(dy) {
+          track().style.transform = `translate(-100vw, ${dy}px)`;
+          lb().style.setProperty('--lb-pull', Math.min(1, Math.abs(dy) / dist()).toFixed(3));
+        },
+        reached(dy) { return Math.abs(dy) >= dist(); },
+        cancel() {                                     // soltaste antes: vuelve todo
+          const l = lb();
+          l.classList.remove('lb-pull');
+          l.style.removeProperty('--lb-pull');
+          lbResetTrack(true);
+        },
+        close(dy) {                                    // soltaste en el punto máximo: se cierra
+          const l = lb(), t = track();
+          lockScroll(false);
+          l.style.setProperty('--lb-pull', '1');
+          l.classList.remove('lb-pull');
+          l.classList.add('lb-closing');               // el fondo termina de irse
+          t.style.transition = `transform ${CLOSE_MS}ms ease`;
+          t.style.transform = `translate(-100vw, ${dy + Math.sign(dy) * innerHeight}px)`;   // la foto sigue de largo
+          setTimeout(() => {
+            l.classList.remove('open', 'lb-closing');
+            l.style.removeProperty('--lb-pull');
+            lbResetTrack(false);
+            flashLastCard();
+          }, CLOSE_MS);
+        }
+      };
+    })();
+
     // ─── Mouse (PC): arrastrar = cambiar de foto / cerrar; con zoom, mover la foto ───
     (function() {
       const lb = document.getElementById('lightbox');
@@ -4470,7 +4656,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       let zoomPan = false, zMoved = false;
 
       lb.addEventListener('mousedown', e => {
-        if (e.button !== 0) return;
+        if (e.button !== 0 || lb.classList.contains('lb-closing')) return;
         if (e.target.closest('.lightbox-zone') || e.target.closest('.lightbox-close') || e.target.closest('#lb-filmstrip')) return;
         startX = e.clientX;
         startY = e.clientY;
@@ -4485,7 +4671,6 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         moved = false;
         axis = null;
         track().style.transition = 'none';
-        lb.style.transition = 'none';
         lb.style.cursor = 'grabbing';
       });
 
@@ -4501,13 +4686,13 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         if (!axis && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
           axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
           moved = true;
+          if (axis === 'y') LbPull.start();
         }
         if (axis === 'x') {
           const atEdge = (lbIndex === 0 && dx > 0) || (lbIndex === lbImages.length - 1 && dx < 0);
           if (!atEdge) track().style.transform = `translateX(calc(-100vw + ${dx}px))`;
         } else if (axis === 'y') {
-          lb.style.transform = `translateY(${dy}px)`;
-          lb.style.opacity = Math.max(0, 1 - Math.abs(dy) / 300);
+          LbPull.move(dy);
         }
       });
 
@@ -4526,23 +4711,10 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         const dy = e.clientY - startY;
         if (axis === 'x' && Math.abs(dx) > window.innerWidth * 0.15) {
           lbNavBtn(dx < 0 ? 1 : -1);
-        } else if (axis === 'y' && Math.abs(dy) > 100) {
-          lockScroll(false);
-          lb.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
-          lb.style.transform = `translateY(${dy > 0 ? '100vh' : '-100vh'})`;
-          lb.style.opacity = '0';
-          setTimeout(() => {
-            lb.classList.remove('open');
-            lb.style.transform = '';
-            lb.style.opacity = '';
-            lb.style.transition = '';
-            flashLastCard();
-          }, 180);
+        } else if (axis === 'y' && LbPull.reached(dy)) {
+          LbPull.close(dy);
         } else {
-          lb.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
-          lb.style.transform = '';
-          lb.style.opacity = '';
-          lbResetTrack(true);
+          if (axis === 'y') LbPull.cancel(); else lbResetTrack(true);
           if (!moved) closeLightbox();
         }
         moved = false;
@@ -4568,10 +4740,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       let swipeSamples = [];           // últimas posiciones del dedo (para medir la velocidad del swipe)
 
       const undoSwipe = () => {        // si un swipe venía empezado, vuelve todo a su lugar
-        lb.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
-        lb.style.transform = '';
-        lb.style.opacity = '';
-        lbResetTrack(true);
+        if (axis === 'y') LbPull.cancel(); else lbResetTrack(true);
         axis = null;
       };
       const onTap = (t) => {
@@ -4593,7 +4762,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
 
       lb.addEventListener('touchstart', e => {
         if (e.touches.length === 1) {
-          ignore = !!(e.target.closest('#lb-filmstrip') || e.target.closest('.lightbox-close'));
+          ignore = !!(e.target.closest('#lb-filmstrip') || e.target.closest('.lightbox-close') || lb.classList.contains('lb-closing'));
           tapZone = e.target.closest('.lightbox-zone');   // flechas ‹ ›: un toque las usa; un swipe desde ahí igual swipea
         }
         if (ignore) return;
@@ -4616,7 +4785,6 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           mode = 'swipe';
           swipeSamples = [{ x: t.clientX, t: performance.now() }];
           track().style.transition = 'none';
-          lb.style.transition = 'none';
         }
       }, { passive: true });
 
@@ -4632,6 +4800,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         if (mode !== 'swipe') return;
         if (!axis && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
           axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+          if (axis === 'y') LbPull.start();
         }
         if (axis === 'x') {
           const now = performance.now();
@@ -4640,8 +4809,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           const atEdge = (lbIndex === 0 && dx > 0) || (lbIndex === lbImages.length - 1 && dx < 0);
           if (!atEdge) track().style.transform = `translateX(calc(-100vw + ${dx}px))`;
         } else if (axis === 'y') {
-          lb.style.transform = `translateY(${dy}px)`;
-          lb.style.opacity = Math.max(0, 1 - Math.abs(dy) / 300);
+          LbPull.move(dy);
         }
       }, { passive: false });
 
@@ -4692,17 +4860,8 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
           } else {
             lbResetTrack(true);
           }
-        } else if (axis === 'y' && Math.abs(dy) > 100 && !cancelled) {
-          lockScroll(false);
-          lb.style.transition = 'transform 0.18s ease, opacity 0.18s ease';
-          lb.style.transform = `translateY(${dy > 0 ? '100vh' : '-100vh'})`;
-          lb.style.opacity = '0';
-          setTimeout(() => {
-            lb.classList.remove('open');
-            lb.style.transform = '';
-            lb.style.opacity = '';
-            flashLastCard();
-          }, 180);
+        } else if (axis === 'y' && LbPull.reached(dy) && !cancelled) {
+          LbPull.close(dy);
         } else {
           undoSwipe();
         }
