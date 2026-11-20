@@ -33,7 +33,8 @@
       --bg-rgb: 13, 13, 13;         /* el mismo color, en números (para la barra semitransparente) */
       --bar-alpha: 0.8;             /* opacidad de la barra de arriba (1 = sólida, 0 = invisible) */
       --bar-blur: 20px;             /* cuánto se difumina lo que pasa por detrás de la barra */
-      --line: #262626;              /* líneas finas del pie (arriba del About y arriba del ©) */
+      --line: #262626;              /* líneas finas (menú del celu, chip y ventanita de contacto) */
+      --footer-bg: #1b1b1b;         /* el pie (debajo del telón): un poco más claro que el fondo */
       --sbw: 0px;                   /* PC: ancho de la barra de scroll (lo mide el JS) */
       --sbw-box: 0px;               /* PC: ancho de la cajita de esa barra (lo mide el JS) */
       --bg2: #111111;
@@ -66,8 +67,6 @@
       --about-align-last: justify;  /* también el último renglón → bloque cuadradito */
       --about-hyphens: auto;        /* guiones al cortar palabras (solo cuando está justificado) */
       --about-block-gap: 16px;      /* separación entre bloques del About (uno por cada salto de línea) */
-      --contact-link-size: 18px;    /* links del pie (navegación) */
-      --footer-name-size: 12px;
       --row-align: center;       /* alineación de la última fila incompleta de la galería */
     }
 
@@ -273,11 +272,12 @@
     .mobile-menu a:last-child { border-bottom: none; }
 
     /* ─── Main wrapper ─── */
-    main {
-      padding-top: var(--nav-space);   /* el contenido arranca debajo de la barra de arriba (que es fija) */
-    }
+    /* El contenido arranca debajo de la barra de arriba (que es fija). Va en la
+       galería y no en <main>: en la PC <main> es el que scrollea, y el padding de
+       un contenedor que scrollea también corre lo sticky (el pie "telón"). */
     #dynamicSections {
-      padding-bottom: 80px;            /* espacio antes del pie */
+      padding-top: var(--nav-space);
+      padding-bottom: 12px;            /* un pelito entre la última foto y el borde del telón */
     }
     /* En la PC (mouse o touchpad) NO scrollea la página entera: scrollea este
        contenedor (las fotos + el pie). Ocupa toda la pantalla, así lo que
@@ -535,49 +535,71 @@
     }
 
 
-    /* ─── Pie de página: About + Navegación ──────────────────────────────
-         (fotos)
-         ─────────────────────────────── línea ─────────────────────────────
-         [ ABOUT + texto en bloque ]                      [ NAVEGACIÓN ]
-         ─────────────────────────────── línea ─────────────────────────────
-                               © 2026 Mateo Ronn Abregu
-       Mismo fondo que todo lo demás: lo separan dos líneas finas (--line), una
-       arriba (de las fotos) y otra abajo (del ©).
-       En pantallas angostas se apila todo y Navegación va centrada.
-       (El contacto no está acá: es el chip fijo de abajo a la derecha.) */
-    .site-footer {
+    /* ─── Pie de página: el About, debajo de un TELÓN ─────────────────────
+         La galería (#dynamicSections) es el telón: va arriba del pie, con su
+         fondo y una sombra en el borde de abajo. El pie queda DEBAJO y quieto:
+         al llegar al final, la galería se levanta y lo va destapando de abajo
+         hacia arriba (como en el video de opciones).
+         Cómo: el pie arranca metido debajo de la última pantalla de la galería
+         (margin-top negativo = el alto que se ve debajo de la barra, --stage-h)
+         y su contenido (.footer-stage) es sticky arriba, justo debajo de la
+         barra: mientras el telón sube, no se mueve. Cuando el telón ya se fue,
+         el pie scrollea normal (en el celu, si es más alto que la pantalla, ahí
+         se lee el resto). .footer-spacer es el lugar que necesita el sticky
+         para quedarse quieto (no se ve: lo tapa el contenido).
+         El contenido mide como mínimo esa pantalla: en la PC, destapado, el pie
+         ocupa toda la pantalla y lo de adentro va centrado.
+         Sin navegación ni ©; abajo, "Volver arriba". (El contacto no está acá:
+         es el chip fijo de abajo a la derecha.) */
+    #dynamicSections {
+      position: relative;
+      z-index: 1;                          /* el telón va arriba del pie */
       background: var(--bg);
-      border-top: 1px solid var(--line);    /* línea fina: fotos | About */
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.85), 0 2px 0 rgba(0, 0, 0, 0.6);   /* borde del telón */
     }
-    .footer-main {
+    .site-footer {
+      --stage-h: calc(100vh - var(--nav-space));
+      position: relative;
+      z-index: 0;
+      margin-top: calc(-1 * var(--stage-h));
+      background: var(--footer-bg);
+    }
+    @supports (height: 100svh) {
+      .site-footer { --stage-h: calc(100svh - var(--nav-space)); }   /* celu: el alto con la barra del navegador a la vista */
+    }
+    .footer-stage {
+      position: sticky;
+      top: var(--nav-space);
+      box-sizing: border-box;
+      min-height: var(--stage-h);
       display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 56px 96px;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 72px 40px 64px;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 72px 40px 56px;
     }
-    .site-footer.no-about .footer-main { justify-content: center; }  /* sin About: columna al centro */
+    .footer-spacer { height: var(--stage-h); }
+    /* Sin About: un pie chiquito, solo con "Volver arriba" (sin telón). */
+    .site-footer.no-about { margin-top: 0; }
+    .site-footer.no-about .footer-stage { position: static; min-height: 0; padding: 40px 20px 96px; }
+    .site-footer.no-about .footer-spacer { display: none; }
 
     #about {
-      flex: 1 1 auto;
-      min-width: 0;
+      width: 100%;
       max-width: var(--about-max-width);
       text-align: var(--about-align);
     }
 
-    /* Títulos del pie (ABOUT, NAVEGACIÓN): el estilo de siempre del "About". */
-    #about h2,
-    .footer-col h3 {
+    /* Título del pie: el estilo de siempre del "About", centrado. */
+    #about h2 {
       font-family: var(--font-display);
       font-size: var(--about-h2-size);
       font-weight: 700;
       letter-spacing: 0.2em;
       text-transform: uppercase;
       color: var(--muted);
-      text-align: left;
-      margin-bottom: 24px;
+      text-align: center;
+      margin-bottom: 30px;
     }
 
     /* Texto del About en BLOQUES cuadraditos: cada salto de línea del
@@ -605,30 +627,43 @@
     /* Renglones ya elegidos por el JS: cada uno entra justo, nunca se parte. */
     #about p .about-line { white-space: nowrap; }
 
-    /* Columna derecha: Navegación. */
-    .footer-cols {
-      display: flex;
+    /* Volver arriba: flechita y texto chico, como los títulos. */
+    .footer-top {
+      margin-top: 56px;
+      display: inline-flex;
       flex-direction: column;
-      gap: 52px;
-      flex: 0 0 auto;
-      min-width: 220px;
-    }
-    .footer-col ul {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .footer-col a {
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      background: none;
+      border: 0;
+      color: var(--muted);
       font-family: var(--font-display);
-      font-size: var(--contact-link-size);
-      font-weight: 400;              /* mismo peso que el texto del About */
-      letter-spacing: 0.04em;
-      color: var(--text);
-      white-space: nowrap;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
       transition: color 0.2s;
     }
-    .footer-col a:hover { color: var(--muted); }
+    .footer-top span { margin-right: -0.2em; }   /* el espaciado de la última letra no lo corre del centro */
+    .footer-top svg {
+      width: 22px;
+      height: 22px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transition: transform 0.2s;
+    }
+    @media (hover: hover) {
+      .footer-top:hover { color: #fff; }
+      .footer-top:hover svg { transform: translateY(-3px); }
+    }
+    .footer-top:focus-visible { outline: 2px solid #fff; outline-offset: 4px; border-radius: 6px; }
 
     /* Íconos de Instagram y del mail: dibujos de Bootstrap Icons (se cargan de
        cdn.jsdelivr.net), pintados con el color del texto (como máscara). */
@@ -859,33 +894,6 @@
       .cm-field { gap: 8px; padding: 8px 6px 8px 12px; }
       .cm-link { gap: 10px; }
       .cm-value { letter-spacing: 0.01em; }
-    }
-
-    .footer-bottom {
-      border-top: 1px solid var(--line);    /* línea fina: About | © */
-      padding: 24px 20px 28px;
-      text-align: center;
-    }
-
-    /* Tablet / celu: todo apilado; Navegación (y su título) centrada. */
-    @media (max-width: 860px) {
-      .footer-main { flex-direction: column; align-items: center; gap: 56px; }
-      #about { max-width: none; width: 100%; }
-      #about h2 { text-align: center; }
-      .footer-cols { align-items: center; text-align: center; gap: 44px; min-width: 0; }
-      .footer-col h3 { text-align: center; }
-      .footer-col ul { align-items: center; }
-    }
-    .site-footer.no-about .footer-cols { align-items: center; text-align: center; }
-    .site-footer.no-about .footer-col h3 { text-align: center; }
-    .site-footer.no-about .footer-col ul { align-items: center; }
-
-    .footer-name {
-      font-family: var(--font-display);
-      font-size: var(--footer-name-size);
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #333;
     }
 
     /* ─── Pantalla de carga (como la de YouTube) ───
@@ -1263,11 +1271,8 @@
       #lb-filmstrip { bottom: 14px; gap: 6px; padding: 8px; }
       .lb-thumb { width: 38px; height: 38px; }
       .section-label { font-size: calc(var(--section-label-size) * 0.8); padding: calc(24px - 0.145em) 10px calc(7px - 0.105em); }
-      #dynamicSections { padding-bottom: 60px; }
-      .footer-main { gap: 44px; padding: 52px 20px 40px; }
+      .footer-stage { padding: 56px 20px 96px; }    /* abajo: lugar para el chip de contacto */
       #about p { font-size: calc(var(--about-p-size) * 0.85); }   /* un poco más chico en el celu → el About queda menos alto */
-      .footer-cols { gap: 48px; }
-      .footer-bottom { padding: 20px 20px 24px; }
     }
   </style>
 </head>
@@ -1302,35 +1307,28 @@
     <!-- Secciones generadas dinámicamente desde Drive (o datos de respaldo) -->
     <div id="dynamicSections"></div>
 
-    <!-- ── Pie de página: About + Navegación ─────────────────────────────
-           ─────────────────────────────── línea ─────────────────────────────
-           [ ABOUT + texto en bloque ]                    [ NAVEGACIÓN ]
-           ─────────────────────────────── línea ─────────────────────────────
-                                 © 2026 Mateo Ronn Abregu
+    <!-- ── Pie de página: el About, debajo de un telón ───────────────────
+         La galería de arriba es el telón: al llegar al final se levanta y
+         destapa el pie, que queda quieto (ver el CSS de .site-footer).
          · About: el texto sale del documento "about" (o about.txt) de la
            carpeta PRINCIPAL de Drive. Con texto → se muestra; vacío / no
-           existe → la columna queda oculta y se saca del menú. Lo llena el
-           JS (loadAboutText/renderAbout).
-         · Navegación (los mismos botones del menú de arriba, los arma
-           buildNav) y el © se ven SIEMPRE.
+           existe → queda oculto y se saca del menú. Lo llena el JS
+           (loadAboutText/renderAbout).
+         · Abajo, "Volver arriba". Sin navegación ni ©.
          · El contacto (Instagram y mail) no va acá: es el chip fijo de abajo
            a la derecha, que abre la ventanita. ── -->
     <footer class="site-footer" id="siteFooter">
-      <div class="footer-main">
+      <div class="footer-stage">
         <section id="about" class="footer-about" hidden>
           <h2>About</h2>
           <div id="aboutText"></div>
         </section>
-        <div class="footer-cols">
-          <div class="footer-col" role="navigation" aria-label="Navegación">
-            <h3>Navegación</h3>
-            <ul id="footerNav"></ul>
-          </div>
-        </div>
+        <button class="footer-top" id="footerTop" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg>
+          <span>Volver arriba</span>
+        </button>
       </div>
-      <div class="footer-bottom">
-        <span class="footer-name">© 2026 Mateo Ronn Abregu</span>
-      </div>
+      <div class="footer-spacer" aria-hidden="true"></div>
     </footer>
 
   </main>
@@ -1585,10 +1583,8 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     function buildNav(sections) {
       const navLinks = document.getElementById('navLinks');
       const mobileMenu = document.getElementById('mobileMenu');
-      const footerNav = document.getElementById('footerNav');
       navLinks.innerHTML = '';
       mobileMenu.innerHTML = '';
-      footerNav.innerHTML = '';
       // "About" solo aparece en el menú si about.txt tiene texto (igual que las
       // secciones: si no hay contenido, no se muestra el botón).
       const entries = sections.map(s => ({ id: s.id, label: s.label }));
@@ -1606,16 +1602,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
         a2.textContent = entry.label;
         a2.addEventListener('click', toggleMenu);
         mobileMenu.appendChild(a2);
-
-        // "Navegación" del pie: los mismos botones que el menú de arriba.
-        const li3 = document.createElement('li');
-        const a3 = document.createElement('a');
-        a3.href = '#' + entry.id;
-        a3.textContent = entry.label;
-        li3.appendChild(a3);
-        footerNav.appendChild(li3);
       });
-      footerNav.closest('.footer-col').hidden = !entries.length;   // sin secciones: no mostrar "Navegación" vacía
       lastActiveNavId = null;
       scheduleNavSpy();   // marcar de entrada la sección que se está viendo
       if (typeof fitNav === 'function') fitNav();   // ¿entran las secciones al lado del nombre?
@@ -1913,7 +1900,12 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       const navH = navEl ? navEl.offsetHeight : 0;
       const line = navH + (window.innerHeight - navH) * 0.2;
       let current = targets[0];
-      targets.forEach(t => { if (t.getBoundingClientRect().top <= line) current = t; });
+      const curtain = curtainEdge();
+      targets.forEach(t => {
+        // El About está debajo del telón: se "ve" recién cuando el borde del telón pasó el renglón.
+        const top = t.id === 'about' ? curtain : t.getBoundingClientRect().top;
+        if (top <= line) current = t;
+      });
       const sc = scrollEl();
       if (sc.scrollTop <= 2) {
         current = targets[0];                       // arriba de todo → la primera sección
@@ -1979,10 +1971,45 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       if (!navJumping || (ev === 'keydown' && SCROLL_KEYS.indexOf(e.key) === -1)) return;
       endNavJump();
     }, { passive: true }));
-    ['navLinks', 'mobileMenu', 'footerNav'].forEach(id => document.getElementById(id).addEventListener('click', e => {
+    ['navLinks', 'mobileMenu'].forEach(id => document.getElementById(id).addEventListener('click', e => {
       const a = e.target.closest('a[href^="#"]');
-      if (a) startNavJump(a.getAttribute('href').slice(1));
+      if (!a) return;
+      const target = a.getAttribute('href').slice(1);
+      startNavJump(target);
+      if (target === 'about') {                      // el About está debajo del telón (ver aboutScrollTop)
+        e.preventDefault();
+        scrollEl().scrollTo({ top: aboutScrollTop(), behavior: 'smooth' });
+      }
     }));
+
+    /* ─── Pie (telón) ───
+       Borde de abajo de la galería = borde del telón, en pantalla. */
+    function curtainEdge() {
+      return document.getElementById('dynamicSections').getBoundingClientRect().bottom;
+    }
+    // Para ver el About hay que llegar a donde el telón ya se levantó entero (su
+    // borde pasó por debajo de la barra de arriba). Ojo: NO es donde "está" el
+    // About en la página (ahí todavía lo tapa la galería): por eso el link del
+    // menú no salta solo al #about.
+    function aboutScrollTop() {
+      const sc = scrollEl();
+      const navH = document.querySelector('nav').offsetHeight;
+      const scTop = sc === mainEl ? mainEl.getBoundingClientRect().top : 0;
+      const y = sc.scrollTop + curtainEdge() - scTop - navH;
+      return Math.max(0, Math.min(sc.scrollHeight - sc.clientHeight, Math.round(y)));
+    }
+    document.getElementById('footerTop').addEventListener('click', () => {
+      const targets = navTargets();
+      if (targets.length) startNavJump(targets[0].id);     // en el menú se marca directo la primera
+      scrollEl().scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    // Con el teclado (Tab): si el botón quedó tapado por el telón, levantarlo.
+    document.getElementById('siteFooter').addEventListener('focusin', e => {
+      if (e.target.getBoundingClientRect().top < curtainEdge()) {
+        const sc = scrollEl();
+        sc.scrollTo({ top: sc.scrollHeight, behavior: 'smooth' });
+      }
+    });
     window.addEventListener('resize', () => { lastActiveNavId = null; scheduleNavSpy(); });
 
     /* ─── Galería justificada (estilo Flickr / Google Photos) ──────────────
@@ -2009,7 +2036,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       pageBg: 13,            // gris del fondo de TODA la página (0 = negro): galería, barra de arriba y pie
       barAlpha: 80,          // opacidad de la barra de arriba (%): 100 = sólida; menos = se ven más las fotos de atrás
       barBlur: 20,           // difuminado de lo que pasa por detrás de la barra (px)
-      lineGray: 38,          // gris de las líneas finas del pie (arriba del About y arriba del ©)
+      lineGray: 38,          // gris de las líneas finas (menú del celu, chip y ventanita de contacto)
       // Efecto de las fotos
       tiltMax: 9,            // inclinación máxima de las fotos con el mouse (grados; 0 = sin efecto)
       tiltShadow: 100,       // fuerza de la sombra de las fotos (%)
@@ -2026,8 +2053,6 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       aboutMaxWidth: 800,          // ancho máx. de la columna About en el pie
       aboutBlockGap: 16,           // separación entre bloques del About (px)
       aboutAlign: 'justify',       // left | center | right | justify (justify = bloque parejo)
-      contactLinkSize: 18,         // links del pie (navegación)
-      footerNameSize: 12,
       // Sonido de la moneda (el loguito)
       spinSound: 'visita',         // 'visita' = en cada visita se sortea: Boing (90%) o Miau (10%). Los demás: COIN_SOUND_LIST, se prueban en #ajustes
       spinVolume: 100,             // % (100 = como fue diseñado cada sonido)
@@ -3117,7 +3142,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       } else {
         section.hidden = true;       // vacío o borrado → About oculto
       }
-      // Sin About, las columnas Navegación/Contacto quedan centradas en el pie.
+      // Sin About: el pie queda chiquito, solo con "Volver arriba" (sin telón).
       document.getElementById('siteFooter').classList.toggle('no-about', !aboutHasText);
       scheduleAboutFit();
     }
@@ -3319,14 +3344,14 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       s.setProperty('--about-align', TWEAKS.aboutAlign);
       // Guiones solo en justificado (es lo que evita huecos grandes entre palabras).
       s.setProperty('--about-hyphens', TWEAKS.aboutAlign === 'justify' ? 'auto' : 'manual');
-      s.setProperty('--contact-link-size', TWEAKS.contactLinkSize + 'px');
-      s.setProperty('--footer-name-size', TWEAKS.footerNameSize + 'px');
       // Justificado = bloque cuadradito: también el último renglón de cada bloque.
       s.setProperty('--about-align-last', TWEAKS.aboutAlign === 'justify' ? 'justify' : 'auto');
       s.setProperty('--row-align', alignToFlex(TWEAKS.rowAlign));
       const g = Math.round(Math.min(255, Math.max(0, TWEAKS.pageBg)));
       s.setProperty('--bg', `rgb(${g}, ${g}, ${g})`);
       s.setProperty('--bg-rgb', `${g}, ${g}, ${g}`);
+      const fg = Math.min(255, g + 14);                // el pie (debajo del telón): un poco más claro que el fondo
+      s.setProperty('--footer-bg', `rgb(${fg}, ${fg}, ${fg})`);
       s.setProperty('--bar-alpha', Math.min(100, Math.max(0, TWEAKS.barAlpha)) / 100);
       s.setProperty('--bar-blur', Math.max(0, TWEAKS.barBlur) + 'px');
       const gl = Math.round(Math.min(255, Math.max(0, TWEAKS.lineGray)));
@@ -3338,7 +3363,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       if (typeof scheduleFitNav === 'function') scheduleFitNav(); // tamaño del nombre/menú: ¿sigue entrando en un renglón?
     }
 
-    const TWEAK_KEYS = ['rowHeight','gap','portraitBoost','stretchCap','rowAlign','pageBg','barAlpha','barBlur','lineGray','tiltMax','tiltShadow','tiltGlare','navLogoSize','navLinkSize','sectionLabelSize','sectionLabelAlign','artistNameSize','lightboxTitleSize','aboutH2Size','aboutPSize','aboutMaxWidth','aboutBlockGap','aboutAlign','contactLinkSize','footerNameSize','spinSound','spinVolume'];
+    const TWEAK_KEYS = ['rowHeight','gap','portraitBoost','stretchCap','rowAlign','pageBg','barAlpha','barBlur','lineGray','tiltMax','tiltShadow','tiltGlare','navLogoSize','navLinkSize','sectionLabelSize','sectionLabelAlign','artistNameSize','lightboxTitleSize','aboutH2Size','aboutPSize','aboutMaxWidth','aboutBlockGap','aboutAlign','spinSound','spinVolume'];
     const ALIGN_KEYS = ['rowAlign','sectionLabelAlign','aboutAlign'];
 
     function serializeTweaks() { return TWEAK_KEYS.map(k => k + ' = ' + TWEAKS[k]).join('\n'); }
@@ -3366,7 +3391,7 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       { key: 'pageBg', label: 'Fondo de toda la página', min: 0, max: 60, step: 1, unit: '' },
       { key: 'barAlpha', label: 'Barra de arriba — opacidad', min: 0, max: 100, step: 1, unit: '%' },
       { key: 'barBlur', label: 'Barra de arriba — difuminado', min: 0, max: 60, step: 1, unit: 'px' },
-      { key: 'lineGray', label: 'Líneas del pie', min: 0, max: 120, step: 1, unit: '' },
+      { key: 'lineGray', label: 'Líneas finas (menú del celu, chip, ventanita)', min: 0, max: 120, step: 1, unit: '' },
       { group: 'Efecto de las fotos' },
       { key: 'tiltMax', label: 'Inclinación con el mouse', min: 0, max: 20, step: 0.5, unit: '°' },
       { key: 'tiltShadow', label: 'Sombra de las fotos', min: 0, max: 200, step: 5, unit: '%' },
@@ -3377,12 +3402,10 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       { key: 'sectionLabelSize', label: 'Título de sección', min: 12, max: 56, step: 1, unit: 'px' },
       { key: 'artistNameSize', label: 'Nombre sobre la foto', min: 10, max: 44, step: 1, unit: 'px' },
       { key: 'lightboxTitleSize', label: 'Nombre en la foto abierta', min: 12, max: 48, step: 1, unit: 'px' },
-      { key: 'aboutH2Size', label: 'Pie — títulos (About, Contacto, Navegación)', min: 10, max: 44, step: 1, unit: 'px' },
+      { key: 'aboutH2Size', label: 'Pie — título (About)', min: 10, max: 44, step: 1, unit: 'px' },
       { key: 'aboutPSize', label: 'About — texto', min: 12, max: 44, step: 1, unit: 'px' },
       { key: 'aboutMaxWidth', label: 'About — ancho de la columna', min: 300, max: 1000, step: 10, unit: 'px' },
       { key: 'aboutBlockGap', label: 'About — espacio entre bloques', min: 0, max: 60, step: 1, unit: 'px' },
-      { key: 'contactLinkSize', label: 'Pie — links de navegación', min: 10, max: 32, step: 1, unit: 'px' },
-      { key: 'footerNameSize', label: 'Contacto — ©', min: 10, max: 28, step: 1, unit: 'px' },
       { group: 'Alineación (izq / centro / der)' },
       { key: 'sectionLabelAlign', label: 'Título de sección', align: true },
       { key: 'aboutAlign', label: 'About (texto)', align: true, justify: true },
