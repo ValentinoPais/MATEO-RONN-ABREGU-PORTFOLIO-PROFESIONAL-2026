@@ -361,7 +361,12 @@
       text-transform: uppercase;
       color: #fff;
       text-align: var(--section-label-align);
-      padding: 44px 20px 14px;
+      /* Pegado a sus fotos (apenas unos px abajo) y con más aire arriba, así se lee
+         como el título de lo que sigue. Los px son el espacio QUE SE VE hasta las
+         mayúsculas: con line-height 1, en Manrope las mayúsculas arrancan 0.145em
+         debajo del borde de arriba de la caja y terminan 0.105em antes del de abajo. */
+      line-height: 1;
+      padding: calc(32px - 0.145em) 20px calc(9px - 0.105em);
     }
 
     .empty-message {
@@ -634,8 +639,8 @@
        Circulito fijo abajo a la derecha de la pantalla, siempre arriba de todo
        (fotos, barra, lightbox). Tiene el sobre y abre la ventanita. Mientras
        carga la página no se ve: cuando aparecen las fotos, sube desde abajo de
-       la pantalla. Con una foto abierta, si abajo están las miniaturas, sube
-       un poco para no taparlas. */
+       la pantalla. Con una foto abierta (lightbox) no está; al cerrarla vuelve
+       a subir desde abajo con la misma entrada. */
     .contact-chip {
       --chip-size: 58px;
       --chip-gap: 24px;                   /* distancia a los bordes de la pantalla */
@@ -656,7 +661,7 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
-      transition: color 0.2s, border-color 0.2s, bottom 0.35s cubic-bezier(.2, .8, .2, 1);
+      transition: color 0.2s, border-color 0.2s;
     }
     .contact-chip::before {
       content: '';
@@ -674,16 +679,15 @@
       .contact-chip { --chip-size: 52px; --chip-gap: 16px; }
       .contact-chip::before { width: 22px; height: 22px; }
     }
-    /* Foto abierta con miniaturas abajo (ocupan hasta 90px del borde): el chip sube. */
-    body:has(.lightbox.open #lb-filmstrip.visible:not(.hidden)) .contact-chip {
-      bottom: calc(102px + env(safe-area-inset-bottom, 0px));
-    }
     /* Entrada: durante la pantalla de carga no está; apenas aparecen las fotos
        (se va body.loading) sube desde abajo de la pantalla, derecho y sin
        rebote: arranca rápido y frena suave al llegar. Con "reducir movimiento"
        del sistema: aparece con un fundido. */
     .contact-chip { animation: chip-rise 0.55s cubic-bezier(.22, .8, .3, 1) 0.2s both; }
     body.loading .contact-chip { visibility: hidden; pointer-events: none; animation: none; }
+    /* Foto abierta: el chip no está. Al cerrarla, sin el animation:none la entrada
+       arranca de nuevo (sube desde abajo, igual que al principio). */
+    body:has(.lightbox.open) .contact-chip { visibility: hidden; pointer-events: none; animation: none; }
     @keyframes chip-rise {
       from { transform: translateY(calc(var(--chip-size) + var(--chip-gap) + 48px + env(safe-area-inset-bottom, 0px))); }
     }
@@ -1091,7 +1095,7 @@
       gap: 8px;
       max-width: 92vw;
       overflow-x: auto;
-      padding: 10px 14px;
+      padding: 10px;              /* el mismo aire en los cuatro lados */
       border-radius: 8px;
       background: rgba(20,20,20,0.55);
       -webkit-backdrop-filter: blur(6px);
@@ -1201,9 +1205,9 @@
         font-size: var(--lightbox-title-size-m);
         max-width: calc(100vw - 100px);
       }
-      #lb-filmstrip { bottom: 14px; gap: 6px; padding: 8px 10px; }
+      #lb-filmstrip { bottom: 14px; gap: 6px; padding: 8px; }
       .lb-thumb { width: 38px; height: 38px; }
-      .section-label { font-size: calc(var(--section-label-size) * 0.8); padding: 34px 10px 10px; }
+      .section-label { font-size: calc(var(--section-label-size) * 0.8); padding: calc(24px - 0.145em) 10px calc(7px - 0.105em); }
       #dynamicSections { padding-bottom: 60px; }
       .footer-main { gap: 44px; padding: 52px 20px 40px; }
       #about p { font-size: calc(var(--about-p-size) * 0.85); }   /* un poco más chico en el celu → el About queda menos alto */
@@ -1367,6 +1371,14 @@
     function driveThumbUrl(src, size) {
       if (isDirectLink(src)) return directBase(src) + '=w' + size + '-rw';
       return src.replace(/sz=w\d+/, 'sz=w' + size);
+    }
+
+    // Miniatura CUADRADA de size×size (recortada al medio por Drive, igual que la
+    // muestra el CSS): para las miniaturas del lightbox, que son chiquitas → pesan
+    // poquito (≈1,5-4 KB). Con el link de respaldo, el ancho que deja ese lado.
+    function driveSquareThumbUrl(src, size) {
+      if (isDirectLink(src)) return directBase(src) + '=w' + size + '-h' + size + '-c-rw';
+      return src.replace(/sz=w\d+/, 'sz=w' + Math.round(size * 1.5));
     }
 
     // Link directo → el de siempre, en el mismo ancho (null si no era directo).
@@ -4213,29 +4225,48 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     }
 
     /* ─── Filmstrip de miniaturas ─── */
+    // Lado (px) de cada miniatura: el cuadradito que se ve (50 px; 38 en el celu),
+    // un 15% más por la activa (que se agranda) y la densidad de la pantalla (hasta 2×).
+    function lbThumbPx() {
+      const box = window.matchMedia('(max-width: 600px)').matches ? 38 : 50;
+      return Math.ceil(box * 1.15 * Math.min(window.devicePixelRatio || 1, 2) / 10) * 10;
+    }
+    let lbStripToken = 0;
     function lbBuildFilmstrip() {
       const strip = document.getElementById('lb-filmstrip');
       lbStopFilmstripMotion();
       strip.innerHTML = '';
       strip.classList.remove('visible');
+      const token = ++lbStripToken;
       if (lbImages.length <= 1) { strip.classList.add('hidden'); return; }
       strip.classList.remove('hidden');
+      const size = lbThumbPx(), waits = [];
       lbImages.forEach((src, i) => {
         const t = document.createElement('img');
         t.className = 'lb-thumb' + (i === lbIndex ? ' active' : '');
-        t.src = driveThumbUrl(src, 200);
         t.alt = '';
-        t.loading = 'lazy';
+        t.decoding = 'async';
         t.draggable = false;   // que el arrastre con mouse deslice la tira, no "agarre" la foto
         t.addEventListener('click', e => {
           e.stopPropagation();
           lbJumpTo(i);
         });
+        // Todas (no "lazy"): la tira sube recién cuando bajaron todas.
+        waits.push(new Promise(res => {
+          t.addEventListener('load', res, { once: true });
+          t.addEventListener('error', res, { once: true });
+        }));
+        t.src = driveSquareThumbUrl(src, size);
         strip.appendChild(t);
       });
       requestAnimationFrame(lbScrollFilmstripToActive);
-      // Animar: sube desde abajo con un pequeño rebote
-      requestAnimationFrame(() => requestAnimationFrame(() => strip.classList.add('visible')));
+      // Sube desde abajo (con un pequeño rebote) cuando están TODAS las miniaturas,
+      // así aparecen juntas de golpe. Si alguna tarda demasiado, sube igual a los 4 s.
+      const show = () => {
+        if (token !== lbStripToken || !document.getElementById('lightbox').classList.contains('open')) return;
+        requestAnimationFrame(() => requestAnimationFrame(() => strip.classList.add('visible')));
+      };
+      Promise.race([Promise.all(waits), new Promise(r => setTimeout(r, 4000))]).then(show);
     }
 
     function lbUpdateFilmstripActive() {
