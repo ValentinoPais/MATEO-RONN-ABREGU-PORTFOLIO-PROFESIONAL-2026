@@ -437,26 +437,9 @@
       transform-origin: 50% 50%;
       background: var(--skel);   /* recuadro de muestra (un poco más claro que el fondo) */
     }
-    /* Mientras la portada no llegó: el recuadro ya tiene el tamaño JUSTO (la
-       proporción de cada foto viene de Drive, así nada se mueve) y un brillito
-       que pasa. Cuando la foto bajó entera y está lista, aparece de una encima. */
-    .card-inner::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      z-index: 0;
-      background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.07) 50%, transparent 65%);
-      background-size: 250% 100%;
-      animation: card-shimmer 1.4s ease-in-out infinite;
-      animation-delay: var(--shimmer-delay, 0ms);   /* todos al mismo paso, aunque se rearme la galería (ver syncShimmer) */
-      pointer-events: none;
-    }
-    @keyframes card-shimmer {
-      from { background-position: 130% 0; }
-      to   { background-position: -30% 0; }
-    }
-    .artist-card.is-loaded .card-inner::before,
-    .artist-card.is-error .card-inner::before { animation: none; opacity: 0; }
+    /* Mientras la portada no llegó: el recuadro gris, quieto (sin brillo que pase),
+       que ya tiene el tamaño JUSTO (la proporción de cada foto viene de Drive, así
+       nada se mueve). Cuando la foto bajó entera y está lista, aparece de una encima. */
     .artist-card.is-lifted .card-inner { will-change: transform; }
 
     .card-shadow {
@@ -1016,14 +999,9 @@
     body.loading .nav-logo-mark { background-color: var(--skel); }
     body.loading .coin-front { opacity: 0; }
 
-    /* Fotos → su recuadro gris con el brillito, aunque ya hayan bajado:
-       aparecen todas juntas al final. Sombras, nombres y pie, también al final. */
+    /* Fotos → su recuadro gris, aunque ya hayan bajado: aparecen todas juntas
+       al final. Sombras, nombres y pie, también al final. */
     body.loading .artist-card img { opacity: 0; }
-    body.loading .artist-card.is-loaded .card-inner::before {
-      animation: card-shimmer 1.4s ease-in-out infinite;
-      animation-delay: var(--shimmer-delay, 0ms);
-      opacity: 1;
-    }
     body.loading .card-shadow { opacity: 0; }
     /* Con las fotos pegadas, en el esqueleto cada recuadro lleva una rayita fina
        del color del fondo contra el de al lado y el de arriba: así se siguen
@@ -1207,7 +1185,7 @@
     #lb-filmstrip.dragging .lb-thumb:not(.active) { opacity: 0.45; }
 
     /* Cada miniatura es un recuadro (con la foto adentro). Mientras bajan, se ve
-       el recuadro de muestra con el brillito (como las fotos de la página); cuando
+       el recuadro de muestra gris, quieto (como las fotos de la página); cuando
        bajaron TODAS, aparecen juntas (#lb-filmstrip.ready). */
     .lb-thumb {
       position: relative;
@@ -1225,15 +1203,6 @@
       -webkit-touch-callout: none;
       transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
     }
-    .lb-thumb::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.07) 50%, transparent 65%);
-      background-size: 250% 100%;
-      animation: card-shimmer 1.4s ease-in-out infinite;
-      pointer-events: none;
-    }
     .lb-thumb img {
       position: absolute;
       inset: 0;
@@ -1248,7 +1217,6 @@
       user-select: none;
     }
     #lb-filmstrip.ready .lb-thumb img { opacity: 1; }
-    #lb-filmstrip.ready .lb-thumb::before { animation: none; opacity: 0; }
     .lb-thumb.active {
       opacity: 1;
       filter: brightness(1.05) saturate(1.15);
@@ -2849,7 +2817,6 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
     function renderSections(sections) {
       const container = document.getElementById('dynamicSections');
       container.innerHTML = '';
-      syncShimmer(container);
       currentSections = sections || [];
 
       if (!sections || !sections.length) {
@@ -3018,19 +2985,12 @@ Actualmente, mi búsqueda está puesta en expandir mi mundo creativo más allá 
       skeletonSaveTimer = setTimeout(saveSkeletonModel, 1500);
     }
 
-    // El brillito de los recuadros va con un reloj común: si la galería se
-    // rearma (esqueleto → datos reales), sigue al mismo paso, sin saltar.
-    function syncShimmer(el) {
-      el.style.setProperty('--shimmer-delay', -Math.round(performance.now() % 1400) + 'ms');
-    }
-
     // Arma la estructura de la página con recuadros vacíos: mismas clases y
     // mismo justifyGrid que la galería real → mismo lugar, mismo tamaño.
     function renderSkeleton() {
       const model = readSkeletonModel();
       const container = document.getElementById('dynamicSections');
       container.innerHTML = '';
-      syncShimmer(container);
       model.sections.forEach(sec => {
         const labelEl = document.createElement('p');
         labelEl.className = 'section-label';
